@@ -584,10 +584,17 @@
     </div>
   </div>
 
-  <div class="header-center">
-    <button class="btn-mes" id="btn-prev" title="Mês anterior">&#8249;</button>
-    <span id="periodo-label">Carregando...</span>
-    <button class="btn-mes" id="btn-next" title="Próximo mês">&#8250;</button>
+  <div style="display:flex;align-items:center;gap:16px">
+    <nav style="display:flex;gap:4px">
+      <a href="index.html" style="text-decoration:none;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--accent2);background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3)">Dashboard</a>
+      <a href="clientes.html" style="text-decoration:none;padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;color:var(--muted);border:1px solid transparent;transition:all 0.15s" onmouseover="this.style.color='var(--text)';this.style.background='var(--card)';this.style.borderColor='var(--border)'" onmouseout="this.style.color='var(--muted)';this.style.background='';this.style.borderColor='transparent'">Clientes</a>
+    </nav>
+
+    <div class="header-center">
+      <button class="btn-mes" id="btn-prev" title="Mês anterior">&#8249;</button>
+      <span id="periodo-label">Carregando...</span>
+      <button class="btn-mes" id="btn-next" title="Próximo mês">&#8250;</button>
+    </div>
   </div>
 
   <div class="header-right">

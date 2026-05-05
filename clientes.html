@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESTRATERIK — Clientes & Prospects</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:     #07091a; --bg2:    #0c1024; --card:   #101428; --card2:  #141830;
+      --border: #1c2240; --border2:#242b50;
+      --text:   #e2e8f0; --muted:  #64748b; --muted2: #3d4b6b;
+      --ok:     #22c55e; --warn:   #f59e0b; --danger: #ef4444;
+      --accent: #6366f1; --accent2:#818cf8;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ── HEADER ── */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(7,9,26,0.92); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px; height: 64px;
+      display: flex; align-items: center; justify-content: space-between; gap: 24px;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 14px; color: #fff; letter-spacing: -1px;
+    }
+    .logo-text { font-size: 17px; font-weight: 800; color: var(--text); letter-spacing: 1.5px; }
+    .logo-sub  { font-size: 11px; font-weight: 400; color: var(--muted); }
+
+    nav { display: flex; gap: 4px; }
+    .nav-btn {
+      text-decoration: none; padding: 7px 16px; border-radius: 8px;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      transition: all 0.15s; border: 1px solid transparent;
+    }
+    .nav-btn:hover { color: var(--text); background: var(--card); border-color: var(--border); }
+    .nav-btn.active { color: var(--accent2); background: rgba(99,102,241,0.1); border-color: rgba(99,102,241,0.3); }
+
+    .btn-novo {
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      color: #fff; border: none; padding: 9px 20px; border-radius: 9px;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      display: flex; align-items: center; gap: 7px; transition: opacity 0.15s;
+    }
+    .btn-novo:hover { opacity: 0.88; }
+
+    /* ── MAIN ── */
+    main { padding: 24px 32px; max-width: 1600px; margin: 0 auto; }
+
+    /* ── STATS RÁPIDOS ── */
+    .stats-bar {
+      display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .stat-chip {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 18px; display: flex; align-items: center; gap: 10px;
+    }
+    .stat-chip .num { font-size: 22px; font-weight: 800; }
+    .stat-chip .lbl { font-size: 11px; color: var(--muted); font-weight: 500; line-height: 1.3; }
+    .stat-chip .dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    /* ── FILTROS ── */
+    .filtros {
+      display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;
+    }
+    .filtro-input {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      border-radius: 9px; padding: 9px 14px; font-size: 13px; font-family: inherit;
+      outline: none; transition: border-color 0.15s;
+    }
+    .filtro-input:focus { border-color: var(--accent); }
+    #busca { min-width: 220px; }
+    .filtros select { min-width: 160px; }
+    .btn-limpar {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 9px; padding: 9px 14px; font-size: 12px; cursor: pointer;
+      font-family: inherit; transition: all 0.15s;
+    }
+    .btn-limpar:hover { border-color: var(--border2); color: var(--text); }
+
+    /* ── TABELA ── */
+    .table-wrap {
+      background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+      overflow: hidden; margin-bottom: 16px;
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      padding: 11px 14px; text-align: left;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase;
+      color: var(--muted); border-bottom: 1px solid var(--border); background: var(--bg2);
+      white-space: nowrap; cursor: pointer; user-select: none;
+    }
+    thead th:hover { color: var(--text); }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--card2); }
+    tbody td { padding: 11px 14px; vertical-align: middle; }
+    .td-nome { font-weight: 700; font-size: 14px; }
+    .td-nome small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); margin-top: 2px; }
+
+    .badge-status {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; white-space: nowrap;
+    }
+    .s-prospect    { background: rgba(99,102,241,0.15); color: #818cf8; }
+    .s-andamento   { background: rgba(245,158,11,0.15); color: #f59e0b; }
+    .s-finalizado  { background: rgba(34,197,94,0.15);  color: #22c55e; }
+    .s-declinado   { background: rgba(239,68,68,0.15);  color: #ef4444; }
+    .s-adiado      { background: rgba(100,116,139,0.15);color: #94a3b8; }
+    .s-cobrar      { background: rgba(249,115,22,0.15); color: #f97316; }
+
+    .produtos-flags { display: flex; gap: 4px; flex-wrap: wrap; }
+    .prod-flag {
+      font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px;
+      background: rgba(129,140,248,0.12); color: var(--accent2); white-space: nowrap;
+    }
+
+    .consultor-dot {
+      display: flex; align-items: center; gap: 7px; font-weight: 600; font-size: 13px;
+    }
+    .c-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    .valor-cell { font-weight: 700; text-align: right; }
+    .valor-cell.zero { color: var(--muted2); font-weight: 400; }
+
+    .btn-edit {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 7px; padding: 5px 12px; font-size: 12px; cursor: pointer;
+      font-family: inherit; transition: all 0.15s; white-space: nowrap;
+    }
+    .btn-edit:hover { border-color: var(--accent); color: var(--accent2); }
+
+    .btn-del {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 7px; padding: 5px 10px; font-size: 12px; cursor: pointer;
+      font-family: inherit; transition: all 0.15s; margin-left: 5px;
+    }
+    .btn-del:hover { border-color: var(--danger); color: var(--danger); }
+
+    .empty-row { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+
+    /* ── PAGINAÇÃO ── */
+    .paginacao {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 12px; color: var(--muted);
+    }
+    .pag-btns { display: flex; gap: 6px; }
+    .pag-btn {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      border-radius: 7px; padding: 6px 12px; font-size: 12px; cursor: pointer;
+      font-family: inherit; transition: all 0.15s;
+    }
+    .pag-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent2); }
+    .pag-btn:disabled { opacity: 0.35; cursor: default; }
+    .pag-btn.active { background: rgba(99,102,241,0.15); border-color: var(--accent); color: var(--accent2); }
+
+    /* ── DRAWER (Painel lateral) ── */
+    .overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 200; backdrop-filter: blur(3px);
+    }
+    .overlay.open { display: block; }
+
+    .drawer {
+      position: fixed; right: 0; top: 0; bottom: 0; width: 560px;
+      background: var(--bg2); border-left: 1px solid var(--border);
+      z-index: 201; display: flex; flex-direction: column;
+      transform: translateX(100%); transition: transform 0.3s ease;
+    }
+    .drawer.open { transform: translateX(0); }
+
+    .drawer-header {
+      padding: 20px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .drawer-title { font-size: 16px; font-weight: 800; }
+    .drawer-close {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 8px; width: 34px; height: 34px; cursor: pointer;
+      font-size: 18px; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .drawer-close:hover { border-color: var(--danger); color: var(--danger); }
+
+    .drawer-body {
+      flex: 1; overflow-y: auto; padding: 24px;
+    }
+    .drawer-body::-webkit-scrollbar { width: 5px; }
+    .drawer-body::-webkit-scrollbar-track { background: var(--bg); }
+    .drawer-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    .drawer-footer {
+      padding: 16px 24px; border-top: 1px solid var(--border); flex-shrink: 0;
+      display: flex; gap: 10px; justify-content: flex-end;
+    }
+
+    /* ── FORM ── */
+    .form-section {
+      margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border);
+    }
+    .form-section:last-child { border-bottom: none; margin-bottom: 0; }
+    .form-section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase;
+      color: var(--accent2); margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+    .form-section-title::after { content:''; flex:1; height:1px; background: rgba(99,102,241,0.2); }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid.full { grid-template-columns: 1fr; }
+    .form-grid.thirds { grid-template-columns: 1fr 1fr 1fr; }
+
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.span2 { grid-column: span 2; }
+    .form-group.span3 { grid-column: span 3; }
+
+    label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+      text-transform: uppercase; color: var(--muted);
+    }
+    input, select, textarea {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 9px 12px; font-size: 13px; font-family: inherit;
+      outline: none; transition: border-color 0.15s; width: 100%;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 70px; }
+    select option { background: var(--card2); }
+
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.5); cursor: pointer; }
+    input[type="number"] { -moz-appearance: textfield; }
+    input[type="number"]::-webkit-inner-spin-button { display: none; }
+
+    /* Checkboxes de produto */
+    .check-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    }
+    .check-item {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+      padding: 9px 10px; cursor: pointer; transition: all 0.15s; user-select: none;
+    }
+    .check-item:hover { border-color: var(--border2); }
+    .check-item.checked { border-color: var(--accent); background: rgba(99,102,241,0.08); }
+    .check-item input[type="checkbox"] { display: none; }
+    .check-box {
+      width: 16px; height: 16px; border: 2px solid var(--border2); border-radius: 4px;
+      flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .check-item.checked .check-box { background: var(--accent); border-color: var(--accent); }
+    .check-box::after { content: '✓'; font-size: 10px; color: #fff; display: none; }
+    .check-item.checked .check-box::after { display: block; }
+    .check-label { font-size: 12px; font-weight: 600; }
+
+    /* Subseção de fechamento */
+    .fechamento-group {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px; margin-bottom: 10px;
+    }
+    .fechamento-titulo {
+      font-size: 12px; font-weight: 700; margin-bottom: 10px; color: var(--accent2);
+    }
+
+    /* Botões do footer */
+    .btn-salvar {
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      color: #fff; border: none; padding: 10px 24px; border-radius: 9px;
+      font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: opacity 0.15s;
+    }
+    .btn-salvar:hover { opacity: 0.88; }
+    .btn-cancelar {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 9px; padding: 10px 20px; font-size: 13px; cursor: pointer;
+      font-family: inherit; transition: all 0.15s;
+    }
+    .btn-cancelar:hover { border-color: var(--border2); color: var(--text); }
+
+    /* ── LOADING ── */
+    .loading-overlay {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 999; gap: 20px; transition: opacity 0.4s;
+    }
+    .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+    .loading-logo { font-size: 28px; font-weight: 900; letter-spacing: 3px; color: var(--accent2); }
+    .spinner {
+      width: 36px; height: 36px; border: 3px solid var(--border);
+      border-top-color: var(--accent); border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+      border-top: 1px solid var(--border); padding: 14px 32px;
+      font-size: 11px; color: var(--muted); text-align: center;
+    }
+
+    @media (max-width: 800px) {
+      main { padding: 16px; }
+      header { padding: 0 16px; }
+      .drawer { width: 100%; }
+      .check-grid { grid-template-columns: repeat(2, 1fr); }
+      .form-grid { grid-template-columns: 1fr; }
+      .form-grid.thirds { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="loading-logo">ESTRATERIK</div>
+  <div class="spinner"></div>
+</div>
+
+<header>
+  <a class="logo" href="index.html">
+    <div class="logo-icon">EK</div>
+    <div>
+      <div class="logo-text">ESTRATERIK</div>
+      <div class="logo-sub">Dashboard de Consultores</div>
+    </div>
+  </a>
+
+  <nav>
+    <a class="nav-btn" href="index.html">Dashboard</a>
+    <a class="nav-btn active" href="clientes.html">Clientes</a>
+  </nav>
+
+  <button class="btn-novo" onclick="abrirDrawer(null)">
+    <span>＋</span> Novo Cliente
+  </button>
+</header>
+
+<main>
+
+  <!-- STATS RÁPIDOS -->
+  <div class="stats-bar" id="stats-bar">
+    <div class="stat-chip"><div class="num" id="st-total">—</div><div class="lbl">Total de<br>Clientes</div></div>
+    <div class="stat-chip"><div class="dot" style="background:#818cf8"></div><div class="num" id="st-prospect">—</div><div class="lbl">Prospects</div></div>
+    <div class="stat-chip"><div class="dot" style="background:#f59e0b"></div><div class="num" id="st-andamento">—</div><div class="lbl">Em Andamento</div></div>
+    <div class="stat-chip"><div class="dot" style="background:#22c55e"></div><div class="num" id="st-finalizado">—</div><div class="lbl">Finalizados</div></div>
+    <div class="stat-chip"><div class="dot" style="background:#ef4444"></div><div class="num" id="st-declinado">—</div><div class="lbl">Declinados</div></div>
+    <div class="stat-chip" style="margin-left:auto"><div class="num" id="st-receita" style="color:#818cf8">—</div><div class="lbl">Receita<br>em Estudos</div></div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filtros">
+    <input class="filtro-input" id="busca" type="text" placeholder="🔍  Buscar cliente...">
+    <select class="filtro-input" id="fil-consultor">
+      <option value="">Todos os consultores</option>
+    </select>
+    <select class="filtro-input" id="fil-status">
+      <option value="">Todos os status</option>
+      <option value="Prospect">Prospect</option>
+      <option value="Em andamento">Em andamento</option>
+      <option value="Finalizado">Finalizado</option>
+      <option value="Declinado">Declinado</option>
+      <option value="Adiado">Adiado</option>
+      <option value="Financeiro Cobrar">Financeiro Cobrar</option>
+    </select>
+    <select class="filtro-input" id="fil-produto">
+      <option value="">Todos os produtos</option>
+      <option value="tem_estudo">Estudo</option>
+      <option value="tem_investimento">Investimento</option>
+      <option value="tem_previdencia">Previdência</option>
+      <option value="tem_seguro">Seguro</option>
+      <option value="tem_precatorio">Precatório</option>
+      <option value="tem_pe">Private Equity</option>
+      <option value="tem_consorcio">Consórcio</option>
+      <option value="tem_juridico">Jurídico</option>
+    </select>
+    <button class="btn-limpar" onclick="limparFiltros()">✕ Limpar</button>
+  </div>
+
+  <!-- TABELA -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Cliente</th>
+          <th>Consultor</th>
+          <th>Status</th>
+          <th>Produtos</th>
+          <th>Indicação</th>
+          <th>1ª Reunião</th>
+          <th style="text-align:right">Val. Estudo</th>
+          <th style="text-align:right">Receita Total</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="tabela-body">
+        <tr><td colspan="9" class="empty-row">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGINAÇÃO -->
+  <div class="paginacao">
+    <span id="pag-info">—</span>
+    <div class="pag-btns" id="pag-btns"></div>
+  </div>
+
+</main>
+
+<footer>ESTRATERIK © 2026 — Oikos Assessoria</footer>
+
+<!-- OVERLAY + DRAWER -->
+<div class="overlay" id="overlay" onclick="fecharDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title" id="drawer-title">Novo Cliente</div>
+    <button class="drawer-close" onclick="fecharDrawer()">✕</button>
+  </div>
+
+  <div class="drawer-body">
+    <form id="form-cliente" onsubmit="salvarCliente(event)">
+      <input type="hidden" id="f-id">
+
+      <!-- SEÇÃO 1: IDENTIFICAÇÃO -->
+      <div class="form-section">
+        <div class="form-section-title">Identificação</div>
+        <div class="form-grid">
+          <div class="form-group span2">
+            <label>Nome do Cliente *</label>
+            <input type="text" id="f-nome" required placeholder="Nome completo">
+          </div>
+          <div class="form-group">
+            <label>Consultor</label>
+            <select id="f-consultor">
+              <option value="">Selecione...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="f-status">
+              <option value="Prospect">Prospect</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Finalizado">Finalizado</option>
+              <option value="Declinado">Declinado</option>
+              <option value="Adiado">Adiado</option>
+              <option value="Financeiro Cobrar">Financeiro Cobrar</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>País / Estado</label>
+            <input type="text" id="f-pais-estado" placeholder="ex: Brasília, SP, Portugal">
+          </div>
+          <div class="form-group span2">
+            <label>Observações</label>
+            <textarea id="f-observacoes" placeholder="Anotações livres sobre o cliente..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEÇÃO 2: ORIGEM -->
+      <div class="form-section">
+        <div class="form-section-title">Origem</div>
+        <div class="form-grid thirds">
+          <div class="form-group">
+            <label>Origem da Indicação</label>
+            <select id="f-origem">
+              <option value="">Selecione...</option>
+              <option value="Cliente">Cliente</option>
+              <option value="Evento">Evento</option>
+              <option value="Site">Site</option>
+              <option value="Indicação">Indicação direta</option>
+              <option value="Outros">Outros</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Indicado Por</label>
+            <input type="text" id="f-indicado-por" placeholder="Nome de quem indicou">
+          </div>
+          <div class="form-group">
+            <label>Data da Indicação</label>
+            <input type="date" id="f-data-indicacao">
+          </div>
+        </div>
+      </div>
+
+      <!-- SEÇÃO 3: PRODUTOS DE INTERESSE -->
+      <div class="form-section">
+        <div class="form-section-title">Produtos de Interesse</div>
+        <div class="check-grid">
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox" id="f-estudo">
+            <div class="check-box"></div>
+            <span class="check-label">📊 Estudo Financeiro</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox" id="f-investimento">
+            <div class="check-box"></div>
+            <span class="check-label">💼 Investimento</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox" id="f-previdencia">
+            <div class="check-box"></div>
+            <span class="check-label">🏦 Previdência</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox" id="f-seguro">
+            <div class="check-box"></div>
+            <span class="check-label">🛡️ Seguro</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox" id="f-precatorio">
+            <div class="check-box"></div>
+            <span class="check-label">⚖️ Precatório</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox" id="f-pe">
+            <div class="check-box"></div>
+            <span class="check-label">🚀 Private Equity</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox" id="f-bigdeal">
+            <div class="check-box"></div>
+            <span class="check-label">⭐ Big Deal</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox" id="f-valuation">
+            <div class="check-box"></div>
+            <span class="check-label">📈 Valuation</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox" id="f-consorcio">
+            <div class="check-box"></div>
+            <span class="check-label">🏠 Consórcio</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox" id="f-juridico">
+            <div class="check-box"></div>
+            <span class="check-label">📋 Jurídico</span>
+          </label>
+          <label class="check-item" onclick="toggleCheck(this)">
+            <input type="checkbox" id="f-outros">
+            <div class="check-box"></div>
+            <span class="check-label">🔹 Outros</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- SEÇÃO 4: TIMELINE DO ESTUDO -->
+      <div class="form-section">
+        <div class="form-section-title">Timeline — Estudo Financeiro</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Data da Apresentação</label>
+            <input type="date" id="f-apresentacao">
+          </div>
+          <div class="form-group">
+            <label>Data da 1ª Reunião</label>
+            <input type="date" id="f-1a-reuniao">
+          </div>
+          <div class="form-group">
+            <label>Data da 2ª Reunião</label>
+            <input type="date" id="f-2a-reuniao">
+          </div>
+          <div class="form-group">
+            <label>Data de Entrega do Estudo</label>
+            <input type="date" id="f-entrega-estudo">
+          </div>
+          <div class="form-group">
+            <label>Contrato Assinado?</label>
+            <select id="f-contrato">
+              <option value="false">Não</option>
+              <option value="true">Sim</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Valor do Estudo (R$)</label>
+            <input type="number" id="f-valor-estudo" placeholder="0" step="0.01">
+          </div>
+          <div class="form-group">
+            <label>Data de Pagamento</label>
+            <input type="date" id="f-pgto-estudo">
+          </div>
+          <div class="form-group">
+            <label>Andamento do Estudo</label>
+            <select id="f-andamento-estudo">
+              <option value="">Selecione...</option>
+              <option value="Em andamento">Em andamento</option>
+              <option value="Finalizado">Finalizado</option>
+              <option value="Declinado">Declinado</option>
+              <option value="Adiado">Adiado</option>
+              <option value="Financeiro Cobrar">Financeiro Cobrar</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEÇÃO 5: FECHAMENTOS -->
+      <div class="form-section">
+        <div class="form-section-title">Fechamentos — Valores dos Negócios</div>
+
+        <div class="fechamento-group">
+          <div class="fechamento-titulo">💼 Investimento</div>
+          <div class="form-grid full">
+            <div class="form-group">
+              <label>Data de Fechamento</label>
+              <input type="date" id="f-dt-invest">
+            </div>
+          </div>
+        </div>
+
+        <div class="fechamento-group">
+          <div class="fechamento-titulo">🏦 Previdência</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Data de Fechamento</label>
+              <input type="date" id="f-dt-prev">
+            </div>
+            <div class="form-group">
+              <label>Valor Mensal (R$)</label>
+              <input type="number" id="f-valor-prev" placeholder="0" step="0.01">
+            </div>
+          </div>
+        </div>
+
+        <div class="fechamento-group">
+          <div class="fechamento-titulo">🛡️ Seguro</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Data de Fechamento</label>
+              <input type="date" id="f-dt-seguro">
+            </div>
+            <div class="form-group">
+              <label>Prêmio Mensal (R$)</label>
+              <input type="number" id="f-valor-seguro" placeholder="0" step="0.01">
+            </div>
+          </div>
+        </div>
+
+        <div class="fechamento-group">
+          <div class="fechamento-titulo">⚖️ Precatório</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Data de Fechamento</label>
+              <input type="date" id="f-dt-prec">
+            </div>
+            <div class="form-group">
+              <label>Valor (R$)</label>
+              <input type="number" id="f-valor-prec" placeholder="0" step="0.01">
+            </div>
+          </div>
+        </div>
+
+        <div class="fechamento-group">
+          <div class="fechamento-titulo">🚀 Private Equity</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Data de Fechamento</label>
+              <input type="date" id="f-dt-pe">
+            </div>
+            <div class="form-group">
+              <label>Valor (R$)</label>
+              <input type="number" id="f-valor-pe" placeholder="0" step="0.01">
+            </div>
+          </div>
+        </div>
+
+        <div class="fechamento-group">
+          <div class="fechamento-titulo">🏠 Consórcio</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Data de Fechamento</label>
+              <input type="date" id="f-dt-cons">
+            </div>
+            <div class="form-group">
+              <label>Valor (R$)</label>
+              <input type="number" id="f-valor-cons" placeholder="0" step="0.01">
+            </div>
+          </div>
+        </div>
+
+        <div class="fechamento-group">
+          <div class="fechamento-titulo">📋 Jurídico</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Data de Fechamento</label>
+              <input type="date" id="f-dt-jur">
+            </div>
+            <div class="form-group">
+              <label>Valor (R$)</label>
+              <input type="number" id="f-valor-jur" placeholder="0" step="0.01">
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+  <div class="drawer-footer">
+    <button class="btn-cancelar" onclick="fecharDrawer()">Cancelar</button>
+    <button class="btn-salvar" onclick="document.getElementById('form-cliente').requestSubmit()">
+      💾 Salvar Cliente
+    </button>
+  </div>
+</div>
+
+<script>
+  // ── CONFIG ──────────────────────────────────────────────────
+  const SUPA_URL = 'https://uilotsvjzzoydajmfjur.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpbG90c3ZqenpveWRham1manVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MzAzMzUsImV4cCI6MjA5MzUwNjMzNX0.IrZvlVcT1Kt8EMAmERvaA_QEzrjlG650ZwclRcGlRkA';
+  const { createClient } = supabase;
+  const db = createClient(SUPA_URL, SUPA_KEY);
+
+  // ── ESTADO ──────────────────────────────────────────────────
+  let consultores = [];
+  let todosClientes = [];
+  let clientesFiltrados = [];
+  let paginaAtual = 1;
+  const POR_PAGINA = 20;
+
+  const STATUS_COR = {
+    'Prospect':          's-prospect',
+    'Em andamento':      's-andamento',
+    'Finalizado':        's-finalizado',
+    'Declinado':         's-declinado',
+    'Adiado':            's-adiado',
+    'Financeiro Cobrar': 's-cobrar',
+  };
+
+  const PRODUTOS_LABEL = {
+    tem_estudo:'Estudo', tem_investimento:'Invest.',
+    tem_previdencia:'Prev.', tem_seguro:'Seguro',
+    tem_precatorio:'Precat.', tem_pe:'Priv. Eq.',
+    tem_bigdeal:'Big Deal', tem_valuation:'Valuation',
+    tem_consorcio:'Consórcio', tem_juridico:'Jurídico', tem_outros:'Outros'
+  };
+
+  const fmtR = v => v ? 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:0,maximumFractionDigits:0}) : '—';
+  const fmtD = d => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—';
+  const num  = v => parseFloat(v) || 0;
+  const orNull = v => v || null;
+
+  // ── INIT ────────────────────────────────────────────────────
+  async function init() {
+    const { data: cons } = await db.from('consultores').select('*').eq('ativo', true).order('nome');
+    consultores = cons || [];
+
+    // preencher selects de consultor
+    const opts = consultores.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+    document.getElementById('fil-consultor').innerHTML = '<option value="">Todos os consultores</option>' + opts;
+    document.getElementById('f-consultor').innerHTML   = '<option value="">Selecione...</option>' + opts;
+
+    await carregarClientes();
+    document.getElementById('loading').classList.add('hidden');
+  }
+
+  async function carregarClientes() {
+    const { data } = await db.from('clientes').select('*').order('created_at', { ascending: false });
+    todosClientes = data || [];
+    atualizarStats();
+    aplicarFiltros();
+  }
+
+  // ── STATS ────────────────────────────────────────────────────
+  function atualizarStats() {
+    const st = cl => todosClientes.filter(c => c.status === cl).length;
+    document.getElementById('st-total').textContent     = todosClientes.length;
+    document.getElementById('st-prospect').textContent   = st('Prospect');
+    document.getElementById('st-andamento').textContent  = st('Em andamento');
+    document.getElementById('st-finalizado').textContent = st('Finalizado');
+    document.getElementById('st-declinado').textContent  = st('Declinado');
+    const receita = todosClientes.reduce((s,c) => s + num(c.valor_estudo), 0);
+    document.getElementById('st-receita').textContent = fmtR(receita);
+  }
+
+  // ── FILTROS ──────────────────────────────────────────────────
+  function aplicarFiltros() {
+    const busca   = document.getElementById('busca').value.toLowerCase().trim();
+    const cons    = document.getElementById('fil-consultor').value;
+    const status  = document.getElementById('fil-status').value;
+    const produto = document.getElementById('fil-produto').value;
+
+    clientesFiltrados = todosClientes.filter(c => {
+      if (busca   && !c.nome.toLowerCase().includes(busca)) return false;
+      if (cons    && String(c.consultor_id) !== cons)        return false;
+      if (status  && c.status !== status)                    return false;
+      if (produto && !c[produto])                            return false;
+      return true;
+    });
+
+    paginaAtual = 1;
+    renderTabela();
+    renderPaginacao();
+  }
+
+  function limparFiltros() {
+    document.getElementById('busca').value = '';
+    document.getElementById('fil-consultor').value = '';
+    document.getElementById('fil-status').value = '';
+    document.getElementById('fil-produto').value = '';
+    aplicarFiltros();
+  }
+
+  ['busca','fil-consultor','fil-status','fil-produto'].forEach(id => {
+    document.getElementById(id).addEventListener('input', aplicarFiltros);
+    document.getElementById(id).addEventListener('change', aplicarFiltros);
+  });
+
+  // ── TABELA ───────────────────────────────────────────────────
+  function renderTabela() {
+    const tbody = document.getElementById('tabela-body');
+    const ini   = (paginaAtual - 1) * POR_PAGINA;
+    const slice = clientesFiltrados.slice(ini, ini + POR_PAGINA);
+
+    if (!slice.length) {
+      tbody.innerHTML = '<tr><td colspan="9" class="empty-row">Nenhum cliente encontrado.</td></tr>';
+      return;
+    }
+
+    const consMap = {};
+    consultores.forEach(c => consMap[c.id] = c);
+
+    tbody.innerHTML = slice.map(c => {
+      const cons = consMap[c.consultor_id] || {};
+      const prods = Object.keys(PRODUTOS_LABEL).filter(k => c[k]);
+      const receitaTotal = num(c.valor_estudo) + num(c.valor_precatorio) + num(c.valor_pe)
+                         + num(c.valor_consorcio) + num(c.valor_juridico);
+
+      return `<tr>
+        <td class="td-nome">
+          ${c.nome}
+          <small>${c.pais_estado || ''} ${c.indicado_por ? '· via ' + c.indicado_por : ''}</small>
+        </td>
+        <td>
+          ${cons.nome ? `<div class="consultor-dot">
+            <div class="c-dot" style="background:${cons.cor}"></div>${cons.nome}
+          </div>` : '<span style="color:var(--muted2)">—</span>'}
+        </td>
+        <td><span class="badge-status ${STATUS_COR[c.status] || ''}">${c.status || '—'}</span></td>
+        <td>
+          <div class="produtos-flags">
+            ${prods.length ? prods.map(k => `<span class="prod-flag">${PRODUTOS_LABEL[k]}</span>`).join('') : '<span style="color:var(--muted2);font-size:12px">—</span>'}
+          </div>
+        </td>
+        <td style="color:var(--muted);font-size:12px">${fmtD(c.data_indicacao)}</td>
+        <td style="color:var(--muted);font-size:12px">${fmtD(c.data_1a_reuniao)}</td>
+        <td class="valor-cell ${!c.valor_estudo ? 'zero' : ''}">${fmtR(c.valor_estudo)}</td>
+        <td class="valor-cell ${!receitaTotal ? 'zero' : ''}">${receitaTotal ? fmtR(receitaTotal) : '—'}</td>
+        <td>
+          <button class="btn-edit" onclick='abrirDrawer(${JSON.stringify(c)})'>✏️ Editar</button>
+          <button class="btn-del" onclick="excluirCliente(${c.id}, '${c.nome.replace(/'/g,"\\'")}')">🗑</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // ── PAGINAÇÃO ────────────────────────────────────────────────
+  function renderPaginacao() {
+    const total  = clientesFiltrados.length;
+    const paginas = Math.ceil(total / POR_PAGINA);
+    const ini    = (paginaAtual - 1) * POR_PAGINA + 1;
+    const fim    = Math.min(paginaAtual * POR_PAGINA, total);
+
+    document.getElementById('pag-info').textContent =
+      total ? `${ini}–${fim} de ${total} cliente${total !== 1 ? 's' : ''}` : '0 clientes';
+
+    const btns = document.getElementById('pag-btns');
+    btns.innerHTML = '';
+    if (paginas <= 1) return;
+
+    const addBtn = (label, pg, active) => {
+      const b = document.createElement('button');
+      b.className = 'pag-btn' + (active ? ' active' : '');
+      b.textContent = label;
+      b.disabled = pg === paginaAtual && !active ? false : false;
+      b.onclick = () => { paginaAtual = pg; renderTabela(); renderPaginacao(); };
+      btns.appendChild(b);
+    };
+
+    addBtn('←', Math.max(1, paginaAtual - 1));
+    for (let p = 1; p <= paginas; p++) addBtn(p, p, p === paginaAtual);
+    addBtn('→', Math.min(paginas, paginaAtual + 1));
+  }
+
+  // ── DRAWER ───────────────────────────────────────────────────
+  function abrirDrawer(cliente) {
+    const isNovo = !cliente;
+    document.getElementById('drawer-title').textContent = isNovo ? 'Novo Cliente' : 'Editar Cliente';
+    limparForm();
+
+    if (!isNovo) {
+      const c = cliente;
+      document.getElementById('f-id').value             = c.id;
+      document.getElementById('f-nome').value           = c.nome || '';
+      document.getElementById('f-consultor').value      = c.consultor_id || '';
+      document.getElementById('f-status').value         = c.status || 'Prospect';
+      document.getElementById('f-pais-estado').value    = c.pais_estado || '';
+      document.getElementById('f-observacoes').value    = c.observacoes || '';
+      document.getElementById('f-origem').value         = c.origem_indicacao || '';
+      document.getElementById('f-indicado-por').value   = c.indicado_por || '';
+      document.getElementById('f-data-indicacao').value = c.data_indicacao || '';
+      document.getElementById('f-apresentacao').value   = c.data_apresentacao || '';
+      document.getElementById('f-1a-reuniao').value     = c.data_1a_reuniao || '';
+      document.getElementById('f-2a-reuniao').value     = c.data_2a_reuniao || '';
+      document.getElementById('f-entrega-estudo').value = c.data_entrega_estudo || '';
+      document.getElementById('f-contrato').value       = String(c.contrato_assinado || false);
+      document.getElementById('f-valor-estudo').value   = c.valor_estudo || '';
+      document.getElementById('f-pgto-estudo').value    = c.data_pgto_estudo || '';
+      document.getElementById('f-andamento-estudo').value = c.andamento_estudo || '';
+      document.getElementById('f-dt-invest').value      = c.data_fechamento_investimento || '';
+      document.getElementById('f-dt-prev').value        = c.data_fechamento_previdencia || '';
+      document.getElementById('f-valor-prev').value     = c.valor_mensal_previdencia || '';
+      document.getElementById('f-dt-seguro').value      = c.data_fechamento_seguro || '';
+      document.getElementById('f-valor-seguro').value   = c.premio_mensal_seguro || '';
+      document.getElementById('f-dt-prec').value        = c.data_fechamento_precatorio || '';
+      document.getElementById('f-valor-prec').value     = c.valor_precatorio || '';
+      document.getElementById('f-dt-pe').value          = c.data_fechamento_pe || '';
+      document.getElementById('f-valor-pe').value       = c.valor_pe || '';
+      document.getElementById('f-dt-cons').value        = c.data_consorcio || '';
+      document.getElementById('f-valor-cons').value     = c.valor_consorcio || '';
+      document.getElementById('f-dt-jur').value         = c.data_juridico || '';
+      document.getElementById('f-valor-jur').value      = c.valor_juridico || '';
+
+      // checkboxes
+      const checks = {
+        'f-estudo':c.tem_estudo,'f-investimento':c.tem_investimento,
+        'f-previdencia':c.tem_previdencia,'f-seguro':c.tem_seguro,
+        'f-precatorio':c.tem_precatorio,'f-pe':c.tem_pe,
+        'f-bigdeal':c.tem_bigdeal,'f-valuation':c.tem_valuation,
+        'f-consorcio':c.tem_consorcio,'f-juridico':c.tem_juridico,
+        'f-outros':c.tem_outros
+      };
+      Object.entries(checks).forEach(([id, val]) => {
+        const input = document.getElementById(id);
+        const label = input?.closest('.check-item');
+        if (input) {
+          input.checked = !!val;
+          label?.classList.toggle('checked', !!val);
+        }
+      });
+    }
+
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('drawer').classList.add('open');
+    document.getElementById('drawer').querySelector('.drawer-body').scrollTop = 0;
+  }
+
+  function fecharDrawer() {
+    document.getElementById('overlay').classList.remove('open');
+    document.getElementById('drawer').classList.remove('open');
+  }
+
+  function limparForm() {
+    document.getElementById('form-cliente').reset();
+    document.getElementById('f-id').value = '';
+    document.querySelectorAll('.check-item').forEach(el => el.classList.remove('checked'));
+  }
+
+  function toggleCheck(label) {
+    const input = label.querySelector('input[type="checkbox"]');
+    if (!input) return;
+    setTimeout(() => {
+      label.classList.toggle('checked', input.checked);
+    }, 0);
+  }
+
+  // ── SALVAR ───────────────────────────────────────────────────
+  async function salvarCliente(e) {
+    e.preventDefault();
+    const id = document.getElementById('f-id').value;
+
+    const payload = {
+      nome:                         document.getElementById('f-nome').value.trim(),
+      consultor_id:                 orNull(document.getElementById('f-consultor').value) || null,
+      status:                       document.getElementById('f-status').value,
+      pais_estado:                  orNull(document.getElementById('f-pais-estado').value),
+      observacoes:                  orNull(document.getElementById('f-observacoes').value),
+      origem_indicacao:             orNull(document.getElementById('f-origem').value),
+      indicado_por:                 orNull(document.getElementById('f-indicado-por').value),
+      data_indicacao:               orNull(document.getElementById('f-data-indicacao').value),
+      tem_estudo:                   document.getElementById('f-estudo').checked,
+      tem_investimento:             document.getElementById('f-investimento').checked,
+      tem_previdencia:              document.getElementById('f-previdencia').checked,
+      tem_seguro:                   document.getElementById('f-seguro').checked,
+      tem_precatorio:               document.getElementById('f-precatorio').checked,
+      tem_pe:                       document.getElementById('f-pe').checked,
+      tem_bigdeal:                  document.getElementById('f-bigdeal').checked,
+      tem_valuation:                document.getElementById('f-valuation').checked,
+      tem_consorcio:                document.getElementById('f-consorcio').checked,
+      tem_juridico:                 document.getElementById('f-juridico').checked,
+      tem_outros:                   document.getElementById('f-outros').checked,
+      data_apresentacao:            orNull(document.getElementById('f-apresentacao').value),
+      data_1a_reuniao:              orNull(document.getElementById('f-1a-reuniao').value),
+      data_2a_reuniao:              orNull(document.getElementById('f-2a-reuniao').value),
+      data_entrega_estudo:          orNull(document.getElementById('f-entrega-estudo').value),
+      contrato_assinado:            document.getElementById('f-contrato').value === 'true',
+      valor_estudo:                 num(document.getElementById('f-valor-estudo').value),
+      data_pgto_estudo:             orNull(document.getElementById('f-pgto-estudo').value),
+      andamento_estudo:             orNull(document.getElementById('f-andamento-estudo').value),
+      data_fechamento_investimento: orNull(document.getElementById('f-dt-invest').value),
+      data_fechamento_previdencia:  orNull(document.getElementById('f-dt-prev').value),
+      valor_mensal_previdencia:     num(document.getElementById('f-valor-prev').value),
+      data_fechamento_seguro:       orNull(document.getElementById('f-dt-seguro').value),
+      premio_mensal_seguro:         num(document.getElementById('f-valor-seguro').value),
+      data_fechamento_precatorio:   orNull(document.getElementById('f-dt-prec').value),
+      valor_precatorio:             num(document.getElementById('f-valor-prec').value),
+      data_fechamento_pe:           orNull(document.getElementById('f-dt-pe').value),
+      valor_pe:                     num(document.getElementById('f-valor-pe').value),
+      data_consorcio:               orNull(document.getElementById('f-dt-cons').value),
+      valor_consorcio:              num(document.getElementById('f-valor-cons').value),
+      data_juridico:                orNull(document.getElementById('f-dt-jur').value),
+      valor_juridico:               num(document.getElementById('f-valor-jur').value),
+    };
+
+    if (payload.consultor_id) payload.consultor_id = parseInt(payload.consultor_id);
+
+    let erro;
+    if (id) {
+      const { error } = await db.from('clientes').update(payload).eq('id', id);
+      erro = error;
+    } else {
+      const { error } = await db.from('clientes').insert(payload);
+      erro = error;
+    }
+
+    if (erro) {
+      alert('Erro ao salvar: ' + erro.message);
+      return;
+    }
+
+    fecharDrawer();
+    await carregarClientes();
+  }
+
+  // ── EXCLUIR ──────────────────────────────────────────────────
+  async function excluirCliente(id, nome) {
+    if (!confirm(`Excluir o cliente "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
+    const { error } = await db.from('clientes').delete().eq('id', id);
+    if (error) { alert('Erro: ' + error.message); return; }
+    await carregarClientes();
+  }
+
+  // ── START ────────────────────────────────────────────────────
+  init();
+</script>
+</body>
+</html>
