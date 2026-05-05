@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ESTRATERIK — Consultor</title>
+  <title>OIKOS CONSULTORIA — Consultor</title>
   <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -37,9 +37,9 @@
       display: flex; align-items: center; gap: 13px; flex-shrink: 0;
     }
     .brand-icon {
-      width: 42px; height: 42px; background: var(--gold); border-radius: 10px;
+      width: 42px; height: 42px; background: transparent; border-radius: 10px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px; font-weight: 900; color: var(--navy); flex-shrink: 0;
+      flex-shrink: 0;
     }
     .brand-text { display: flex; flex-direction: column; gap: 2px; }
     .brand-name { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: 2.5px; line-height: 1; }
@@ -266,7 +266,7 @@
 
 <div class="loading-overlay" id="loading">
   <div class="loading-logo">OIKOS</div>
-  <div class="loading-sub">Dashboard Individual</div>
+  <div class="loading-sub">Dashboard Consultor</div>
   <div class="spinner"></div>
 </div>
 
@@ -274,10 +274,12 @@
   <!-- ══ SIDEBAR ══ -->
   <aside class="sidebar">
     <div class="sidebar-brand">
-      <div class="brand-icon">O</div>
+      <div class="brand-icon">
+        <img src="logo.svg" alt="Oikos" width="38" height="38" style="object-fit:contain">
+      </div>
       <div class="brand-text">
         <span class="brand-name">OIKOS</span>
-        <span class="brand-tagline">Assessoria</span>
+        <span class="brand-tagline">Consultoria</span>
       </div>
     </div>
     <div class="sidebar-section">
@@ -382,9 +384,28 @@
       <div class="section-title">Leads & Fechamentos</div>
       <div class="leads-grid" id="leads-grid"></div>
 
+      <!-- CLIENTES DO CONSULTOR -->
+      <div class="section-title" style="margin-top:36px">Clientes <span id="clientes-count" style="font-size:11px;color:var(--muted);font-weight:500;margin-left:6px"></span></div>
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Status</th>
+              <th style="text-align:right">PL Atual</th>
+              <th>Produtos</th>
+              <th style="text-align:center">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="clientes-body">
+            <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
     </main>
 
-    <footer>ESTRATERIK © 2026 — Oikos Assessoria</footer>
+    <footer>OIKOS CONSULTORIA © 2026</footer>
   </div>
 </div>
 
@@ -434,13 +455,14 @@
       <div class="form-section-label">Receita de Produtos</div>
       <div class="form-grid three">
         <div class="form-group"><label>Estudos (R$)</label><input type="number" id="e-estudos" placeholder="0"></div>
-        <div class="form-group"><label>Câmbio (R$)</label><input type="number" id="e-cambio" placeholder="0"></div>
-        <div class="form-group"><label>Jurídico (R$)</label><input type="number" id="e-juridico" placeholder="0"></div>
         <div class="form-group"><label>Previdência (R$)</label><input type="number" id="e-previdencia" placeholder="0"></div>
         <div class="form-group"><label>Seguros (R$)</label><input type="number" id="e-seguros" placeholder="0"></div>
         <div class="form-group"><label>Precatórios (R$)</label><input type="number" id="e-precatorios" placeholder="0"></div>
         <div class="form-group"><label>Consórcio (R$)</label><input type="number" id="e-consorcio" placeholder="0"></div>
         <div class="form-group"><label>Private Equity (R$)</label><input type="number" id="e-pe" placeholder="0"></div>
+        <div class="form-group"><label>Jurídico (R$)</label><input type="number" id="e-juridico" placeholder="0"></div>
+        <div class="form-group"><label>Offshore (R$)</label><input type="number" id="e-offshore" placeholder="0"></div>
+        <div class="form-group"><label>Câmbio (R$)</label><input type="number" id="e-cambio" placeholder="0"></div>
         <div class="form-group"><label>Outros (R$)</label><input type="number" id="e-outros-prod" placeholder="0"></div>
       </div>
       <div class="form-section-label">Meta</div>
@@ -605,7 +627,7 @@
 
     // Resumo executivo
     const metaProd = n(prod.meta_produtos) || n(consultor.meta_produtos_mensal) || 15000;
-    const prodCols = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity','outros'];
+    const prodCols = ['estudos','previdencia','seguros','precatorios','consorcio','private_equity','juridico','offshore','cambio','outros'];
     const receitaProd = prodCols.reduce((s,k) => s + n(prod[k]), 0);
     const pctProd = metaProd > 0 ? receitaProd / metaProd : 0;
     const churnCls = churn > 0.015 ? 'resumo-bad' : churn > 0.008 ? 'resumo-warn' : 'resumo-ok';
@@ -654,30 +676,33 @@
 
     // Tabela de produtos
     const PROD_LABELS = {
-      estudos:'Estudos Financeiros', cambio:'Câmbio', juridico:'Jurídico',
-      previdencia:'Previdência', seguros:'Seguros', consorcio:'Consórcio',
-      private_equity:'Private Equity', outros:'Outros'
+      estudos:'Estudos Financeiros', previdencia:'Previdência', seguros:'Seguros',
+      precatorios:'Precatórios', consorcio:'Consórcio', private_equity:'Private Equity',
+      juridico:'Jurídico', offshore:'Offshore', cambio:'Câmbio', outros:'Outros'
     };
+    const allProdCols = ['estudos','previdencia','seguros','precatorios','consorcio','private_equity','juridico','offshore','cambio','outros'];
     const tbEl = document.getElementById('prod-body');
     let totalProd = 0;
     tbEl.innerHTML = '';
-    prodCols.forEach(k => {
+    allProdCols.forEach(k => {
       const v = n(prod[k]);
+      if (v === 0 && (k === 'outros')) return; // esconde outros se zero
       totalProd += v;
       const pct = metaProd > 0 ? v / metaProd : 0;
       const cls = v === 0 ? 'td-zero' : '';
+      const pctColor = v === 0 ? '' : pct >= 1 ? 'color:var(--ok)' : 'color:var(--warn)';
       tbEl.innerHTML += `<tr>
         <td>${PROD_LABELS[k]}</td>
         <td class="${cls}">${v === 0 ? '—' : fmtR(v)}</td>
         <td class="td-zero">${fmtR(metaProd)}</td>
-        <td class="${v===0?'td-zero':pct>=1?'':''}"><span style="color:${v===0?'':'pct>=1?var(--ok):var(--warn)'}">${v===0?'—':fmtP(pct)}</span></td>
+        <td class="${cls}"><span style="${pctColor}">${v === 0 ? '—' : fmtP(pct)}</span></td>
       </tr>`;
     });
     tbEl.innerHTML += `<tr style="border-top:2px solid var(--border2)">
       <td style="font-weight:800;color:var(--gold2)">TOTAL</td>
       <td class="td-gold">${fmtR(totalProd)}</td>
       <td class="td-gold">${fmtR(metaProd)}</td>
-      <td class="${totalProd>=metaProd?'td-gold':''}">${fmtP(totalProd/metaProd)}</td>
+      <td class="${totalProd>=metaProd?'td-gold':''}">${metaProd>0?fmtP(totalProd/metaProd):'—'}</td>
     </tr>`;
 
     // Leads
@@ -698,6 +723,45 @@
     document.getElementById('leads-grid').innerHTML = LEAD_CHIPS.map(c =>
       `<div class="lead-chip"><div class="num" style="color:${c.cor||'var(--text)'}">${c.num}</div><div class="lbl">${c.lbl}</div></div>`
     ).join('');
+
+    // Clientes do consultor
+    renderClientes();
+  }
+
+  async function renderClientes() {
+    const STATUS_LABELS = { prospect:'Prospect', ativo:'Ativo', inativo:'Inativo', churn:'Churn' };
+    const STATUS_COR    = { prospect:'var(--gold)', ativo:'var(--ok)', inativo:'var(--muted)', churn:'var(--danger)' };
+    const tbody = document.getElementById('clientes-body');
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>';
+    try {
+      const { data: clientes, error } = await db.from('clientes')
+        .select('id,nome,status,pl_atual,produtos')
+        .eq('consultor_id', consultorId)
+        .order('nome');
+      if (error) throw error;
+      document.getElementById('clientes-count').textContent = `(${(clientes||[]).length})`;
+      if (!clientes || clientes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Nenhum cliente cadastrado</td></tr>';
+        return;
+      }
+      tbody.innerHTML = clientes.map(c => {
+        const prods = Array.isArray(c.produtos) ? c.produtos.join(', ') : (c.produtos || '—');
+        const pl    = c.pl_atual > 0 ? fmtM(c.pl_atual) : '—';
+        const cor   = STATUS_COR[c.status] || 'var(--muted)';
+        const lbl   = STATUS_LABELS[c.status] || c.status;
+        return `<tr>
+          <td style="font-weight:600">${c.nome}</td>
+          <td><span style="color:${cor};font-size:11px;font-weight:700">${lbl}</span></td>
+          <td style="text-align:right">${pl}</td>
+          <td style="font-size:11px;color:var(--muted)">${prods}</td>
+          <td style="text-align:center">
+            <a href="clientes.html?id=${c.id}" style="color:var(--gold);font-size:11px;font-weight:600;text-decoration:none">Ver ›</a>
+          </td>
+        </tr>`;
+      }).join('');
+    } catch(e) {
+      tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger);padding:20px">Erro: ${e.message}</td></tr>`;
+    }
   }
 
   // ── MODAL ──────────────────────────────────────────────────
@@ -716,13 +780,14 @@
     set('e-cap-outros',  cap.captado_outros);
     set('e-cap-int',     cap.captado_int);
     set('e-estudos',     prod.estudos);
-    set('e-cambio',      prod.cambio);
-    set('e-juridico',    prod.juridico);
     set('e-previdencia', prod.previdencia);
     set('e-seguros',     prod.seguros);
     set('e-precatorios', prod.precatorios);
     set('e-consorcio',   prod.consorcio);
     set('e-pe',          prod.private_equity);
+    set('e-juridico',    prod.juridico);
+    set('e-offshore',    prod.offshore);
+    set('e-cambio',      prod.cambio);
     set('e-outros-prod', prod.outros);
     set('e-meta-prod',   prod.meta_produtos || consultor.meta_produtos_mensal || 15000);
     set('e-reunioes',    lead.reunioes);
@@ -779,11 +844,10 @@
 
     const prodPayload = {
       consultor_id: consultorId, ano: anoAtual, mes: mesAtual,
-      estudos: g('e-estudos'), cambio: g('e-cambio'), juridico: g('e-juridico'),
-      previdencia: g('e-previdencia'), seguros: g('e-seguros'), consorcio: g('e-consorcio'),
-      private_equity: g('e-pe'), outros: g('e-outros-prod'),
-      precatorios: g('e-precatorios'),
-      meta_produtos: g('e-meta-prod'),
+      estudos: g('e-estudos'), previdencia: g('e-previdencia'), seguros: g('e-seguros'),
+      precatorios: g('e-precatorios'), consorcio: g('e-consorcio'), private_equity: g('e-pe'),
+      juridico: g('e-juridico'), offshore: g('e-offshore'), cambio: g('e-cambio'),
+      outros: g('e-outros-prod'), meta_produtos: g('e-meta-prod'),
     };
 
     const leadPayload = {
