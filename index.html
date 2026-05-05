@@ -609,7 +609,7 @@
       const btn = document.createElement('button');
       btn.className = 'nav-item';
       btn.innerHTML = `<span class="nav-dot" style="background:${c.cor}"></span><span>${c.nome}</span>`;
-      btn.onclick = () => scrollToConsultor(c.id);
+      btn.onclick = () => window.location.href = `consultor.html?id=${c.id}`;
       el.appendChild(btn);
     });
   }

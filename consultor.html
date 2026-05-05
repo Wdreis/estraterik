@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESTRATERIK — Consultor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:#00283C; --teal:#28505A; --gold:#C8A046; --gold2:#D4AF6A; --beige:#E6E4E1;
+      --sidebar-bg:#00283C; --sidebar-hover:rgba(200,160,70,0.12); --sidebar-active:rgba(200,160,70,0.18);
+      --bg:#001a27; --bg2:#001f30; --card:#00233a; --card2:#002d48;
+      --border:rgba(200,160,70,0.14); --border2:rgba(200,160,70,0.32);
+      --text:#FFFFFF; --muted:rgba(230,228,225,0.55); --muted2:rgba(230,228,225,0.22);
+      --ok:#22c55e; --warn:#f59e0b; --danger:#ef4444;
+      --cor:#C8A046; /* cor do consultor, sobrescrita via JS */
+    }
+    html, body { height: 100%; }
+    body { font-family: 'Jost', sans-serif; background: var(--bg); color: var(--text); }
+    .app { display: flex; min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      width: 240px; min-width: 240px; background: var(--sidebar-bg);
+      border-right: 1px solid rgba(200,160,70,0.14);
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0; height: 100vh; z-index: 100;
+      overflow-y: auto; overflow-x: hidden;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(200,160,70,0.2); border-radius: 2px; }
+    .sidebar-brand {
+      padding: 26px 20px 22px; border-bottom: 1px solid rgba(200,160,70,0.14);
+      display: flex; align-items: center; gap: 13px; flex-shrink: 0;
+    }
+    .brand-icon {
+      width: 42px; height: 42px; background: var(--gold); border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 900; color: var(--navy); flex-shrink: 0;
+    }
+    .brand-text { display: flex; flex-direction: column; gap: 2px; }
+    .brand-name { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: 2.5px; line-height: 1; }
+    .brand-tagline { font-size: 9px; font-weight: 500; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; }
+    .sidebar-section { padding: 18px 12px 6px; }
+    .sidebar-section-label { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); opacity: 0.65; padding: 0 10px; margin-bottom: 5px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px;
+      text-decoration: none; color: var(--beige); font-size: 13px; font-weight: 500;
+      transition: all 0.15s; cursor: pointer; border: none; background: none; width: 100%;
+    }
+    .nav-item:hover { background: var(--sidebar-hover); color: var(--text); }
+    .nav-item.active { background: var(--sidebar-active); color: var(--gold); font-weight: 600; border-left: 3px solid var(--gold); padding-left: 9px; }
+    .nav-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+    .nav-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .sidebar-divider { margin: 6px 18px; border: none; border-top: 1px solid rgba(200,160,70,0.1); }
+    .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(200,160,70,0.1); flex-shrink: 0; }
+    .badge-live { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 500; color: var(--ok); }
+    .dot-live { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+    /* ── MAIN ── */
+    .main-wrapper { margin-left: 240px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar {
+      background: rgba(0,26,39,0.96); backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border); padding: 0 32px; height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 14px; }
+    .topbar-cor-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--cor); flex-shrink: 0; }
+    .topbar-title { font-size: 16px; font-weight: 800; color: var(--text); letter-spacing: 0.3px; }
+    .topbar-subtitle { font-size: 11px; color: var(--muted); }
+
+    .month-nav {
+      display: flex; align-items: center; gap: 4px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 8px; padding: 4px 6px;
+    }
+    .btn-mes { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px 9px; border-radius: 5px; font-size: 16px; transition: all 0.15s; line-height: 1; }
+    .btn-mes:hover { background: var(--border); color: var(--text); }
+    #periodo-label { font-size: 13px; font-weight: 600; color: var(--text); min-width: 135px; text-align: center; }
+
+    .btn-editar {
+      background: var(--gold); color: var(--navy); border: none;
+      padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 700;
+      cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 7px; transition: opacity 0.15s;
+    }
+    .btn-editar:hover { opacity: 0.88; }
+
+    main { padding: 26px 32px; }
+
+    .section-title {
+      font-size: 9px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 14px; display: flex; align-items: center; gap: 10px;
+    }
+    .section-title::after { content:''; flex:1; height:1px; background: var(--border); }
+
+    /* ── KPI CARDS ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 26px; }
+    .kpi-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 18px; position: relative; overflow: hidden; transition: border-color 0.2s;
+    }
+    .kpi-card:hover { border-color: var(--border2); }
+    .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: var(--kpi-color, var(--gold)); }
+    .kpi-label { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .kpi-value { font-size: 22px; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 5px; letter-spacing: -0.5px; }
+    .kpi-sub { font-size: 11px; color: var(--muted); }
+    .kpi-value.pos { color: var(--ok); }
+    .kpi-value.neg { color: var(--danger); }
+
+    /* ── CAPTAÇÃO DETALHADA ── */
+    .captacao-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 26px; }
+    .corretora-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px;
+    }
+    .corretora-nome { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; }
+    .corretora-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .corretora-row-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .corretora-row-value { font-size: 14px; font-weight: 700; }
+    .corretora-row-value.cap { color: var(--ok); }
+    .corretora-row-value.sai { color: var(--danger); }
+    .corretora-saldo { border-top: 1px solid var(--border); margin-top: 10px; padding-top: 10px; display: flex; justify-content: space-between; }
+    .corretora-saldo-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); }
+    .corretora-saldo-value { font-size: 15px; font-weight: 800; }
+
+    /* ── RESUMO BOX ── */
+    .resumo-box {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px; margin-bottom: 26px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
+    }
+    .resumo-item { display: flex; flex-direction: column; gap: 4px; }
+    .resumo-label { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+    .resumo-value { font-size: 20px; font-weight: 800; }
+    .resumo-meta { font-size: 11px; color: var(--muted); }
+    .resumo-ok   { color: var(--ok); }
+    .resumo-warn { color: var(--warn); }
+    .resumo-bad  { color: var(--danger); }
+
+    /* ── PRODUCTS TABLE ── */
+    .table-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 26px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      padding: 10px 16px; font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase;
+      color: var(--gold); border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.2);
+    }
+    thead th:first-child { text-align: left; }
+    thead th:not(:first-child) { text-align: right; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--card2); }
+    tbody td { padding: 10px 16px; }
+    tbody td:first-child { font-size: 13px; font-weight: 600; }
+    tbody td:not(:first-child) { text-align: right; }
+    .td-zero { color: var(--muted2); font-weight: 400; }
+    .td-gold { color: var(--gold2); font-weight: 800; }
+
+    /* ── LEADS GRID ── */
+    .leads-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 26px; }
+    .lead-chip {
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px; display: flex; flex-direction: column; gap: 4px;
+    }
+    .lead-chip .num { font-size: 24px; font-weight: 800; }
+    .lead-chip .lbl { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px; }
+
+    /* ── CHART ── */
+    .chart-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 26px; }
+    .chart-title { font-size: 13px; font-weight: 700; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; }
+    .chart-title span { color: var(--gold); font-size: 11px; font-weight: 400; }
+    .chart-wrap { position: relative; height: 220px; }
+
+    /* ── LOADING ── */
+    .loading-overlay {
+      position: fixed; inset: 0; background: var(--navy);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 999; gap: 16px; transition: opacity 0.4s;
+    }
+    .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+    .loading-logo { font-size: 36px; font-weight: 900; letter-spacing: 8px; color: var(--gold); }
+    .loading-sub { font-size: 10px; letter-spacing: 4px; color: var(--beige); opacity: 0.45; text-transform: uppercase; }
+    .spinner { width: 30px; height: 30px; border: 2px solid rgba(200,160,70,0.15); border-top-color: var(--gold); border-radius: 50%; animation: spin 0.75s linear infinite; margin-top: 4px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── MODAL DE EDIÇÃO ── */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; backdrop-filter: blur(3px); }
+    .overlay.open { display: block; }
+    .modal {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0.96);
+      width: min(700px, 95vw); max-height: 90vh;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+      z-index: 201; display: flex; flex-direction: column;
+      transition: transform 0.25s, opacity 0.25s; opacity: 0; pointer-events: none;
+    }
+    .modal.open { transform: translate(-50%,-50%) scale(1); opacity: 1; pointer-events: all; }
+    .modal-header {
+      padding: 18px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .modal-title { font-size: 16px; font-weight: 800; }
+    .modal-close {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 8px; width: 32px; height: 32px; cursor: pointer;
+      font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+    }
+    .modal-close:hover { border-color: var(--danger); color: var(--danger); }
+    .modal-body { flex: 1; overflow-y: auto; padding: 22px 24px; }
+    .modal-body::-webkit-scrollbar { width: 5px; }
+    .modal-body::-webkit-scrollbar-thumb { background: rgba(200,160,70,0.2); border-radius: 3px; }
+    .modal-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; flex-shrink: 0; }
+
+    .form-tabs { display: flex; gap: 6px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+    .form-tab {
+      background: none; border: 1px solid transparent; color: var(--muted);
+      border-radius: 7px; padding: 6px 14px; font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .form-tab.active { background: rgba(200,160,70,0.15); border-color: var(--gold); color: var(--gold); }
+    .form-tab:hover:not(.active) { color: var(--text); }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid.three { grid-template-columns: repeat(3, 1fr); }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    label { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); }
+    input, select {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 9px 12px; font-size: 13px; font-family: inherit;
+      outline: none; transition: border-color 0.15s; width: 100%;
+    }
+    input:focus, select:focus { border-color: var(--gold); }
+    input[type="number"] { -moz-appearance: textfield; }
+    input[type="number"]::-webkit-inner-spin-button { display: none; }
+    select option { background: var(--card2); }
+
+    .btn-salvar { background: var(--gold); color: var(--navy); border: none; padding: 10px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
+    .btn-salvar:hover { opacity: 0.88; }
+    .btn-cancelar { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 10px 20px; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .btn-cancelar:hover { border-color: var(--border2); color: var(--text); }
+
+    .form-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--gold); margin: 16px 0 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .form-section-label::after { content:''; flex:1; height:1px; background: rgba(200,160,70,0.2); }
+
+    footer { border-top: 1px solid var(--border); padding: 14px 32px; font-size: 11px; color: var(--muted); text-align: center; }
+
+    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .captacao-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 900px) {
+      .sidebar { width: 62px; }
+      .brand-text, .nav-item > span:last-child, .sidebar-section-label, .sidebar-footer .badge-live > span { display: none; }
+      .brand-icon { margin: auto; }
+      .sidebar-brand { justify-content: center; padding: 18px 10px; }
+      .nav-item { justify-content: center; padding: 10px; }
+      .main-wrapper { margin-left: 62px; }
+    }
+    @media (max-width: 700px) { main { padding: 16px; } .leads-grid { grid-template-columns: repeat(2, 1fr); } .resumo-box { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="loading-logo">OIKOS</div>
+  <div class="loading-sub">Dashboard Individual</div>
+  <div class="spinner"></div>
+</div>
+
+<div class="app">
+  <!-- ══ SIDEBAR ══ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">O</div>
+      <div class="brand-text">
+        <span class="brand-name">OIKOS</span>
+        <span class="brand-tagline">Assessoria</span>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Menu</div>
+      <a href="index.html" class="nav-item"><span class="nav-icon">▣</span><span>Dashboard</span></a>
+      <a href="clientes.html" class="nav-item"><span class="nav-icon">⊞</span><span>Clientes</span></a>
+    </div>
+    <hr class="sidebar-divider">
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Consultores</div>
+      <div id="sidebar-consultores"></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="badge-live"><div class="dot-live"></div><span>Supabase Live</span></div>
+    </div>
+  </aside>
+
+  <!-- ══ MAIN ══ -->
+  <div class="main-wrapper">
+    <div class="topbar">
+      <div class="topbar-left">
+        <div class="topbar-cor-dot" id="top-dot"></div>
+        <div>
+          <div class="topbar-title" id="top-nome">Carregando...</div>
+          <div class="topbar-subtitle">Dashboard Individual</div>
+        </div>
+      </div>
+      <div class="month-nav">
+        <button class="btn-mes" id="btn-prev">&#8249;</button>
+        <span id="periodo-label">—</span>
+        <button class="btn-mes" id="btn-next">&#8250;</button>
+      </div>
+      <button class="btn-editar" onclick="abrirModal()">✏️ Editar Mês</button>
+    </div>
+
+    <main>
+
+      <!-- KPIs -->
+      <div class="section-title">Visão do Mês</div>
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">Net New Money</div>
+          <div class="kpi-value" id="k-nnm">—</div>
+          <div class="kpi-sub" id="k-nnm-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#22c55e">
+          <div class="kpi-label">% da Meta NNM</div>
+          <div class="kpi-value" id="k-meta-pct">—</div>
+          <div class="kpi-sub" id="k-meta-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--teal)">
+          <div class="kpi-label">PL Atual</div>
+          <div class="kpi-value" id="k-pl">—</div>
+          <div class="kpi-sub" id="k-churn-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--beige)">
+          <div class="kpi-label">Reuniões</div>
+          <div class="kpi-value" id="k-reun">—</div>
+          <div class="kpi-sub" id="k-reun-sub">—</div>
+        </div>
+      </div>
+
+      <!-- CAPTAÇÃO DETALHADA -->
+      <div class="section-title">Captação por Corretora</div>
+      <div class="captacao-grid" id="captacao-grid">
+        <!-- preenchido via JS -->
+      </div>
+
+      <!-- RESUMO DO MÊS -->
+      <div class="section-title">Resumo Executivo</div>
+      <div class="resumo-box" id="resumo-box">
+        <div class="resumo-item"><div class="resumo-label">Captado</div><div class="resumo-value" id="r-cap">—</div><div class="resumo-meta" id="r-cap-meta">—</div></div>
+        <div class="resumo-item"><div class="resumo-label">Saída Total</div><div class="resumo-value" id="r-sai">—</div><div class="resumo-meta" id="r-sai-pct">—</div></div>
+        <div class="resumo-item"><div class="resumo-label">Receita Produtos</div><div class="resumo-value" id="r-prod">—</div><div class="resumo-meta" id="r-prod-meta">—</div></div>
+        <div class="resumo-item"><div class="resumo-label">Churn do Mês</div><div class="resumo-value" id="r-churn">—</div><div class="resumo-meta">Limite saudável: 1,5%</div></div>
+      </div>
+
+      <!-- EVOLUÇÃO ANUAL -->
+      <div class="section-title">Evolução Anual — NNM</div>
+      <div class="chart-card">
+        <div class="chart-title">Net New Money — Jan a Dez 2026 <span id="chart-ytd">YTD: —</span></div>
+        <div class="chart-wrap"><canvas id="chartAnual"></canvas></div>
+      </div>
+
+      <!-- PRODUTOS DO MÊS -->
+      <div class="section-title">Produtos — Receita do Mês</div>
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th>Produto</th>
+              <th style="text-align:right">Valor</th>
+              <th style="text-align:right">Meta Mensal</th>
+              <th style="text-align:right">% Meta</th>
+            </tr>
+          </thead>
+          <tbody id="prod-body"></tbody>
+        </table>
+      </div>
+
+      <!-- LEADS E FECHAMENTOS -->
+      <div class="section-title">Leads & Fechamentos</div>
+      <div class="leads-grid" id="leads-grid"></div>
+
+    </main>
+
+    <footer>ESTRATERIK © 2026 — Oikos Assessoria</footer>
+  </div>
+</div>
+
+<!-- MODAL EDIÇÃO -->
+<div class="overlay" id="overlay" onclick="fecharModal()"></div>
+<div class="modal" id="modal">
+  <div class="modal-header">
+    <div class="modal-title" id="modal-title">Editar Mês</div>
+    <button class="modal-close" onclick="fecharModal()">✕</button>
+  </div>
+  <div class="modal-body">
+    <div class="form-tabs">
+      <button class="form-tab active" onclick="mudarTab('captacao', this)">Captação</button>
+      <button class="form-tab" onclick="mudarTab('produtos', this)">Produtos</button>
+      <button class="form-tab" onclick="mudarTab('leads', this)">Leads</button>
+    </div>
+
+    <!-- TAB CAPTAÇÃO -->
+    <div class="tab-pane active" id="tab-captacao">
+      <div class="form-section-label">Patrimônio Líquido</div>
+      <div class="form-grid">
+        <div class="form-group"><label>PL do Mês (R$)</label><input type="number" id="e-pl" placeholder="0"></div>
+        <div class="form-group"><label>Meta NNM Mensal (R$)</label><input type="number" id="e-meta-nnm" placeholder="0"></div>
+      </div>
+
+      <div class="form-section-label">BTG</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Captado BTG (R$)</label><input type="number" id="e-cap-btg" placeholder="0"></div>
+        <div class="form-group"><label>Saída BTG (R$)</label><input type="number" id="e-sai-btg" placeholder="0"></div>
+      </div>
+
+      <div class="form-section-label">XP</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Captado XP (R$)</label><input type="number" id="e-cap-xp" placeholder="0"></div>
+        <div class="form-group"><label>Saída XP (R$)</label><input type="number" id="e-sai-xp" placeholder="0"></div>
+      </div>
+
+      <div class="form-section-label">Outros</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Captado Outros Bancos (R$)</label><input type="number" id="e-cap-outros" placeholder="0"></div>
+        <div class="form-group"><label>Internacional (R$)</label><input type="number" id="e-cap-int" placeholder="0"></div>
+      </div>
+    </div>
+
+    <!-- TAB PRODUTOS -->
+    <div class="tab-pane" id="tab-produtos">
+      <div class="form-section-label">Receita de Produtos</div>
+      <div class="form-grid three">
+        <div class="form-group"><label>Estudos (R$)</label><input type="number" id="e-estudos" placeholder="0"></div>
+        <div class="form-group"><label>Câmbio (R$)</label><input type="number" id="e-cambio" placeholder="0"></div>
+        <div class="form-group"><label>Jurídico (R$)</label><input type="number" id="e-juridico" placeholder="0"></div>
+        <div class="form-group"><label>Previdência (R$)</label><input type="number" id="e-previdencia" placeholder="0"></div>
+        <div class="form-group"><label>Seguros (R$)</label><input type="number" id="e-seguros" placeholder="0"></div>
+        <div class="form-group"><label>Precatórios (R$)</label><input type="number" id="e-precatorios" placeholder="0"></div>
+        <div class="form-group"><label>Consórcio (R$)</label><input type="number" id="e-consorcio" placeholder="0"></div>
+        <div class="form-group"><label>Private Equity (R$)</label><input type="number" id="e-pe" placeholder="0"></div>
+        <div class="form-group"><label>Outros (R$)</label><input type="number" id="e-outros-prod" placeholder="0"></div>
+      </div>
+      <div class="form-section-label">Meta</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Meta de Produtos (R$)</label><input type="number" id="e-meta-prod" placeholder="15000"></div>
+      </div>
+    </div>
+
+    <!-- TAB LEADS -->
+    <div class="tab-pane" id="tab-leads">
+      <div class="form-section-label">Reuniões & Contatos</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Reuniões Realizadas</label><input type="number" id="e-reunioes" placeholder="0"></div>
+        <div class="form-group"><label>Meta de Reuniões</label><input type="number" id="e-meta-reun" placeholder="10"></div>
+        <div class="form-group"><label>Targets (Prospects abordados)</label><input type="number" id="e-targets" placeholder="0"></div>
+        <div class="form-group"><label>Clientes Em Andamento</label><input type="number" id="e-andamento" placeholder="0"></div>
+      </div>
+
+      <div class="form-section-label">Fechamentos por Produto</div>
+      <div class="form-grid three">
+        <div class="form-group"><label>Fechamentos — Estudo</label><input type="number" id="e-fech-estudo" placeholder="0"></div>
+        <div class="form-group"><label>Fechamentos — Investimento</label><input type="number" id="e-fech-invest" placeholder="0"></div>
+        <div class="form-group"><label>Fechamentos — Seguro</label><input type="number" id="e-fech-seguro" placeholder="0"></div>
+        <div class="form-group"><label>Fechamentos — Previdência</label><input type="number" id="e-fech-prev" placeholder="0"></div>
+        <div class="form-group"><label>Fechamentos — Precatório</label><input type="number" id="e-fech-prec" placeholder="0"></div>
+        <div class="form-group"><label>Fechamentos — Private Equity</label><input type="number" id="e-fech-pe" placeholder="0"></div>
+        <div class="form-group"><label>Fechamentos — Outros</label><input type="number" id="e-fech-outros" placeholder="0"></div>
+        <div class="form-group"><label>Clientes Big Deal</label><input type="number" id="e-bigdeal" placeholder="0"></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+    <button class="btn-salvar" onclick="salvarMes()">💾 Salvar Mês</button>
+  </div>
+</div>
+
+<script>
+  const SUPA_URL = 'https://uilotsvjzzoydajmfjur.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpbG90c3ZqenpveWRham1manVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MzAzMzUsImV4cCI6MjA5MzUwNjMzNX0.IrZvlVcT1Kt8EMAmERvaA_QEzrjlG650ZwclRcGlRkA';
+  const { createClient } = supabase;
+  const db = createClient(SUPA_URL, SUPA_KEY);
+
+  const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  let consultorId = null, consultor = null, todosConsultores = [];
+  let anoAtual = 2026, mesAtual = new Date().getMonth() + 1;
+  let capData = null, prodData = null, leadsData = null;
+  let capAnual = [], chartAnual = null;
+
+  const fmtM = v => { const a=Math.abs(v),s=v<0?'-':''; return a>=1e9?s+'R$ '+(a/1e9).toFixed(2)+'B':a>=1e6?s+'R$ '+(a/1e6).toFixed(2)+'M':a>=1e3?s+'R$ '+(a/1e3).toFixed(1)+'K':s+'R$ '+a.toFixed(0); };
+  const fmtR = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
+  const fmtP = v => (v*100).toFixed(1)+'%';
+  const n = v => parseFloat(v)||0;
+
+  // ── INIT ──────────────────────────────────────────────────
+  async function init() {
+    const params = new URLSearchParams(location.search);
+    consultorId = parseInt(params.get('id'));
+
+    if (!consultorId) {
+      document.querySelector('main').innerHTML = '<p style="padding:40px;color:var(--muted)">Consultor não encontrado. <a href="index.html" style="color:var(--gold)">Voltar ao dashboard</a></p>';
+      document.getElementById('loading').classList.add('hidden');
+      return;
+    }
+
+    const { data: cons } = await db.from('consultores').select('*').eq('ativo', true).order('id');
+    todosConsultores = cons || [];
+    consultor = todosConsultores.find(c => c.id === consultorId);
+
+    if (!consultor) {
+      document.querySelector('main').innerHTML = '<p style="padding:40px;color:var(--muted)">Consultor não encontrado.</p>';
+      document.getElementById('loading').classList.add('hidden');
+      return;
+    }
+
+    // Aplica cor do consultor
+    document.documentElement.style.setProperty('--cor', consultor.cor);
+    document.getElementById('top-dot').style.background = consultor.cor;
+    document.getElementById('top-nome').textContent = consultor.nome;
+    document.title = 'ESTRATERIK — ' + consultor.nome;
+
+    // Sidebar consultores
+    const sideEl = document.getElementById('sidebar-consultores');
+    todosConsultores.forEach(c => {
+      const a = document.createElement('a');
+      a.href = 'consultor.html?id=' + c.id;
+      a.className = 'nav-item' + (c.id === consultorId ? ' active' : '');
+      a.innerHTML = `<span class="nav-dot" style="background:${c.cor}"></span><span>${c.nome}</span>`;
+      sideEl.appendChild(a);
+    });
+
+    await carregar();
+    document.getElementById('loading').classList.add('hidden');
+  }
+
+  async function carregar() {
+    document.getElementById('periodo-label').textContent = MESES[mesAtual] + ' ' + anoAtual;
+
+    const [capRes, prodRes, leadsRes, capAnualRes] = await Promise.all([
+      db.from('captacao_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
+      db.from('produtos_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
+      db.from('leads_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
+      db.from('captacao_mensal').select('mes,nnm,captado,saida,pl').eq('consultor_id', consultorId).eq('ano', anoAtual).order('mes'),
+    ]);
+
+    capData   = capRes.data   || {};
+    prodData  = prodRes.data  || {};
+    leadsData = leadsRes.data || {};
+    capAnual  = capAnualRes.data || [];
+
+    renderPage();
+  }
+
+  function renderPage() {
+    const cap  = capData, prod = prodData, lead = leadsData;
+    const nnm  = n(cap.nnm), pl = n(cap.pl), captado = n(cap.captado), saida = n(cap.saida);
+    const metaNNM = n(cap.meta_nnm) || n(consultor.meta_nnm_mensal);
+    const pctMeta = metaNNM > 0 ? nnm / metaNNM : 0;
+    const churn   = pl > 0 ? (saida / pl) : 0;
+    const reun    = n(lead.reunioes);
+    const metaR   = n(lead.meta_reunioes) || n(consultor.meta_reunioes_mensal) || 10;
+
+    // KPIs
+    const nnmEl = document.getElementById('k-nnm');
+    nnmEl.textContent = fmtM(nnm);
+    nnmEl.className = 'kpi-value ' + (nnm >= 0 ? 'pos' : 'neg');
+    document.getElementById('k-nnm-sub').innerHTML = `Captado: <strong>${fmtM(captado)}</strong> | Saída: <strong>${fmtM(saida)}</strong>`;
+
+    const pctEl = document.getElementById('k-meta-pct');
+    pctEl.textContent = fmtP(pctMeta);
+    pctEl.style.color = pctMeta >= 1 ? 'var(--ok)' : pctMeta >= 0.5 ? 'var(--warn)' : 'var(--danger)';
+    document.getElementById('k-meta-sub').textContent = 'Meta: ' + fmtM(metaNNM);
+
+    document.getElementById('k-pl').textContent = fmtM(pl);
+    document.getElementById('k-churn-sub').innerHTML = `Churn: <strong style="color:${churn>0.015?'var(--danger)':churn>0.008?'var(--warn)':'var(--ok)'}">${fmtP(churn)}</strong>`;
+
+    document.getElementById('k-reun').textContent = reun;
+    document.getElementById('k-reun-sub').textContent = `Meta: ${metaR} — ${reun >= metaR ? '✅ atingido' : reun + ' realizadas'}`;
+
+    // Captação por corretora
+    const cgEl = document.getElementById('captacao-grid');
+    const corretoras = [
+      { nome: 'BTG', cap: n(cap.captado_btg), sai: n(cap.saida_btg) },
+      { nome: 'XP',  cap: n(cap.captado_xp),  sai: n(cap.saida_xp) },
+      { nome: 'Outros Bancos', cap: n(cap.captado_outros), sai: 0, extra: true },
+      { nome: 'Internacional', cap: n(cap.captado_int),    sai: 0, extra: true },
+    ];
+    cgEl.innerHTML = corretoras.map(c => {
+      const saldo = c.cap - c.sai;
+      const saldoCls = saldo >= 0 ? 'resumo-ok' : 'resumo-bad';
+      return `<div class="corretora-card">
+        <div class="corretora-nome">${c.nome}</div>
+        <div class="corretora-row"><span class="corretora-row-label">Captado</span><span class="corretora-row-value cap">${fmtM(c.cap)}</span></div>
+        ${!c.extra ? `<div class="corretora-row"><span class="corretora-row-label">Saída</span><span class="corretora-row-value sai">${fmtM(c.sai)}</span></div>` : ''}
+        <div class="corretora-saldo">
+          <span class="corretora-saldo-label">Líquido</span>
+          <span class="corretora-saldo-value ${saldoCls}">${fmtM(saldo)}</span>
+        </div>
+      </div>`;
+    }).join('');
+
+    // Resumo executivo
+    const metaProd = n(prod.meta_produtos) || n(consultor.meta_produtos_mensal) || 15000;
+    const prodCols = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity','outros'];
+    const receitaProd = prodCols.reduce((s,k) => s + n(prod[k]), 0);
+    const pctProd = metaProd > 0 ? receitaProd / metaProd : 0;
+    const churnCls = churn > 0.015 ? 'resumo-bad' : churn > 0.008 ? 'resumo-warn' : 'resumo-ok';
+
+    document.getElementById('r-cap').textContent      = fmtM(captado);
+    document.getElementById('r-cap-meta').innerHTML   = `Meta: ${fmtM(metaNNM)} &nbsp; <span style="color:${pctMeta>=1?'var(--ok)':'var(--warn)'}">${fmtP(pctMeta)} atingido</span>`;
+    document.getElementById('r-sai').textContent      = fmtM(saida);
+    document.getElementById('r-sai-pct').textContent  = pl > 0 ? fmtP(saida/pl) + ' do PL' : '—';
+    document.getElementById('r-prod').textContent     = fmtR(receitaProd);
+    document.getElementById('r-prod-meta').innerHTML  = `Meta: ${fmtR(metaProd)} &nbsp; <span style="color:${pctProd>=1?'var(--ok)':'var(--warn)'}">${fmtP(pctProd)}</span>`;
+    document.getElementById('r-churn').innerHTML      = `<span class="${churnCls}">${fmtP(churn)}</span>`;
+
+    // Chart anual
+    const allMeses = MESES.slice(1);
+    const nnmPorMes = allMeses.map((_,i) => {
+      const row = capAnual.find(r => r.mes === i+1);
+      return row ? n(row.nnm) : null;
+    });
+    const ytd = nnmPorMes.filter(v => v !== null).reduce((s,v) => s+v, 0);
+    document.getElementById('chart-ytd').textContent = 'YTD: ' + fmtM(ytd);
+
+    if (chartAnual) chartAnual.destroy();
+    chartAnual = new Chart(document.getElementById('chartAnual'), {
+      type: 'bar',
+      data: {
+        labels: allMeses,
+        datasets: [{
+          data: nnmPorMes,
+          backgroundColor: nnmPorMes.map(v => v === null ? 'rgba(200,160,70,0.1)' : v >= 0 ? consultor.cor + '99' : '#ef444499'),
+          borderColor:     nnmPorMes.map(v => v === null ? 'transparent' : v >= 0 ? consultor.cor : '#ef4444'),
+          borderWidth: 2, borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ' ' + fmtR(ctx.raw) : ' Sem dados' } }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
+          y: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } }
+        }
+      }
+    });
+
+    // Tabela de produtos
+    const PROD_LABELS = {
+      estudos:'Estudos Financeiros', cambio:'Câmbio', juridico:'Jurídico',
+      previdencia:'Previdência', seguros:'Seguros', consorcio:'Consórcio',
+      private_equity:'Private Equity', outros:'Outros'
+    };
+    const tbEl = document.getElementById('prod-body');
+    let totalProd = 0;
+    tbEl.innerHTML = '';
+    prodCols.forEach(k => {
+      const v = n(prod[k]);
+      totalProd += v;
+      const pct = metaProd > 0 ? v / metaProd : 0;
+      const cls = v === 0 ? 'td-zero' : '';
+      tbEl.innerHTML += `<tr>
+        <td>${PROD_LABELS[k]}</td>
+        <td class="${cls}">${v === 0 ? '—' : fmtR(v)}</td>
+        <td class="td-zero">${fmtR(metaProd)}</td>
+        <td class="${v===0?'td-zero':pct>=1?'':''}"><span style="color:${v===0?'':'pct>=1?var(--ok):var(--warn)'}">${v===0?'—':fmtP(pct)}</span></td>
+      </tr>`;
+    });
+    tbEl.innerHTML += `<tr style="border-top:2px solid var(--border2)">
+      <td style="font-weight:800;color:var(--gold2)">TOTAL</td>
+      <td class="td-gold">${fmtR(totalProd)}</td>
+      <td class="td-gold">${fmtR(metaProd)}</td>
+      <td class="${totalProd>=metaProd?'td-gold':''}">${fmtP(totalProd/metaProd)}</td>
+    </tr>`;
+
+    // Leads
+    const LEAD_CHIPS = [
+      { num: reun, lbl: 'Reuniões', cor: reun >= metaR ? 'var(--ok)' : 'var(--warn)' },
+      { num: n(lead.targets), lbl: 'Targets Abordados', cor: consultor.cor },
+      { num: n(lead.fech_estudo) + n(lead.fech_invest) + n(lead.fech_seguro) + n(lead.fech_prev) + n(lead.fech_prec) + n(lead.fech_pe) + n(lead.fech_outros), lbl: 'Total Fechamentos', cor: 'var(--ok)' },
+      { num: n(lead.clientes_andamento), lbl: 'Em Andamento', cor: 'var(--warn)' },
+      { num: n(lead.fech_estudo),    lbl: 'Estudos',        cor: '' },
+      { num: n(lead.fech_invest),    lbl: 'Investimentos',  cor: '' },
+      { num: n(lead.fech_seguro),    lbl: 'Seguros',        cor: '' },
+      { num: n(lead.fech_prev),      lbl: 'Previdência',    cor: '' },
+      { num: n(lead.fech_prec),      lbl: 'Precatórios',    cor: '' },
+      { num: n(lead.fech_pe),        lbl: 'Private Equity', cor: '' },
+      { num: n(lead.clientes_bigdeal), lbl: 'Big Deal',     cor: 'var(--gold)' },
+      { num: n(lead.fech_outros),    lbl: 'Outros',         cor: '' },
+    ];
+    document.getElementById('leads-grid').innerHTML = LEAD_CHIPS.map(c =>
+      `<div class="lead-chip"><div class="num" style="color:${c.cor||'var(--text)'}">${c.num}</div><div class="lbl">${c.lbl}</div></div>`
+    ).join('');
+  }
+
+  // ── MODAL ──────────────────────────────────────────────────
+  function abrirModal() {
+    const cap = capData, prod = prodData, lead = leadsData;
+    document.getElementById('modal-title').textContent = `Editar — ${consultor.nome} — ${MESES[mesAtual]} ${anoAtual}`;
+
+    // Preenche campos
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    set('e-pl',          cap.pl);
+    set('e-meta-nnm',    cap.meta_nnm || consultor.meta_nnm_mensal);
+    set('e-cap-btg',     cap.captado_btg);
+    set('e-sai-btg',     cap.saida_btg);
+    set('e-cap-xp',      cap.captado_xp);
+    set('e-sai-xp',      cap.saida_xp);
+    set('e-cap-outros',  cap.captado_outros);
+    set('e-cap-int',     cap.captado_int);
+    set('e-estudos',     prod.estudos);
+    set('e-cambio',      prod.cambio);
+    set('e-juridico',    prod.juridico);
+    set('e-previdencia', prod.previdencia);
+    set('e-seguros',     prod.seguros);
+    set('e-precatorios', prod.precatorios);
+    set('e-consorcio',   prod.consorcio);
+    set('e-pe',          prod.private_equity);
+    set('e-outros-prod', prod.outros);
+    set('e-meta-prod',   prod.meta_produtos || consultor.meta_produtos_mensal || 15000);
+    set('e-reunioes',    lead.reunioes);
+    set('e-meta-reun',   lead.meta_reunioes || consultor.meta_reunioes_mensal || 10);
+    set('e-targets',     lead.targets);
+    set('e-andamento',   lead.clientes_andamento);
+    set('e-fech-estudo', lead.fech_estudo);
+    set('e-fech-invest', lead.fech_invest);
+    set('e-fech-seguro', lead.fech_seguro);
+    set('e-fech-prev',   lead.fech_prev);
+    set('e-fech-prec',   lead.fech_prec);
+    set('e-fech-pe',     lead.fech_pe);
+    set('e-fech-outros', lead.fech_outros);
+    set('e-bigdeal',     lead.clientes_bigdeal);
+
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('modal').classList.add('open');
+    mudarTab('captacao', document.querySelector('.form-tab'));
+  }
+
+  function fecharModal() {
+    document.getElementById('overlay').classList.remove('open');
+    document.getElementById('modal').classList.remove('open');
+  }
+
+  function mudarTab(nome, btn) {
+    document.querySelectorAll('.form-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + nome).classList.add('active');
+  }
+
+  async function salvarMes() {
+    const g = id => n(document.getElementById(id).value);
+
+    const capBtg   = g('e-cap-btg');
+    const saiBtg   = g('e-sai-btg');
+    const capXp    = g('e-cap-xp');
+    const saiXp    = g('e-sai-xp');
+    const capOut   = g('e-cap-outros');
+    const capInt   = g('e-cap-int');
+    const captado  = capBtg + capXp + capOut + capInt;
+    const saida    = saiBtg + saiXp;
+    const nnm      = captado - saida;
+
+    const capPayload = {
+      consultor_id: consultorId, ano: anoAtual, mes: mesAtual,
+      pl: g('e-pl'), meta_nnm: g('e-meta-nnm'),
+      captado, saida, nnm,
+      captado_btg: capBtg, saida_btg: saiBtg,
+      captado_xp: capXp, saida_xp: saiXp,
+      captado_outros: capOut, captado_int: capInt,
+    };
+
+    const prodPayload = {
+      consultor_id: consultorId, ano: anoAtual, mes: mesAtual,
+      estudos: g('e-estudos'), cambio: g('e-cambio'), juridico: g('e-juridico'),
+      previdencia: g('e-previdencia'), seguros: g('e-seguros'), consorcio: g('e-consorcio'),
+      private_equity: g('e-pe'), outros: g('e-outros-prod'),
+      precatorios: g('e-precatorios'),
+      meta_produtos: g('e-meta-prod'),
+    };
+
+    const leadPayload = {
+      consultor_id: consultorId, ano: anoAtual, mes: mesAtual,
+      reunioes: g('e-reunioes'), meta_reunioes: g('e-meta-reun'),
+      targets: g('e-targets'), clientes_andamento: g('e-andamento'),
+      fech_estudo: g('e-fech-estudo'), fech_invest: g('e-fech-invest'),
+      fech_seguro: g('e-fech-seguro'), fech_prev: g('e-fech-prev'),
+      fech_prec: g('e-fech-prec'), fech_pe: g('e-fech-pe'),
+      fech_outros: g('e-fech-outros'), clientes_bigdeal: g('e-bigdeal'),
+    };
+
+    const upsert = async (table, payload) => {
+      const { error } = await db.from(table).upsert(payload, { onConflict: 'consultor_id,ano,mes' });
+      if (error) throw error;
+    };
+
+    try {
+      await Promise.all([
+        upsert('captacao_mensal', capPayload),
+        upsert('produtos_mensal', prodPayload),
+        upsert('leads_mensal', leadPayload),
+      ]);
+      fecharModal();
+      await carregar();
+    } catch(e) {
+      alert('Erro ao salvar: ' + e.message);
+    }
+  }
+
+  // ── NAVEGAÇÃO ──────────────────────────────────────────────
+  document.getElementById('btn-prev').onclick = () => {
+    mesAtual--; if (mesAtual < 1) { mesAtual = 12; anoAtual--; } carregar();
+  };
+  document.getElementById('btn-next').onclick = () => {
+    mesAtual++; if (mesAtual > 12) { mesAtual = 1; anoAtual++; } carregar();
+  };
+
+  init();
+</script>
+</body>
+</html>

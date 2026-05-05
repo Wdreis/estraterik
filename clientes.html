@@ -728,7 +728,7 @@
     const sideEl = document.getElementById('sidebar-consultores');
     consultores.forEach(c => {
       const a = document.createElement('a');
-      a.href = 'index.html#c-card-' + c.id;
+      a.href = 'consultor.html?id=' + c.id;
       a.className = 'nav-item';
       a.innerHTML = `<span class="nav-dot" style="background:${c.cor}"></span><span>${c.nome}</span>`;
       sideEl.appendChild(a);
