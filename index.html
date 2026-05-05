@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESTRATERIK — Dashboard de Consultores</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #07091a;
+      --bg2:      #0c1024;
+      --card:     #101428;
+      --card2:    #141830;
+      --border:   #1c2240;
+      --border2:  #242b50;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --muted2:   #3d4b6b;
+      --ok:       #22c55e;
+      --warn:     #f59e0b;
+      --danger:   #ef4444;
+      --accent:   #6366f1;
+      --accent2:  #818cf8;
+    }
+
+    html, body { height: 100%; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ─── HEADER ─── */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 9, 26, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 14px;
+      color: #fff;
+      letter-spacing: -1px;
+    }
+    .logo-text {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: 1.5px;
+    }
+    .logo-sub {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--muted);
+      letter-spacing: 0.5px;
+    }
+
+    .header-center {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 5px 8px;
+    }
+
+    .btn-mes {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 5px 9px;
+      border-radius: 6px;
+      font-size: 18px;
+      transition: all 0.15s;
+      line-height: 1;
+    }
+    .btn-mes:hover { background: var(--border); color: var(--text); }
+
+    #periodo-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      min-width: 130px;
+      text-align: center;
+      letter-spacing: 0.3px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .pl-total-header {
+      text-align: right;
+    }
+    .pl-total-header .label { font-size: 10px; font-weight: 500; color: var(--muted); letter-spacing: 0.8px; text-transform: uppercase; }
+    .pl-total-header .value { font-size: 16px; font-weight: 700; color: var(--text); }
+
+    .badge-live {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(34,197,94,0.1);
+      border: 1px solid rgba(34,197,94,0.25);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--ok);
+    }
+    .dot-live {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--ok);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ─── MAIN CONTENT ─── */
+    main { padding: 28px 32px; max-width: 1600px; margin: 0 auto; }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── KPI CARDS ─── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .kpi-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .kpi-card:hover { border-color: var(--border2); }
+    .kpi-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--kpi-color, var(--accent));
+      opacity: 0.8;
+    }
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+    .kpi-sub {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+    .kpi-sub .ok  { color: var(--ok); }
+    .kpi-sub .bad { color: var(--danger); }
+
+    /* ─── RANKING ─── */
+    .ranking-section { margin-bottom: 28px; }
+
+    .ranking-grid {
+      display: grid;
+      gap: 8px;
+    }
+
+    .rank-row {
+      display: grid;
+      grid-template-columns: 36px 130px 1fr 160px 70px;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .rank-row:hover { border-color: var(--border2); background: var(--card2); }
+
+    .rank-badge {
+      font-size: 13px;
+      font-weight: 800;
+      text-align: center;
+      color: var(--muted);
+    }
+    .rank-badge.gold   { color: #FFD700; }
+    .rank-badge.silver { color: #C0C0C0; }
+    .rank-badge.bronze { color: #CD7F32; }
+
+    .rank-name {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rank-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .rank-bar-wrap {
+      height: 8px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .rank-bar {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    .rank-value {
+      font-size: 13px;
+      font-weight: 700;
+      text-align: right;
+    }
+    .rank-value.pos { color: var(--ok); }
+    .rank-value.neg { color: var(--danger); }
+
+    .rank-meta {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    /* ─── CONSULTANT CARDS ─── */
+    .cards-section { margin-bottom: 28px; }
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+    }
+
+    .c-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+    .c-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+    .c-card-stripe {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+
+    .c-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+    .c-name {
+      font-size: 15px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+    .c-name .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+    }
+    .c-rank-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: var(--border);
+      color: var(--muted);
+    }
+    .c-rank-badge.g { background: rgba(255,215,0,0.15); color: #FFD700; }
+    .c-rank-badge.s { background: rgba(192,192,192,0.15); color: #C0C0C0; }
+    .c-rank-badge.b { background: rgba(205,127,50,0.15); color: #CD7F32; }
+
+    .c-pl {
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .c-pl-value {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 14px;
+    }
+
+    .c-nnm-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+    .c-nnm-value {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 10px;
+    }
+    .c-nnm-value.pos { color: var(--ok); }
+    .c-nnm-value.neg { color: var(--danger); }
+
+    .c-progress-wrap { margin-bottom: 12px; }
+    .c-progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    .c-progress-bg {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .c-progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.6s ease;
+    }
+
+    .c-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    .c-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .c-stat-label {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .c-stat-value {
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .c-stat-value.ok { color: var(--ok); }
+    .c-stat-value.warn { color: var(--warn); }
+    .c-stat-value.bad { color: var(--danger); }
+
+    /* ─── CHARTS ROW ─── */
+    .charts-section { margin-bottom: 28px; }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+    }
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px;
+    }
+    .chart-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .chart-title span { color: var(--muted); font-size: 11px; font-weight: 500; }
+    .chart-wrap { position: relative; height: 240px; }
+
+    /* ─── PRODUTOS TABLE ─── */
+    .produtos-section { margin-bottom: 28px; }
+    .table-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .table-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      padding: 11px 16px;
+      text-align: right;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg2);
+    }
+    thead th:first-child { text-align: left; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--card2); }
+
+    tbody td {
+      padding: 11px 16px;
+      text-align: right;
+      font-weight: 600;
+      color: var(--text);
+    }
+    tbody td:first-child {
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .td-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .td-zero { color: var(--muted2); font-weight: 400; }
+    .td-total { color: var(--accent2); font-weight: 800; }
+
+    tfoot td {
+      padding: 11px 16px;
+      text-align: right;
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--text);
+      border-top: 1px solid var(--border2);
+      background: var(--bg2);
+    }
+    tfoot td:first-child { text-align: left; font-size: 11px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); }
+
+    /* ─── LOADING ─── */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      gap: 20px;
+      transition: opacity 0.4s;
+    }
+    .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+    .loading-logo { font-size: 28px; font-weight: 900; letter-spacing: 3px; color: var(--accent2); }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 1200px) {
+      .cards-grid { grid-template-columns: repeat(2, 1fr); }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 800px) {
+      main { padding: 20px 16px; }
+      header { padding: 0 16px; }
+      .cards-grid { grid-template-columns: 1fr; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .rank-row { grid-template-columns: 30px 110px 1fr 120px; }
+      .rank-meta { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="loading-logo">ESTRATERIK</div>
+  <div class="spinner"></div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">EK</div>
+    <div>
+      <div class="logo-text">ESTRATERIK</div>
+      <div class="logo-sub">Dashboard de Consultores</div>
+    </div>
+  </div>
+
+  <div class="header-center">
+    <button class="btn-mes" id="btn-prev" title="Mês anterior">&#8249;</button>
+    <span id="periodo-label">Carregando...</span>
+    <button class="btn-mes" id="btn-next" title="Próximo mês">&#8250;</button>
+  </div>
+
+  <div class="header-right">
+    <div class="pl-total-header">
+      <div class="label">PL Oikos</div>
+      <div class="value" id="pl-header">—</div>
+    </div>
+    <div class="badge-live">
+      <div class="dot-live"></div>
+      Supabase
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main>
+
+  <!-- KPIs -->
+  <div class="section-title">Visão Geral</div>
+  <div class="kpi-grid" id="kpi-grid">
+    <div class="kpi-card" style="--kpi-color:#6366f1">
+      <div class="kpi-label">NNM Total do Mês</div>
+      <div class="kpi-value" id="kpi-nnm">—</div>
+      <div class="kpi-sub" id="kpi-nnm-sub">—</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#22c55e">
+      <div class="kpi-label">% da Meta NNM</div>
+      <div class="kpi-value" id="kpi-meta-pct">—</div>
+      <div class="kpi-sub">Meta: <strong>R$ 25.000.000</strong></div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#f59e0b">
+      <div class="kpi-label">Captação Total</div>
+      <div class="kpi-value" id="kpi-captado">—</div>
+      <div class="kpi-sub" id="kpi-saida-sub">—</div>
+    </div>
+    <div class="kpi-card" style="--kpi-color:#06b6d4">
+      <div class="kpi-label">Reuniões Realizadas</div>
+      <div class="kpi-value" id="kpi-reunioes">—</div>
+      <div class="kpi-sub" id="kpi-reunioes-sub">—</div>
+    </div>
+  </div>
+
+  <!-- RANKING NNM -->
+  <div class="section-title ranking-section">Ranking — Net New Money</div>
+  <div class="ranking-grid" id="ranking-grid">
+    <!-- preenchido via JS -->
+  </div>
+
+  <!-- CONSULTANT CARDS -->
+  <br>
+  <div class="section-title cards-section">Consultores</div>
+  <div class="cards-grid" id="cards-grid">
+    <!-- preenchido via JS -->
+  </div>
+
+  <!-- CHARTS -->
+  <br>
+  <div class="section-title charts-section">Análises</div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">
+        NNM por Consultor
+        <span id="chart-bar-label">mês atual</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartBar"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">
+        PL por Consultor
+        <span>distribuição</span>
+      </div>
+      <div class="chart-wrap"><canvas id="chartDoughnut"></canvas></div>
+    </div>
+  </div>
+
+  <!-- PRODUTOS TABLE -->
+  <br>
+  <div class="section-title produtos-section">Produtos — Receita do Mês</div>
+  <div class="table-card">
+    <table>
+      <thead>
+        <tr>
+          <th style="min-width:130px">Consultor</th>
+          <th>Estudos</th>
+          <th>Câmbio</th>
+          <th>Jurídico</th>
+          <th>Previdência</th>
+          <th>Seguros</th>
+          <th>Consórcio</th>
+          <th>Priv. Equity</th>
+          <th>Total</th>
+          <th>Meta</th>
+        </tr>
+      </thead>
+      <tbody id="tabela-produtos">
+        <!-- preenchido via JS -->
+      </tbody>
+      <tfoot>
+        <tr id="tabela-total">
+          <!-- preenchido via JS -->
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+</main>
+
+<footer>
+  <div>ESTRATERIK © 2026 — Oikos Assessoria</div>
+  <div id="footer-update">Carregando dados...</div>
+</footer>
+
+<!-- SCRIPT -->
+<script>
+  // ─── CONFIG SUPABASE ───────────────────────────────────────
+  const SUPA_URL = 'https://uilotsvjzzoydajmfjur.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpbG90c3ZqenpveWRham1manVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MzAzMzUsImV4cCI6MjA5MzUwNjMzNX0.IrZvlVcT1Kt8EMAmERvaA_QEzrjlG650ZwclRcGlRkA';
+  const { createClient } = supabase;
+  const db = createClient(SUPA_URL, SUPA_KEY);
+
+  // ─── ESTADO ────────────────────────────────────────────────
+  let anoAtual = 2026, mesAtual = 4;
+  let consultores = [];
+  let chartBar = null, chartDoughnut = null;
+
+  const MESES = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                 'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+  // ─── UTILITÁRIOS ───────────────────────────────────────────
+  const fmtM  = v => {
+    const abs = Math.abs(v);
+    const sig = v < 0 ? '-' : '';
+    if (abs >= 1e9) return sig + 'R$ ' + (abs/1e9).toFixed(2) + 'B';
+    if (abs >= 1e6) return sig + 'R$ ' + (abs/1e6).toFixed(2) + 'M';
+    if (abs >= 1e3) return sig + 'R$ ' + (abs/1e3).toFixed(1) + 'K';
+    return sig + 'R$ ' + abs.toFixed(0);
+  };
+  const fmtR  = v => 'R$ ' + Number(v).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
+  const fmtP  = v => (v*100).toFixed(1) + '%';
+  const clamp = (v,mn,mx) => Math.min(Math.max(v,mn),mx);
+
+  // ─── CORES ─────────────────────────────────────────────────
+  const COR_RANK = ['gold','silver','bronze','','','','',''];
+
+  // ─── CARREGAR DADOS ────────────────────────────────────────
+  async function carregar() {
+    document.getElementById('loading').classList.remove('hidden');
+    document.getElementById('periodo-label').textContent =
+      MESES[mesAtual] + ' ' + anoAtual;
+    document.getElementById('chart-bar-label').textContent =
+      MESES[mesAtual] + ' ' + anoAtual;
+
+    try {
+      // 1. Consultores
+      const { data: cons } = await db.from('consultores')
+        .select('*').eq('ativo', true).order('id');
+      consultores = cons || [];
+
+      // 2. Captação do mês
+      const { data: cap } = await db.from('captacao_mensal')
+        .select('*').eq('ano', anoAtual).eq('mes', mesAtual);
+
+      // 3. Produtos do mês
+      const { data: prod } = await db.from('produtos_mensal')
+        .select('*').eq('ano', anoAtual).eq('mes', mesAtual);
+
+      // 4. Leads do mês
+      const { data: leads } = await db.from('leads_mensal')
+        .select('*').eq('ano', anoAtual).eq('mes', mesAtual);
+
+      // 5. Oikos geral histórico (para gráfico de evolução - últimos 4 meses)
+      // não usado nesta versão simplificada
+
+      // montar mapa
+      const capMap   = {};  (cap   || []).forEach(r => capMap[r.consultor_id]   = r);
+      const prodMap  = {};  (prod  || []).forEach(r => prodMap[r.consultor_id]  = r);
+      const leadsMap = {};  (leads || []).forEach(r => leadsMap[r.consultor_id] = r);
+
+      renderUI(capMap, prodMap, leadsMap);
+
+    } catch(e) {
+      console.error(e);
+    }
+
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('footer-update').textContent =
+      'Atualizado: ' + new Date().toLocaleString('pt-BR');
+  }
+
+  // ─── RENDER PRINCIPAL ──────────────────────────────────────
+  function renderUI(capMap, prodMap, leadsMap) {
+    // ordenar por NNM (ranking)
+    const ordenado = [...consultores].sort((a,b) => {
+      const na = (capMap[a.id] || {}).nnm || 0;
+      const nb = (capMap[b.id] || {}).nnm || 0;
+      return nb - na;
+    });
+    const rankMap = {}; ordenado.forEach((c,i) => rankMap[c.id] = i + 1);
+
+    // ── KPIs ──
+    const totalNNM     = Object.values(capMap).reduce((s,r) => s + (r.nnm||0), 0);
+    const totalCaptado = Object.values(capMap).reduce((s,r) => s + (r.captado||0), 0);
+    const totalSaida   = Object.values(capMap).reduce((s,r) => s + (r.saida||0), 0);
+    const totalPL      = Object.values(capMap).reduce((s,r) => s + (r.pl||0), 0);
+    const totalReun    = Object.values(leadsMap).reduce((s,r) => s + (r.reunioes||0), 0);
+    const metaNNM      = 25000000;
+    const pctMeta      = totalNNM / metaNNM;
+
+    document.getElementById('pl-header').textContent = fmtM(totalPL);
+    document.getElementById('kpi-nnm').textContent = fmtM(totalNNM);
+    document.getElementById('kpi-nnm').className = 'kpi-value ' + (totalNNM >= 0 ? 'pos' : 'neg');
+
+    document.getElementById('kpi-nnm-sub').innerHTML =
+      `Captado: <strong>${fmtM(totalCaptado)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totalSaida)}</strong>`;
+
+    const pctEl = document.getElementById('kpi-meta-pct');
+    pctEl.textContent = fmtP(pctMeta);
+    pctEl.style.color = pctMeta >= 1 ? 'var(--ok)' : pctMeta >= 0.5 ? 'var(--warn)' : 'var(--danger)';
+
+    document.getElementById('kpi-captado').textContent = fmtM(totalCaptado);
+    document.getElementById('kpi-saida-sub').innerHTML =
+      `Saída total: <strong class="${totalSaida > totalCaptado ? 'bad' : 'ok'}">${fmtM(totalSaida)}</strong>`;
+
+    document.getElementById('kpi-reunioes').textContent = totalReun;
+    const metaReun = consultores.length * 10;
+    document.getElementById('kpi-reunioes-sub').innerHTML =
+      `Meta: <strong>${metaReun}</strong> — <span class="${totalReun >= metaReun ? 'ok' : ''}">${Math.round(totalReun/metaReun*100)}% atingido</span>`;
+
+    // ── RANKING ──
+    const maxAbsNNM = Math.max(...ordenado.map(c => Math.abs((capMap[c.id]||{}).nnm||0)), 1);
+    const rgEl = document.getElementById('ranking-grid');
+    rgEl.innerHTML = '';
+    ordenado.forEach((c, i) => {
+      const cap = capMap[c.id] || {};
+      const nnm = cap.nnm || 0;
+      const pos = i + 1;
+      const barW = Math.max(2, Math.abs(nnm) / maxAbsNNM * 100);
+      const barColor = nnm >= 0 ? c.cor : 'var(--danger)';
+      const badgeClass = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+      const posLabel = pos + (pos === 1 ? 'º' : 'º');
+      const metaP = Math.min(Math.round((nnm / c.meta_nnm_mensal) * 100), 999);
+
+      rgEl.innerHTML += `
+        <div class="rank-row">
+          <div class="rank-badge ${badgeClass}">${posLabel}</div>
+          <div class="rank-name">
+            <div class="rank-dot" style="background:${c.cor}"></div>
+            ${c.nome}
+          </div>
+          <div class="rank-bar-wrap">
+            <div class="rank-bar" style="width:${barW}%;background:${barColor}"></div>
+          </div>
+          <div class="rank-value ${nnm >= 0 ? 'pos' : 'neg'}">${fmtM(nnm)}</div>
+          <div class="rank-meta">${metaP >= 0 ? metaP + '% meta' : metaP + '% meta'}</div>
+        </div>`;
+    });
+
+    // ── CARDS DOS CONSULTORES ──
+    const cgEl = document.getElementById('cards-grid');
+    cgEl.innerHTML = '';
+    consultores.forEach(c => {
+      const cap   = capMap[c.id]   || {};
+      const lead  = leadsMap[c.id] || {};
+      const rank  = rankMap[c.id];
+      const nnm   = cap.nnm    || 0;
+      const pl    = cap.pl     || 0;
+      const saida = cap.saida  || 0;
+      const churn = pl > 0 ? (saida / pl * 100) : 0;
+      const reun  = lead.reunioes || 0;
+      const metaR = c.meta_reunioes_mensal || 10;
+      const pctN  = c.meta_nnm_mensal > 0
+                    ? clamp(nnm / c.meta_nnm_mensal * 100, 0, 100) : 0;
+      const pctNR = c.meta_nnm_mensal > 0
+                    ? Math.round(nnm / c.meta_nnm_mensal * 100) : 0;
+
+      const badgeClass = rank === 1 ? 'g' : rank === 2 ? 's' : rank === 3 ? 'b' : '';
+      const churnClass = churn > 1.5 ? 'bad' : churn > 0.8 ? 'warn' : 'ok';
+      const reunClass  = reun >= metaR ? 'ok' : reun >= metaR * 0.7 ? 'warn' : 'bad';
+      const progColor  = pctNR >= 100 ? 'var(--ok)' : pctNR >= 50 ? c.cor : 'var(--danger)';
+
+      cgEl.innerHTML += `
+        <div class="c-card">
+          <div class="c-card-stripe" style="background:${c.cor}"></div>
+          <div class="c-card-top">
+            <div class="c-name">
+              <div class="dot" style="background:${c.cor}"></div>
+              ${c.nome}
+            </div>
+            <div class="c-rank-badge ${badgeClass}">${rank}º lugar</div>
+          </div>
+          <div class="c-pl">Patrimônio Líquido</div>
+          <div class="c-pl-value">${fmtM(pl)}</div>
+          <div class="c-nnm-label">Net New Money</div>
+          <div class="c-nnm-value ${nnm >= 0 ? 'pos' : 'neg'}">${fmtM(nnm)}</div>
+          <div class="c-progress-wrap">
+            <div class="c-progress-label">
+              <span>Meta: ${fmtM(c.meta_nnm_mensal)}</span>
+              <span>${pctNR}%</span>
+            </div>
+            <div class="c-progress-bg">
+              <div class="c-progress-fill" style="width:${pctN}%;background:${progColor}"></div>
+            </div>
+          </div>
+          <div class="c-stats">
+            <div class="c-stat">
+              <div class="c-stat-label">Churn</div>
+              <div class="c-stat-value ${churnClass}">${churn.toFixed(2)}%</div>
+            </div>
+            <div class="c-stat">
+              <div class="c-stat-label">Reuniões</div>
+              <div class="c-stat-value ${reunClass}">${reun} / ${metaR}</div>
+            </div>
+            <div class="c-stat">
+              <div class="c-stat-label">Captado</div>
+              <div class="c-stat-value">${fmtM(cap.captado || 0)}</div>
+            </div>
+            <div class="c-stat">
+              <div class="c-stat-label">Saída</div>
+              <div class="c-stat-value ${saida > 0 ? 'warn' : ''}">${fmtM(saida)}</div>
+            </div>
+          </div>
+        </div>`;
+    });
+
+    // ── CHART BAR (NNM) ──
+    const labelsB  = ordenado.map(c => c.nome);
+    const valuesB  = ordenado.map(c => (capMap[c.id]||{}).nnm||0);
+    const colorsB  = ordenado.map(c => (capMap[c.id]||{}).nnm >= 0 ? c.cor : '#ef4444');
+
+    if (chartBar) chartBar.destroy();
+    chartBar = new Chart(document.getElementById('chartBar'), {
+      type: 'bar',
+      data: {
+        labels: labelsB,
+        datasets: [{
+          label: 'NNM (R$)',
+          data: valuesB,
+          backgroundColor: colorsB.map(c => c + '99'),
+          borderColor: colorsB,
+          borderWidth: 2,
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: ctx => ' ' + fmtR(ctx.raw)
+            }
+          }
+        },
+        scales: {
+          x: { grid: { color: '#1c2240' }, ticks: { color: '#64748b', font: { size: 11 } } },
+          y: {
+            grid: { color: '#1c2240' },
+            ticks: {
+              color: '#64748b', font: { size: 10 },
+              callback: v => fmtM(v)
+            }
+          }
+        }
+      }
+    });
+
+    // ── CHART DOUGHNUT (PL) ──
+    const labelsD  = consultores.map(c => c.nome);
+    const valuesD  = consultores.map(c => (capMap[c.id]||{}).pl||0);
+    const colorsD  = consultores.map(c => c.cor);
+
+    if (chartDoughnut) chartDoughnut.destroy();
+    chartDoughnut = new Chart(document.getElementById('chartDoughnut'), {
+      type: 'doughnut',
+      data: {
+        labels: labelsD,
+        datasets: [{
+          data: valuesD,
+          backgroundColor: colorsD.map(c => c + 'cc'),
+          borderColor: '#07091a',
+          borderWidth: 3,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: { color: '#94a3b8', font: { size: 11 }, padding: 12, boxWidth: 12, boxHeight: 12 }
+          },
+          tooltip: {
+            callbacks: {
+              label: ctx => ' ' + ctx.label + ': ' + fmtM(ctx.raw)
+            }
+          }
+        }
+      }
+    });
+
+    // ── TABELA PRODUTOS ──
+    const prodCols = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity'];
+    const tbEl = document.getElementById('tabela-produtos');
+    tbEl.innerHTML = '';
+    const totais = { estudos:0, cambio:0, juridico:0, previdencia:0, seguros:0, consorcio:0, private_equity:0 };
+    let totalGeral = 0;
+
+    consultores.forEach(c => {
+      const p = prodMap[c.id] || {};
+      const total = prodCols.reduce((s,k) => s + (p[k]||0), 0);
+      totalGeral += total;
+      prodCols.forEach(k => totais[k] = (totais[k]||0) + (p[k]||0));
+
+      const metaP = p.meta_produtos || c.meta_produtos_mensal || 15000;
+      const meta_cls = total >= metaP ? 'ok' : total > 0 ? 'warn' : 'td-zero';
+
+      tbEl.innerHTML += `
+        <tr>
+          <td><div class="td-dot" style="background:${c.cor}"></div>${c.nome}</td>
+          ${prodCols.map(k => `<td class="${(p[k]||0) === 0 ? 'td-zero' : ''}">${(p[k]||0) === 0 ? '—' : fmtR(p[k])}</td>`).join('')}
+          <td class="td-total ${meta_cls}">${total === 0 ? '—' : fmtR(total)}</td>
+          <td class="td-zero">${fmtR(metaP)}</td>
+        </tr>`;
+    });
+
+    // footer totais
+    const tfEl = document.getElementById('tabela-total');
+    tfEl.innerHTML = `
+      <td>TOTAL</td>
+      ${prodCols.map(k => `<td>${totais[k] === 0 ? '—' : fmtR(totais[k])}</td>`).join('')}
+      <td class="td-total">${fmtR(totalGeral)}</td>
+      <td></td>`;
+  }
+
+  // ─── NAVEGAÇÃO DE MÊS ──────────────────────────────────────
+  document.getElementById('btn-prev').onclick = () => {
+    mesAtual--;
+    if (mesAtual < 1) { mesAtual = 12; anoAtual--; }
+    carregar();
+  };
+  document.getElementById('btn-next').onclick = () => {
+    mesAtual++;
+    if (mesAtual > 12) { mesAtual = 1; anoAtual++; }
+    carregar();
+  };
+
+  // ─── INIT ──────────────────────────────────────────────────
+  carregar();
+</script>
+</body>
+</html>
