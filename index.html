@@ -404,6 +404,7 @@
 
 <!-- LOADING -->
 <div class="loading-overlay" id="loading">
+  <img src="logo.svg" alt="Oikos" width="72" height="72" style="object-fit:contain;margin-bottom:10px">
   <div class="loading-logo">OIKOS</div>
   <div class="loading-sub">Oikos Family Office</div>
   <div class="spinner"></div>
@@ -426,13 +427,13 @@
 
     <div class="sidebar-section">
       <div class="sidebar-section-label">Menu</div>
-      <a href="index.html" class="nav-item active">
-        <span class="nav-icon">▣</span>
-        <span>Dashboard</span>
-      </a>
       <a href="painel-geral.html" class="nav-item">
         <span class="nav-icon">◈</span>
         <span>Painel Geral</span>
+      </a>
+      <a href="index.html" class="nav-item active">
+        <span class="nav-icon">▣</span>
+        <span>Dashboard</span>
       </a>
       <a href="clientes.html" class="nav-item">
         <span class="nav-icon">⊞</span>
@@ -561,26 +562,7 @@
 
       <!-- PRODUTOS -->
       <div class="section-title">Produtos — Receita do Mês</div>
-      <div class="table-card produtos-section">
-        <table>
-          <thead>
-            <tr>
-              <th style="min-width:130px">Consultor</th>
-              <th>Estudos</th>
-              <th>Câmbio</th>
-              <th>Jurídico</th>
-              <th>Previdência</th>
-              <th>Seguros</th>
-              <th>Consórcio</th>
-              <th>Priv. Equity</th>
-              <th>Total</th>
-              <th>Meta</th>
-            </tr>
-          </thead>
-          <tbody id="tabela-produtos"></tbody>
-          <tfoot><tr id="tabela-total"></tr></tfoot>
-        </table>
-      </div>
+      <div class="ranking-grid ranking-section" id="ranking-produtos"></div>
 
     </main>
 
@@ -834,50 +816,37 @@
       }
     });
 
-    // TABELA PRODUTOS
+    // RANKING PRODUTOS
     const prodCols = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity'];
-    const tbEl = document.getElementById('tabela-produtos');
-    tbEl.innerHTML = '';
-    const totais = {}; prodCols.forEach(k => totais[k] = 0);
-    let totalGeral = 0;
-
-    // Ranking de produtos por receita total
-    const prodRankArr = consultores.map(c => ({
-      id: c.id,
+    const prodSorted = [...consultores].map(c => ({
+      c,
       total: prodCols.reduce((s,k) => s + ((prodMap[c.id]||{})[k]||0), 0)
     })).sort((a,b) => b.total - a.total);
-    const prodRankMap = {};
-    prodRankArr.forEach((r,i) => prodRankMap[r.id] = i + 1);
 
-    const MEDALHA_COR = { 1:'#FFD700', 2:'#C0C0C0', 3:'#CD7F32' };
-    const MEDALHA_BG  = { 1:'rgba(255,215,0,0.08)', 2:'rgba(192,192,192,0.06)', 3:'rgba(205,127,50,0.06)' };
+    const maxProd = Math.max(...prodSorted.map(x => x.total), 1);
+    const rpEl = document.getElementById('ranking-produtos');
+    rpEl.innerHTML = '';
 
-    consultores.forEach(c => {
-      const p = prodMap[c.id] || {};
-      const total = prodCols.reduce((s,k) => s + (p[k]||0), 0);
-      totalGeral += total;
-      prodCols.forEach(k => totais[k] += (p[k]||0));
-      const metaP = p.meta_produtos || c.meta_produtos_mensal || 15000;
-      const metaCls = total >= metaP ? 'ok' : total > 0 ? 'warn' : 'td-zero';
-      const rank = prodRankMap[c.id];
-      const badgeHtml = (rank <= 3 && total > 0)
-        ? `<span class="c-rank-badge ${rank===1?'g':rank===2?'s':'b'}" style="margin-right:4px">${rank}°</span>`
-        : '';
-      const rowStyle = (rank <= 3 && total > 0) ? `style="background:${MEDALHA_BG[rank]}"` : '';
-      tbEl.innerHTML += `
-        <tr ${rowStyle}>
-          <td>${badgeHtml}<div class="td-dot" style="background:${c.cor}"></div>${c.nome}</td>
-          ${prodCols.map(k => `<td class="${(p[k]||0)===0?'td-zero':''}">${(p[k]||0)===0?'—':fmtR(p[k])}</td>`).join('')}
-          <td class="td-total ${metaCls}">${total===0?'—':fmtR(total)}</td>
-          <td class="td-zero">${fmtR(metaP)}</td>
-        </tr>`;
+    prodSorted.forEach((x, i) => {
+      const { c, total } = x;
+      const pos = i + 1;
+      const metaP   = c.meta_produtos_mensal || 15000;
+      const metaPct = metaP > 0 ? Math.round(total / metaP * 100) : 0;
+      const barW    = Math.max(2, total / maxProd * 100);
+      const barColor = total >= metaP ? 'var(--ok)' : total > 0 ? c.cor : 'rgba(200,160,70,0.15)';
+      const badgeClass = pos===1?'gold':pos===2?'silver':pos===3?'bronze':'';
+      const badgeHtml = (pos <= 3 && total > 0)
+        ? `<span class="rank-badge ${badgeClass}">${pos}º</span>`
+        : `<span style="font-size:13px;font-weight:700;color:var(--muted)">${pos}º</span>`;
+      rpEl.innerHTML += `
+        <div class="rank-row" style="grid-template-columns:1fr 46px 1fr 165px 80px">
+          <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}</div>
+          <div style="text-align:center">${badgeHtml}</div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:${barColor}"></div></div>
+          <div class="rank-value ${total>=metaP?'pos':total>0?'':'neg'}">${total===0?'—':fmtR(total)}</div>
+          <div class="rank-meta">${metaPct}% meta</div>
+        </div>`;
     });
-
-    document.getElementById('tabela-total').innerHTML = `
-      <td>TOTAL</td>
-      ${prodCols.map(k => `<td>${totais[k]===0?'—':fmtR(totais[k])}</td>`).join('')}
-      <td class="td-total">${fmtR(totalGeral)}</td>
-      <td></td>`;
   }
 
   // ─── NAVEGAÇÃO DE MÊS ────────────────────────────────────

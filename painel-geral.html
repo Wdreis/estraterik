@@ -289,6 +289,7 @@
 <body>
 
 <div class="loading-overlay" id="loading">
+  <img src="logo.svg" alt="Oikos" width="72" height="72" style="object-fit:contain;margin-bottom:10px">
   <div class="loading-logo">OIKOS</div>
   <div class="loading-sub">Painel Geral</div>
   <div class="spinner"></div>
@@ -310,13 +311,13 @@
 
     <div class="sidebar-section">
       <div class="sidebar-section-label">Menu</div>
-      <a href="index.html" class="nav-item">
-        <span class="nav-icon">▣</span>
-        <span>Dashboard</span>
-      </a>
       <a href="painel-geral.html" class="nav-item active">
         <span class="nav-icon">◈</span>
         <span>Painel Geral</span>
+      </a>
+      <a href="index.html" class="nav-item">
+        <span class="nav-icon">▣</span>
+        <span>Dashboard</span>
       </a>
       <a href="clientes.html" class="nav-item">
         <span class="nav-icon">⊞</span>
@@ -427,16 +428,6 @@
         <div class="chart-wrap"><canvas id="chartNNM"></canvas></div>
       </div>
 
-      <!-- SEÇÃO 3: PL & Captação -->
-      <div class="section-title">PL &amp; Captação por Mês</div>
-      <div class="chart-card">
-        <div class="chart-title">
-          Patrimônio Líquido &amp; Captação Líquida (NNM)
-          <span>meses com dados</span>
-        </div>
-        <div class="chart-wrap"><canvas id="chartPL"></canvas></div>
-      </div>
-
       <!-- SEÇÃO 4: Ranking -->
       <div class="section-title">Ranking do Período — Net New Money</div>
       <div class="table-card" style="margin-bottom:28px">
@@ -500,7 +491,7 @@
   let anoAtual = 2026;
   let meInicio = 1, meFim = new Date().getMonth() + 1;
   let consultores = [];
-  let chartNNM = null, chartPL = null;
+  let chartNNM = null;
 
   const fmtM = v => {
     const abs = Math.abs(v), sig = v < 0 ? '-' : '';
@@ -686,7 +677,6 @@
 
     // Charts
     renderChartNNM(capAnual);
-    renderChartPL(capAnual);
 
     // Ranking
     renderRankingTable(consAgg, numMeses, metaNNM);
@@ -747,64 +737,6 @@
         scales: {
           x: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
           y: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } }
-        }
-      }
-    });
-  }
-
-  // ─── CHART PL ────────────────────────────────────────────────
-  function renderChartPL(capAnual) {
-    const plMes  = {};
-    const nnmMes = {};
-    capAnual.forEach(r => {
-      plMes[r.mes]  = (plMes[r.mes]  || 0) + n(r.pl);
-      nnmMes[r.mes] = (nnmMes[r.mes] || 0) + n(r.nnm);
-    });
-
-    const mesesComDados = Object.keys(plMes).map(Number).sort((a,b) => a-b);
-    if (!mesesComDados.length) {
-      if (chartPL) chartPL.destroy();
-      return;
-    }
-
-    const labels  = mesesComDados.map(m => MESES_S[m]);
-    const plData  = mesesComDados.map(m => plMes[m]);
-    const nnmData = mesesComDados.map(m => nnmMes[m]);
-
-    if (chartPL) chartPL.destroy();
-    chartPL = new Chart(document.getElementById('chartPL'), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          {
-            label: 'PL Total',
-            data: plData,
-            borderColor: '#C8A046',
-            backgroundColor: 'rgba(200,160,70,0.1)',
-            borderWidth: 2, pointRadius: 4, tension: 0.35,
-            yAxisID: 'yPL',
-          },
-          {
-            label: 'NNM (Captação Líquida)',
-            data: nnmData,
-            borderColor: '#22c55e',
-            backgroundColor: 'rgba(34,197,94,0.08)',
-            borderWidth: 2, pointRadius: 4, tension: 0.35,
-            yAxisID: 'yNNM',
-          }
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { labels: { color: 'rgba(230,228,225,0.65)', font: { family: 'Jost', size: 11 }, padding: 14, boxWidth: 14, boxHeight: 2 } },
-          tooltip: { callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + fmtM(ctx.raw) } }
-        },
-        scales: {
-          x: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
-          yPL:  { position: 'left',  grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } },
-          yNNM: { position: 'right', grid: { display: false }, ticks: { color: 'rgba(34,197,94,0.6)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } }
         }
       }
     });
