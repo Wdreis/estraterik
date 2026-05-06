@@ -709,10 +709,11 @@
         </div>`;
     });
 
-    // CARDS
+    // CARDS — ordem alfabética
     const cgEl = document.getElementById('cards-grid');
     cgEl.innerHTML = '';
-    consultores.forEach(c => {
+    const consAlfabeticos = [...consultores].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    consAlfabeticos.forEach(c => {
       const cap   = capMap[c.id]   || {};
       const lead  = leadsMap[c.id] || {};
       const rank  = rankMap[c.id];

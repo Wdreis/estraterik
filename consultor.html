@@ -250,6 +250,36 @@
 
     footer { border-top: 1px solid var(--border); padding: 14px 32px; font-size: 11px; color: var(--muted); text-align: center; }
 
+    /* ── ADDER — botão + para somar ao valor atual ── */
+    .addable-input-row { position: relative; }
+    .addable-input-row input[type="number"] { padding-right: 36px; }
+    .btn-add-val {
+      position: absolute; right: 7px; top: 50%; transform: translateY(-50%);
+      background: rgba(200,160,70,0.14); border: none; color: var(--gold);
+      border-radius: 4px; width: 22px; height: 22px; font-size: 15px; line-height: 1;
+      cursor: pointer; font-family: inherit;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s;
+    }
+    .btn-add-val:hover { background: rgba(200,160,70,0.3); }
+    .adder-mini { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+    .adder-mini .adder-input {
+      flex: 1; background: var(--card2); border: 1px solid var(--border2);
+      border-radius: 6px; color: var(--text); padding: 5px 10px;
+      font-family: inherit; font-size: 12px; outline: none; width: auto;
+    }
+    .adder-mini .adder-input:focus { border-color: var(--gold); }
+    .adder-mini .adder-ok {
+      background: var(--gold); color: var(--navy); border: none;
+      border-radius: 5px; padding: 5px 10px; font-weight: 700; font-size: 12px;
+      cursor: pointer; font-family: inherit; flex-shrink: 0;
+    }
+    .adder-mini .adder-x {
+      background: none; border: 1px solid rgba(200,160,70,0.2);
+      color: var(--muted); border-radius: 5px; padding: 5px 8px; font-size: 12px;
+      cursor: pointer; font-family: inherit; flex-shrink: 0;
+    }
+
     @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .captacao-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 900px) {
       .sidebar { width: 62px; }
@@ -844,6 +874,7 @@
     document.getElementById('stvm-lista').innerHTML = '';
     stvmData.forEach(e => addSTVMRow(e));
 
+    initAddableInputs();
     document.getElementById('overlay').classList.add('open');
     document.getElementById('modal').classList.add('open');
     mudarTab('captacao', document.querySelector('.form-tab'));
@@ -852,6 +883,61 @@
   function fecharModal() {
     document.getElementById('overlay').classList.remove('open');
     document.getElementById('modal').classList.remove('open');
+  }
+
+  function initAddableInputs() {
+    document.querySelectorAll('.tab-pane input[type="number"]').forEach(inp => {
+      if (inp.dataset.addable) return;
+      inp.dataset.addable = '1';
+
+      const inputRow = document.createElement('div');
+      inputRow.className = 'addable-input-row';
+      inp.parentNode.insertBefore(inputRow, inp);
+      inputRow.appendChild(inp);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-add-val';
+      btn.title = 'Somar ao valor atual';
+      btn.textContent = '＋';
+      inputRow.appendChild(btn);
+
+      const adder = document.createElement('div');
+      adder.className = 'adder-mini';
+      adder.style.display = 'none';
+      adder.innerHTML = `<input type="number" class="adder-input" placeholder="Valor a adicionar..."><button type="button" class="adder-ok">✓</button><button type="button" class="adder-x">✕</button>`;
+      inputRow.parentNode.insertBefore(adder, inputRow.nextSibling);
+
+      btn.onclick = () => {
+        if (adder.style.display === 'none') {
+          adder.style.display = 'flex';
+          adder.querySelector('.adder-input').focus();
+        } else {
+          adder.style.display = 'none';
+        }
+      };
+
+      const confirmar = () => {
+        const curr = parseFloat(inp.value) || 0;
+        const add  = parseFloat(adder.querySelector('.adder-input').value) || 0;
+        if (add !== 0) {
+          inp.value = curr + add;
+          inp.dispatchEvent(new Event('input'));
+        }
+        adder.querySelector('.adder-input').value = '';
+        adder.style.display = 'none';
+      };
+
+      adder.querySelector('.adder-ok').onclick = confirmar;
+      adder.querySelector('.adder-x').onclick = () => {
+        adder.querySelector('.adder-input').value = '';
+        adder.style.display = 'none';
+      };
+      adder.querySelector('.adder-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter')  { e.preventDefault(); confirmar(); }
+        if (e.key === 'Escape') { adder.querySelector('.adder-x').click(); }
+      });
+    });
   }
 
   function mudarTab(nome, btn) {
