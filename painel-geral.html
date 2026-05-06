@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OIKOS FAMILY OFFICE — Painel Geral</title>
+  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:        #00283C;
+      --teal:        #28505A;
+      --gold:        #C8A046;
+      --gold2:       #D4AF6A;
+      --beige:       #E6E4E1;
+      --sidebar-bg:     #00283C;
+      --sidebar-hover:  rgba(200,160,70,0.12);
+      --sidebar-active: rgba(200,160,70,0.18);
+      --bg:      #001a27;
+      --bg2:     #001f30;
+      --card:    #00233a;
+      --card2:   #002d48;
+      --border:  rgba(200,160,70,0.14);
+      --border2: rgba(200,160,70,0.32);
+      --text:   #FFFFFF;
+      --muted:  rgba(230,228,225,0.55);
+      --muted2: rgba(230,228,225,0.22);
+      --ok:     #22c55e;
+      --warn:   #f59e0b;
+      --danger: #ef4444;
+    }
+
+    html, body { height: 100%; }
+    body { font-family: 'Jost', sans-serif; background: var(--bg); color: var(--text); }
+    .app { display: flex; min-height: 100vh; }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      width: 240px; min-width: 240px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid rgba(200,160,70,0.14);
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0;
+      height: 100vh; z-index: 100;
+      overflow-y: auto; overflow-x: hidden;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(200,160,70,0.2); border-radius: 2px; }
+    .sidebar-brand {
+      padding: 26px 20px 22px;
+      border-bottom: 1px solid rgba(200,160,70,0.14);
+      display: flex; align-items: center; gap: 13px; flex-shrink: 0;
+    }
+    .brand-icon {
+      width: 42px; height: 42px; background: transparent;
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .brand-text { display: flex; flex-direction: column; gap: 2px; }
+    .brand-name { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: 2.5px; line-height: 1; }
+    .brand-tagline { font-size: 9px; font-weight: 500; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; }
+    .sidebar-section { padding: 18px 12px 6px; }
+    .sidebar-section-label { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); opacity: 0.65; padding: 0 10px; margin-bottom: 5px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 8px;
+      text-decoration: none; color: var(--beige);
+      font-size: 13px; font-weight: 500; letter-spacing: 0.2px;
+      transition: all 0.15s; cursor: pointer;
+      border: none; background: none; width: 100%;
+    }
+    .nav-item:hover { background: var(--sidebar-hover); color: var(--text); }
+    .nav-item.active { background: var(--sidebar-active); color: var(--gold); font-weight: 600; border-left: 3px solid var(--gold); padding-left: 9px; }
+    .nav-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+    .nav-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .sidebar-divider { margin: 6px 18px; border: none; border-top: 1px solid rgba(200,160,70,0.1); }
+    .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(200,160,70,0.1); flex-shrink: 0; }
+    .badge-live { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 500; color: var(--ok); }
+    .dot-live { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+    /* ─── MAIN WRAPPER ─── */
+    .main-wrapper { margin-left: 240px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ─── TOPBAR ─── */
+    .topbar {
+      background: rgba(0,26,39,0.96);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: auto;
+      min-height: 60px;
+      display: flex; flex-direction: column; justify-content: center;
+      gap: 10px;
+      padding-top: 14px; padding-bottom: 14px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-row1 { display: flex; align-items: center; justify-content: space-between; }
+    .topbar-title { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: 0.3px; }
+    .topbar-subtitle { font-size: 11px; color: var(--muted); }
+
+    /* ─── ANO NAV ─── */
+    .ano-nav {
+      display: flex; align-items: center; gap: 4px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 4px 6px;
+    }
+    .btn-mes {
+      background: none; border: none; color: var(--muted);
+      cursor: pointer; padding: 4px 9px; border-radius: 5px;
+      font-size: 16px; transition: all 0.15s; line-height: 1;
+    }
+    .btn-mes:hover { background: var(--border); color: var(--text); }
+    #ano-label { font-size: 13px; font-weight: 600; color: var(--text); min-width: 52px; text-align: center; }
+
+    /* ─── PERIODO BAR ─── */
+    .topbar-row2 { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .periodo-bar { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+    .periodo-btn {
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--muted); border-radius: 20px;
+      padding: 4px 12px; font-size: 11px; font-weight: 600;
+      cursor: pointer; font-family: inherit;
+      transition: all 0.15s; letter-spacing: 0.2px;
+    }
+    .periodo-btn:hover { border-color: rgba(200,160,70,0.4); color: var(--text); }
+    .periodo-btn.active { background: rgba(200,160,70,0.18); border-color: var(--gold); color: var(--gold); }
+    .custom-range {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      font-size: 11px; color: var(--muted);
+    }
+    .custom-range select {
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px; padding: 4px 8px;
+      font-size: 11px; font-family: inherit; outline: none; cursor: pointer;
+    }
+    .custom-range select:focus { border-color: var(--gold); }
+    .custom-range select option { background: var(--card2); }
+    .btn-aplicar {
+      background: var(--gold); color: var(--navy); border: none;
+      border-radius: 6px; padding: 5px 12px; font-size: 11px;
+      font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: opacity 0.15s;
+    }
+    .btn-aplicar:hover { opacity: 0.88; }
+    .divider-v { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+
+    /* ─── MAIN ─── */
+    main { padding: 26px 32px; max-width: 1500px; }
+
+    .section-title {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ─── KPI GRID ─── */
+    .kpi-grid-6 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px; margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+      position: relative; overflow: hidden;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .kpi-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+    .kpi-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: var(--kpi-color, var(--gold));
+    }
+    .kpi-label { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-bottom: 9px; }
+    .kpi-value { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 6px; letter-spacing: -0.5px; }
+    .kpi-sub { font-size: 12px; font-weight: 400; color: var(--muted); }
+    .kpi-sub .ok  { color: var(--ok); }
+    .kpi-sub .bad { color: var(--danger); }
+
+    /* ─── CHARTS ─── */
+    .charts-section { margin-bottom: 28px; }
+    .charts-col { display: flex; flex-direction: column; gap: 14px; }
+    .chart-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 22px; margin-bottom: 14px;
+    }
+    .chart-card:last-child { margin-bottom: 0; }
+    .chart-title {
+      font-size: 12px; font-weight: 700; color: var(--text);
+      margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;
+      letter-spacing: 0.4px;
+    }
+    .chart-title span { color: var(--gold); font-size: 11px; font-weight: 400; }
+    .chart-wrap { position: relative; height: 240px; }
+
+    /* ─── TABLE SHARED ─── */
+    .table-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      padding: 10px 16px; text-align: right;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 1.2px; text-transform: uppercase;
+      color: var(--gold); border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.2);
+    }
+    thead th:first-child { text-align: left; }
+    thead th.th-center { text-align: center; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--card2); }
+    tbody td { padding: 10px 16px; text-align: right; font-weight: 500; color: var(--text); }
+    tbody td:first-child { text-align: left; }
+    tbody td.td-center { text-align: center; }
+    .td-zero { color: var(--muted2); font-weight: 400; }
+    .td-total { color: var(--gold2); font-weight: 800; }
+    tfoot td {
+      padding: 10px 16px; text-align: right;
+      font-weight: 700; font-size: 13px; color: var(--text);
+      border-top: 1px solid var(--border);
+      background: rgba(0,0,0,0.2);
+    }
+    tfoot td:first-child { text-align: left; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--gold); }
+
+    /* ─── RANKING ─── */
+    .rank-badge { font-size: 13px; font-weight: 700; text-align: center; color: var(--muted); }
+    .rank-badge.gold   { color: #FFD700; }
+    .rank-badge.silver { color: #C0C0C0; }
+    .rank-badge.bronze { color: #CD7F32; }
+    .rank-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; display: inline-block; margin-right: 7px; }
+    .td-pos { color: var(--ok); font-weight: 700; }
+    .td-neg { color: var(--danger); font-weight: 700; }
+    .td-warn { color: var(--warn); font-weight: 700; }
+
+    /* ─── LOADING ─── */
+    .loading-overlay {
+      position: fixed; inset: 0; background: var(--navy);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 999; gap: 16px; transition: opacity 0.4s;
+    }
+    .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+    .loading-logo { font-size: 36px; font-weight: 900; letter-spacing: 8px; color: var(--gold); }
+    .loading-sub { font-size: 10px; letter-spacing: 4px; color: var(--beige); opacity: 0.45; text-transform: uppercase; }
+    .spinner {
+      width: 30px; height: 30px;
+      border: 2px solid rgba(200,160,70,0.15);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite; margin-top: 4px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11px; color: var(--muted); letter-spacing: 0.3px;
+    }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 1200px) {
+      .kpi-grid-6 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 900px) {
+      .sidebar { width: 62px; }
+      .brand-text, .nav-item > span:last-child,
+      .sidebar-section-label, .sidebar-footer .badge-live > span { display: none; }
+      .brand-icon { margin: auto; }
+      .sidebar-brand { justify-content: center; padding: 18px 10px; }
+      .nav-item { justify-content: center; padding: 10px; }
+      .main-wrapper { margin-left: 62px; }
+    }
+    @media (max-width: 700px) {
+      main { padding: 16px; }
+      .topbar { padding: 12px 16px; }
+      .kpi-grid-6 { grid-template-columns: 1fr; }
+      .custom-range { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <div class="loading-logo">OIKOS</div>
+  <div class="loading-sub">Painel Geral</div>
+  <div class="spinner"></div>
+</div>
+
+<div class="app">
+
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <img src="logo.svg" alt="Oikos" width="38" height="38" style="object-fit:contain">
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">OIKOS</span>
+        <span class="brand-tagline">Family Office</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Menu</div>
+      <a href="index.html" class="nav-item">
+        <span class="nav-icon">▣</span>
+        <span>Dashboard</span>
+      </a>
+      <a href="painel-geral.html" class="nav-item active">
+        <span class="nav-icon">◈</span>
+        <span>Painel Geral</span>
+      </a>
+      <a href="clientes.html" class="nav-item">
+        <span class="nav-icon">⊞</span>
+        <span>Clientes</span>
+      </a>
+    </div>
+
+    <hr class="sidebar-divider">
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Consultores</div>
+      <div id="sidebar-consultores"></div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="badge-live">
+        <div class="dot-live"></div>
+        <span>Supabase Live</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <div class="main-wrapper">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-row1">
+        <div>
+          <div class="topbar-title">Painel Geral</div>
+          <div class="topbar-subtitle">Visão anual e por período da Oikos</div>
+        </div>
+        <div class="ano-nav">
+          <button class="btn-mes" id="btn-ano-prev">&#8249;</button>
+          <span id="ano-label">2026</span>
+          <button class="btn-mes" id="btn-ano-next">&#8250;</button>
+        </div>
+      </div>
+
+      <div class="topbar-row2">
+        <div class="periodo-bar" id="periodo-bar">
+          <button class="periodo-btn" data-ini="1" data-fim="12">Ano Completo</button>
+          <button class="periodo-btn" data-ini="1" data-fim="3">Q1 (Jan–Mar)</button>
+          <button class="periodo-btn" data-ini="4" data-fim="6">Q2 (Abr–Jun)</button>
+          <button class="periodo-btn" data-ini="7" data-fim="9">Q3 (Jul–Set)</button>
+          <button class="periodo-btn" data-ini="10" data-fim="12">Q4 (Out–Dez)</button>
+          <button class="periodo-btn" data-ini="1" data-fim="6">1° Sem</button>
+          <button class="periodo-btn" data-ini="7" data-fim="12">2° Sem</button>
+        </div>
+
+        <div class="divider-v"></div>
+
+        <div class="custom-range">
+          <span>De:</span>
+          <select id="mes-ini-sel"></select>
+          <span>Até:</span>
+          <select id="mes-fim-sel"></select>
+          <button class="btn-aplicar" onclick="aplicarCustom()">Aplicar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <main>
+
+      <!-- SEÇÃO 1: KPIs -->
+      <div class="section-title">KPIs do Período</div>
+      <div class="kpi-grid-6" id="kpi-grid">
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">NNM Total do Período</div>
+          <div class="kpi-value" id="kpi-nnm">—</div>
+          <div class="kpi-sub" id="kpi-nnm-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#22c55e">
+          <div class="kpi-label">% da Meta NNM</div>
+          <div class="kpi-value" id="kpi-meta-pct">—</div>
+          <div class="kpi-sub" id="kpi-meta-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--teal)">
+          <div class="kpi-label">Captação Total</div>
+          <div class="kpi-value" id="kpi-captado">—</div>
+          <div class="kpi-sub" id="kpi-captado-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--danger)">
+          <div class="kpi-label">Saída Total</div>
+          <div class="kpi-value" id="kpi-saida">—</div>
+          <div class="kpi-sub" id="kpi-saida-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--warn)">
+          <div class="kpi-label">Receita de Produtos</div>
+          <div class="kpi-value" id="kpi-produtos">—</div>
+          <div class="kpi-sub" id="kpi-produtos-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--beige)">
+          <div class="kpi-label">Reuniões Realizadas</div>
+          <div class="kpi-value" id="kpi-reunioes">—</div>
+          <div class="kpi-sub" id="kpi-reunioes-sub">—</div>
+        </div>
+      </div>
+
+      <!-- SEÇÃO 2: Evolução Anual -->
+      <div class="section-title">Evolução Anual — NNM Mensal</div>
+      <div class="chart-card">
+        <div class="chart-title">
+          Net New Money — Jan a Dez <span id="ano-chart-label">2026</span>
+          <span id="ytd-label">YTD: —</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartNNM"></canvas></div>
+      </div>
+
+      <!-- SEÇÃO 3: PL & Captação -->
+      <div class="section-title">PL &amp; Captação por Mês</div>
+      <div class="chart-card">
+        <div class="chart-title">
+          Patrimônio Líquido &amp; Captação Líquida (NNM)
+          <span>meses com dados</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chartPL"></canvas></div>
+      </div>
+
+      <!-- SEÇÃO 4: Ranking -->
+      <div class="section-title">Ranking do Período — Net New Money</div>
+      <div class="table-card" style="margin-bottom:28px">
+        <table id="tabela-ranking">
+          <thead>
+            <tr>
+              <th class="th-center" style="width:50px">Rank</th>
+              <th>Consultor</th>
+              <th>NNM</th>
+              <th>% Meta</th>
+              <th>Captado</th>
+              <th>Saído</th>
+              <th>Rec. Produtos</th>
+              <th>Reuniões</th>
+            </tr>
+          </thead>
+          <tbody id="ranking-body"></tbody>
+        </table>
+      </div>
+
+      <!-- SEÇÃO 5: Detalhamento Mensal -->
+      <div class="section-title">Detalhamento Mensal do Período</div>
+      <div class="table-card" style="margin-bottom:28px">
+        <table id="tabela-mensal">
+          <thead>
+            <tr>
+              <th>Mês</th>
+              <th>NNM</th>
+              <th>Captado</th>
+              <th>Saído</th>
+              <th>PL</th>
+              <th>Rec. Produtos</th>
+              <th>Reuniões</th>
+              <th>% Meta NNM</th>
+            </tr>
+          </thead>
+          <tbody id="mensal-body"></tbody>
+          <tfoot><tr id="mensal-total"></tr></tfoot>
+        </table>
+      </div>
+
+    </main>
+
+    <footer>
+      <div>OIKOS FAMILY OFFICE © 2026</div>
+      <div id="footer-update">Carregando dados...</div>
+    </footer>
+
+  </div>
+</div>
+
+<script>
+  const SUPA_URL = 'https://uilotsvjzzoydajmfjur.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpbG90c3ZqenpveWRham1manVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MzAzMzUsImV4cCI6MjA5MzUwNjMzNX0.IrZvlVcT1Kt8EMAmERvaA_QEzrjlG650ZwclRcGlRkA';
+  const { createClient } = supabase;
+  const db = createClient(SUPA_URL, SUPA_KEY);
+
+  const MESES   = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const MESES_S = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  let anoAtual = 2026;
+  let meInicio = 1, meFim = new Date().getMonth() + 1;
+  let consultores = [];
+  let chartNNM = null, chartPL = null;
+
+  const fmtM = v => {
+    const abs = Math.abs(v), sig = v < 0 ? '-' : '';
+    if (abs >= 1e9) return sig + 'R$ ' + (abs/1e9).toFixed(2) + 'B';
+    if (abs >= 1e6) return sig + 'R$ ' + (abs/1e6).toFixed(2) + 'M';
+    if (abs >= 1e3) return sig + 'R$ ' + (abs/1e3).toFixed(1) + 'K';
+    return sig + 'R$ ' + abs.toFixed(0);
+  };
+  const fmtR = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
+  const fmtP = v => (v * 100).toFixed(1) + '%';
+  const n = v => parseFloat(v) || 0;
+
+  // ─── SELECTS DE MÊS ─────────────────────────────────────────
+  function buildMesSelects() {
+    ['mes-ini-sel','mes-fim-sel'].forEach(id => {
+      const sel = document.getElementById(id);
+      sel.innerHTML = '';
+      for (let i = 1; i <= 12; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = MESES_S[i];
+        sel.appendChild(opt);
+      }
+    });
+    document.getElementById('mes-ini-sel').value = meInicio;
+    document.getElementById('mes-fim-sel').value  = meFim;
+  }
+
+  // ─── SIDEBAR ─────────────────────────────────────────────────
+  function renderSidebar() {
+    const el = document.getElementById('sidebar-consultores');
+    el.innerHTML = '';
+    const sorted = [...consultores].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    sorted.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'nav-item';
+      btn.innerHTML = `<span class="nav-dot" style="background:${c.cor}"></span><span>${c.nome}</span>`;
+      btn.onclick = () => window.location.href = 'consultor.html?id=' + c.id;
+      el.appendChild(btn);
+    });
+  }
+
+  // ─── PERIODO BUTTONS ─────────────────────────────────────────
+  const PERIODOS = [
+    { label: 'Ano Completo', ini: 1,  fim: 12 },
+    { label: 'Q1 (Jan–Mar)', ini: 1,  fim: 3  },
+    { label: 'Q2 (Abr–Jun)', ini: 4,  fim: 6  },
+    { label: 'Q3 (Jul–Set)', ini: 7,  fim: 9  },
+    { label: 'Q4 (Out–Dez)', ini: 10, fim: 12 },
+    { label: '1° Sem',       ini: 1,  fim: 6  },
+    { label: '2° Sem',       ini: 7,  fim: 12 },
+  ];
+
+  function setPeriodo(ini, fim, sourceBtnEl) {
+    meInicio = ini;
+    meFim    = fim;
+    document.getElementById('mes-ini-sel').value = ini;
+    document.getElementById('mes-fim-sel').value  = fim;
+    document.querySelectorAll('.periodo-btn').forEach(b => b.classList.remove('active'));
+    if (sourceBtnEl) sourceBtnEl.classList.add('active');
+    carregar();
+  }
+
+  function aplicarCustom() {
+    const ini = parseInt(document.getElementById('mes-ini-sel').value);
+    const fim  = parseInt(document.getElementById('mes-fim-sel').value);
+    if (ini > fim) {
+      alert('O mês inicial não pode ser maior que o mês final.');
+      return;
+    }
+    document.querySelectorAll('.periodo-btn').forEach(b => b.classList.remove('active'));
+    meInicio = ini;
+    meFim    = fim;
+    carregar();
+  }
+
+  document.querySelectorAll('.periodo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ini = parseInt(btn.dataset.ini);
+      const fim  = parseInt(btn.dataset.fim);
+      setPeriodo(ini, fim, btn);
+    });
+  });
+
+  // ─── ANO NAVIGATION ──────────────────────────────────────────
+  document.getElementById('btn-ano-prev').onclick = () => { anoAtual--; carregar(); };
+  document.getElementById('btn-ano-next').onclick = () => { anoAtual++; carregar(); };
+
+  // ─── CARREGAR ────────────────────────────────────────────────
+  async function carregar() {
+    document.getElementById('loading').classList.remove('hidden');
+    document.getElementById('ano-label').textContent      = anoAtual;
+    document.getElementById('ano-chart-label').textContent = anoAtual;
+
+    try {
+      const { data: cons } = await db.from('consultores').select('*').eq('ativo', true).order('id');
+      consultores = cons || [];
+      renderSidebar();
+
+      const [capRes, prodRes, leadsRes, capAnualRes] = await Promise.all([
+        db.from('captacao_mensal').select('*')
+          .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
+        db.from('produtos_mensal').select('*')
+          .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
+        db.from('leads_mensal').select('*')
+          .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
+        db.from('captacao_mensal').select('mes,nnm,captado,saida,pl')
+          .eq('ano', anoAtual).order('mes'),
+      ]);
+
+      renderUI(
+        capRes.data   || [],
+        prodRes.data  || [],
+        leadsRes.data || [],
+        capAnualRes.data || []
+      );
+    } catch(e) {
+      console.error(e);
+    }
+
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('footer-update').textContent = 'Atualizado: ' + new Date().toLocaleString('pt-BR');
+  }
+
+  // ─── RENDER UI ───────────────────────────────────────────────
+  function renderUI(cap, prod, leads, capAnual) {
+    const numMeses = meFim - meInicio + 1;
+    const metaNNM  = 25000000 * numMeses;
+
+    // Totais globais
+    const totNNM  = cap.reduce((s, r) => s + n(r.nnm), 0);
+    const totCap  = cap.reduce((s, r) => s + n(r.captado), 0);
+    const totSai  = cap.reduce((s, r) => s + n(r.saida), 0);
+    const totReun = leads.reduce((s, r) => s + n(r.reunioes), 0);
+
+    const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity','offshore','outros'];
+    const totProd = prod.reduce((s, r) => s + PROD_KEYS.reduce((ps, k) => ps + n(r[k]), 0), 0);
+
+    // PL = último mês disponível no período
+    const capMesesNoperiodo = cap.filter(r => r.mes >= meInicio && r.mes <= meFim);
+    const ultimoCapRow = capMesesNoperiodo.sort((a,b) => b.mes - a.mes)[0];
+    const ultimoPL = ultimoCapRow ? cap.filter(r => r.mes === ultimoCapRow.mes).reduce((s,r) => s + n(r.pl), 0) : 0;
+
+    // Por consultor
+    const consAgg = {};
+    consultores.forEach(c => {
+      consAgg[c.id] = { nnm: 0, captado: 0, saida: 0, produtos: 0, reunioes: 0, pl: 0 };
+    });
+    cap.forEach(r => {
+      if (!consAgg[r.consultor_id]) return;
+      consAgg[r.consultor_id].nnm     += n(r.nnm);
+      consAgg[r.consultor_id].captado += n(r.captado);
+      consAgg[r.consultor_id].saida   += n(r.saida);
+      consAgg[r.consultor_id].pl       = n(r.pl);
+    });
+    prod.forEach(r => {
+      if (!consAgg[r.consultor_id]) return;
+      consAgg[r.consultor_id].produtos += PROD_KEYS.reduce((s, k) => s + n(r[k]), 0);
+    });
+    leads.forEach(r => {
+      if (!consAgg[r.consultor_id]) return;
+      consAgg[r.consultor_id].reunioes += n(r.reunioes);
+    });
+
+    // KPIs
+    const pctMeta = metaNNM > 0 ? totNNM / metaNNM : 0;
+    const pctEl   = document.getElementById('kpi-meta-pct');
+
+    document.getElementById('kpi-nnm').textContent     = fmtM(totNNM);
+    document.getElementById('kpi-nnm').style.color     = totNNM >= 0 ? '' : 'var(--danger)';
+    document.getElementById('kpi-nnm-sub').innerHTML   = `Período: <strong>${MESES_S[meInicio]}–${MESES_S[meFim]} ${anoAtual}</strong>`;
+    pctEl.textContent  = fmtP(pctMeta);
+    pctEl.style.color  = pctMeta >= 1 ? 'var(--ok)' : pctMeta >= 0.5 ? 'var(--warn)' : 'var(--danger)';
+    document.getElementById('kpi-meta-sub').innerHTML  = `Meta pro-rata: <strong>${fmtM(metaNNM)}</strong> (R$25M × ${numMeses} meses)`;
+    document.getElementById('kpi-captado').textContent = fmtM(totCap);
+    document.getElementById('kpi-captado-sub').textContent = 'Bruto captado no período';
+    document.getElementById('kpi-saida').textContent   = fmtM(totSai);
+    document.getElementById('kpi-saida-sub').innerHTML = `Saldo líquido: <strong class="${totNNM>=0?'ok':'bad'}">${fmtM(totNNM)}</strong>`;
+    document.getElementById('kpi-produtos').textContent = fmtR(totProd);
+    document.getElementById('kpi-produtos-sub').textContent = 'Receita total de produtos';
+    document.getElementById('kpi-reunioes').textContent = totReun;
+    document.getElementById('kpi-reunioes-sub').textContent = `${consultores.length} consultores no período`;
+
+    // Charts
+    renderChartNNM(capAnual);
+    renderChartPL(capAnual);
+
+    // Ranking
+    renderRankingTable(consAgg, numMeses, metaNNM);
+
+    // Mensal
+    renderMensalTable(cap, prod, leads, metaNNM);
+  }
+
+  // ─── CHART NNM ───────────────────────────────────────────────
+  function renderChartNNM(capAnual) {
+    const nnmMes = {};
+    capAnual.forEach(r => { nnmMes[r.mes] = (nnmMes[r.mes] || 0) + n(r.nnm); });
+
+    const labels = MESES_S.slice(1);
+    const data   = [];
+    const colors = [];
+    const borders = [];
+
+    for (let m = 1; m <= 12; m++) {
+      const val = nnmMes[m] !== undefined ? nnmMes[m] : null;
+      data.push(val);
+      const inPeriod = m >= meInicio && m <= meFim;
+      if (val === null) {
+        colors.push('rgba(200,160,70,0.08)');
+        borders.push('transparent');
+      } else if (inPeriod) {
+        colors.push(val >= 0 ? 'rgba(200,160,70,0.6)' : 'rgba(239,68,68,0.6)');
+        borders.push(val >= 0 ? '#C8A046' : '#ef4444');
+      } else {
+        colors.push('rgba(200,160,70,0.12)');
+        borders.push('rgba(200,160,70,0.2)');
+      }
+    }
+
+    const ytd = data.filter((v, i) => v !== null && (i+1) >= meInicio && (i+1) <= meFim).reduce((s,v) => s+v, 0);
+    document.getElementById('ytd-label').textContent = 'YTD período: ' + fmtM(ytd);
+
+    if (chartNNM) chartNNM.destroy();
+    chartNNM = new Chart(document.getElementById('chartNNM'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          label: 'NNM (R$)',
+          data,
+          backgroundColor: colors,
+          borderColor: borders,
+          borderWidth: 2,
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ' ' + fmtR(ctx.raw) : ' Sem dados' } }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
+          y: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } }
+        }
+      }
+    });
+  }
+
+  // ─── CHART PL ────────────────────────────────────────────────
+  function renderChartPL(capAnual) {
+    const plMes  = {};
+    const nnmMes = {};
+    capAnual.forEach(r => {
+      plMes[r.mes]  = (plMes[r.mes]  || 0) + n(r.pl);
+      nnmMes[r.mes] = (nnmMes[r.mes] || 0) + n(r.nnm);
+    });
+
+    const mesesComDados = Object.keys(plMes).map(Number).sort((a,b) => a-b);
+    if (!mesesComDados.length) {
+      if (chartPL) chartPL.destroy();
+      return;
+    }
+
+    const labels  = mesesComDados.map(m => MESES_S[m]);
+    const plData  = mesesComDados.map(m => plMes[m]);
+    const nnmData = mesesComDados.map(m => nnmMes[m]);
+
+    if (chartPL) chartPL.destroy();
+    chartPL = new Chart(document.getElementById('chartPL'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'PL Total',
+            data: plData,
+            borderColor: '#C8A046',
+            backgroundColor: 'rgba(200,160,70,0.1)',
+            borderWidth: 2, pointRadius: 4, tension: 0.35,
+            yAxisID: 'yPL',
+          },
+          {
+            label: 'NNM (Captação Líquida)',
+            data: nnmData,
+            borderColor: '#22c55e',
+            backgroundColor: 'rgba(34,197,94,0.08)',
+            borderWidth: 2, pointRadius: 4, tension: 0.35,
+            yAxisID: 'yNNM',
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: 'rgba(230,228,225,0.65)', font: { family: 'Jost', size: 11 }, padding: 14, boxWidth: 14, boxHeight: 2 } },
+          tooltip: { callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + fmtM(ctx.raw) } }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
+          yPL:  { position: 'left',  grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } },
+          yNNM: { position: 'right', grid: { display: false }, ticks: { color: 'rgba(34,197,94,0.6)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } }
+        }
+      }
+    });
+  }
+
+  // ─── RANKING TABLE ───────────────────────────────────────────
+  function renderRankingTable(consAgg, numMeses, metaTotalNNM) {
+    const metaPorConsultor = 25000000 / (consultores.length || 1) * numMeses;
+
+    const ordenado = [...consultores].sort((a, b) => (consAgg[b.id]||{}).nnm - (consAgg[a.id]||{}).nnm);
+    const tbody = document.getElementById('ranking-body');
+    tbody.innerHTML = '';
+
+    ordenado.forEach((c, i) => {
+      const agg  = consAgg[c.id] || {};
+      const nnm  = agg.nnm || 0;
+      const pct  = metaPorConsultor > 0 ? nnm / metaPorConsultor : 0;
+      const rank = i + 1;
+      const badgeClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+      const rankLabel  = rank <= 3
+        ? `<span class="rank-badge ${badgeClass}">${rank}º</span>`
+        : `<span class="rank-badge">${rank}º</span>`;
+      const nnmClass = nnm >= 0 ? 'td-pos' : 'td-neg';
+      const pctClass = pct >= 1 ? 'td-pos' : pct >= 0.5 ? 'td-warn' : 'td-neg';
+
+      tbody.innerHTML += `<tr>
+        <td class="td-center">${rankLabel}</td>
+        <td><span class="rank-dot" style="background:${c.cor}"></span>${c.nome}</td>
+        <td class="${nnmClass}">${fmtM(nnm)}</td>
+        <td class="${pctClass}">${fmtP(pct)}</td>
+        <td>${fmtM(agg.captado || 0)}</td>
+        <td class="${(agg.saida||0) > 0 ? 'td-warn' : ''}">${fmtM(agg.saida || 0)}</td>
+        <td>${fmtR(agg.produtos || 0)}</td>
+        <td>${agg.reunioes || 0}</td>
+      </tr>`;
+    });
+  }
+
+  // ─── MENSAL TABLE ────────────────────────────────────────────
+  function renderMensalTable(cap, prod, leads, metaNNMTotal) {
+    const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity','offshore','outros'];
+    const numMeses  = meFim - meInicio + 1;
+    const metaPorMes = 25000000;
+
+    const porMes = {};
+    for (let m = meInicio; m <= meFim; m++) {
+      porMes[m] = { nnm: 0, captado: 0, saida: 0, pl: 0, produtos: 0, reunioes: 0 };
+    }
+
+    cap.forEach(r => {
+      if (!porMes[r.mes]) return;
+      porMes[r.mes].nnm     += n(r.nnm);
+      porMes[r.mes].captado += n(r.captado);
+      porMes[r.mes].saida   += n(r.saida);
+      porMes[r.mes].pl      += n(r.pl);
+    });
+    prod.forEach(r => {
+      if (!porMes[r.mes]) return;
+      porMes[r.mes].produtos += PROD_KEYS.reduce((s, k) => s + n(r[k]), 0);
+    });
+    leads.forEach(r => {
+      if (!porMes[r.mes]) return;
+      porMes[r.mes].reunioes += n(r.reunioes);
+    });
+
+    const tbody = document.getElementById('mensal-body');
+    tbody.innerHTML = '';
+
+    let sNNM = 0, sCap = 0, sSai = 0, sProd = 0, sReun = 0, lastPL = 0;
+
+    for (let m = meInicio; m <= meFim; m++) {
+      const d   = porMes[m];
+      const pct = metaPorMes > 0 ? d.nnm / metaPorMes : 0;
+      const nnmCls = d.nnm >= 0 ? 'td-pos' : 'td-neg';
+      const pctCls = pct >= 1 ? 'td-pos' : pct >= 0.5 ? 'td-warn' : 'td-neg';
+      sNNM  += d.nnm;
+      sCap  += d.captado;
+      sSai  += d.saida;
+      sProd += d.produtos;
+      sReun += d.reunioes;
+      lastPL = d.pl || lastPL;
+
+      tbody.innerHTML += `<tr>
+        <td style="font-weight:600">${MESES_S[m]} ${anoAtual}</td>
+        <td class="${nnmCls}">${fmtM(d.nnm)}</td>
+        <td>${fmtM(d.captado)}</td>
+        <td class="${d.saida>0?'td-warn':''}">${fmtM(d.saida)}</td>
+        <td>${d.pl > 0 ? fmtM(d.pl) : '<span class="td-zero">—</span>'}</td>
+        <td>${d.produtos > 0 ? fmtR(d.produtos) : '<span class="td-zero">—</span>'}</td>
+        <td>${d.reunioes}</td>
+        <td class="${pctCls}">${fmtP(pct)}</td>
+      </tr>`;
+    }
+
+    const pctTotal = metaNNMTotal > 0 ? sNNM / metaNNMTotal : 0;
+    const pctTotCls = pctTotal >= 1 ? 'td-pos' : pctTotal >= 0.5 ? 'td-warn' : 'td-neg';
+
+    document.getElementById('mensal-total').innerHTML = `
+      <td>TOTAL / MÉDIA</td>
+      <td class="${sNNM>=0?'td-pos':'td-neg'}" style="font-weight:800">${fmtM(sNNM)}</td>
+      <td style="font-weight:800">${fmtM(sCap)}</td>
+      <td style="font-weight:800">${fmtM(sSai)}</td>
+      <td style="font-weight:700;color:var(--muted)">${lastPL > 0 ? fmtM(lastPL) : '—'}</td>
+      <td style="font-weight:800">${fmtR(sProd)}</td>
+      <td style="font-weight:800">${sReun}</td>
+      <td class="${pctTotCls}" style="font-weight:800">${fmtP(pctTotal)}</td>
+    `;
+  }
+
+  // ─── INIT ────────────────────────────────────────────────────
+  buildMesSelects();
+
+  // Ativa botão de período correspondente ao mês atual
+  (function() {
+    const agora = new Date().getMonth() + 1;
+    const btn = document.querySelector(`.periodo-btn[data-ini="1"][data-fim="${agora}"]`);
+    if (!btn) {
+      document.querySelector('.periodo-btn[data-ini="1"][data-fim="12"]').classList.add('active');
+      meInicio = 1; meFim = 12;
+    } else {
+      btn.classList.add('active');
+      meInicio = 1; meFim = agora;
+    }
+    document.getElementById('mes-ini-sel').value = meInicio;
+    document.getElementById('mes-fim-sel').value  = meFim;
+  })();
+
+  carregar();
+</script>
+</body>
+</html>
