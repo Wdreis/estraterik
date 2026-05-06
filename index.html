@@ -481,6 +481,26 @@
     <!-- CONTENT -->
     <main>
 
+      <!-- PATRIMÔNIO DA OIKOS -->
+      <div class="section-title">Patrimônio da Oikos</div>
+      <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 28px;">
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">Patrimônio Total</div>
+          <div class="kpi-value" id="kpi-pl-total">—</div>
+          <div class="kpi-sub">Soma global dos consultores</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--teal)">
+          <div class="kpi-label">Base Oikos — BTG + XP</div>
+          <div class="kpi-value" id="kpi-pl-oikos">—</div>
+          <div class="kpi-sub">Patrimônio nas corretoras principais</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--ok)">
+          <div class="kpi-label">Outros Bancos</div>
+          <div class="kpi-value" id="kpi-pl-outros">—</div>
+          <div class="kpi-sub">Patrimônio em outros bancos</div>
+        </div>
+      </div>
+
       <!-- KPIs -->
       <div class="section-title">Visão Geral do Mês</div>
       <div class="kpi-grid">
@@ -604,7 +624,8 @@
   function renderSidebar() {
     const el = document.getElementById('sidebar-consultores');
     el.innerHTML = '';
-    consultores.forEach(c => {
+    const sorted = [...consultores].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    sorted.forEach(c => {
       const btn = document.createElement('button');
       btn.className = 'nav-item';
       btn.innerHTML = `<span class="nav-dot" style="background:${c.cor}"></span><span>${c.nome}</span>`;
@@ -652,6 +673,15 @@
     const totalReun    = Object.values(leadsMap).reduce((s,r) => s + (r.reunioes||0), 0);
     const metaNNM      = 25000000;
     const pctMeta      = totalNNM / metaNNM;
+
+    // PL breakdown (BTG, XP, Outros)
+    const totalPLbtg    = Object.values(capMap).reduce((s,r) => s + (r.pl_btg||0), 0);
+    const totalPLxp     = Object.values(capMap).reduce((s,r) => s + (r.pl_xp||0), 0);
+    const totalPLoutros = Object.values(capMap).reduce((s,r) => s + (r.pl_outros||0), 0);
+    const totalPLoikos  = totalPLbtg + totalPLxp;
+    document.getElementById('kpi-pl-total').textContent  = fmtM(totalPL);
+    document.getElementById('kpi-pl-oikos').textContent  = fmtM(totalPLoikos);
+    document.getElementById('kpi-pl-outros').textContent = fmtM(totalPLoutros);
 
     document.getElementById('pl-header').textContent = fmtM(totalPL);
     document.getElementById('kpi-nnm').textContent   = fmtM(totalNNM);
@@ -807,6 +837,17 @@
     const totais = {}; prodCols.forEach(k => totais[k] = 0);
     let totalGeral = 0;
 
+    // Ranking de produtos por receita total
+    const prodRankArr = consultores.map(c => ({
+      id: c.id,
+      total: prodCols.reduce((s,k) => s + ((prodMap[c.id]||{})[k]||0), 0)
+    })).sort((a,b) => b.total - a.total);
+    const prodRankMap = {};
+    prodRankArr.forEach((r,i) => prodRankMap[r.id] = i + 1);
+
+    const MEDALHA_COR = { 1:'#FFD700', 2:'#C0C0C0', 3:'#CD7F32' };
+    const MEDALHA_BG  = { 1:'rgba(255,215,0,0.08)', 2:'rgba(192,192,192,0.06)', 3:'rgba(205,127,50,0.06)' };
+
     consultores.forEach(c => {
       const p = prodMap[c.id] || {};
       const total = prodCols.reduce((s,k) => s + (p[k]||0), 0);
@@ -814,9 +855,14 @@
       prodCols.forEach(k => totais[k] += (p[k]||0));
       const metaP = p.meta_produtos || c.meta_produtos_mensal || 15000;
       const metaCls = total >= metaP ? 'ok' : total > 0 ? 'warn' : 'td-zero';
+      const rank = prodRankMap[c.id];
+      const badgeHtml = rank <= 3
+        ? `<span class="c-rank-badge ${rank===1?'g':rank===2?'s':'b'}" style="margin-right:4px">${rank}°</span>`
+        : '';
+      const rowStyle = rank <= 3 ? `style="background:${MEDALHA_BG[rank]}"` : '';
       tbEl.innerHTML += `
-        <tr>
-          <td><div class="td-dot" style="background:${c.cor}"></div>${c.nome}</td>
+        <tr ${rowStyle}>
+          <td>${badgeHtml}<div class="td-dot" style="background:${c.cor}"></div>${c.nome}</td>
           ${prodCols.map(k => `<td class="${(p[k]||0)===0?'td-zero':''}">${(p[k]||0)===0?'—':fmtR(p[k])}</td>`).join('')}
           <td class="td-total ${metaCls}">${total===0?'—':fmtR(total)}</td>
           <td class="td-zero">${fmtR(metaP)}</td>

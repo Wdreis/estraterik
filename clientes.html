@@ -416,7 +416,7 @@
         <div class="stat-chip"><div class="dot" style="background:#f59e0b"></div><div class="num" id="st-andamento">—</div><div class="lbl">Em Andamento</div></div>
         <div class="stat-chip"><div class="dot" style="background:#22c55e"></div><div class="num" id="st-finalizado">—</div><div class="lbl">Finalizados</div></div>
         <div class="stat-chip"><div class="dot" style="background:#ef4444"></div><div class="num" id="st-declinado">—</div><div class="lbl">Declinados</div></div>
-        <div class="stat-chip" style="margin-left:auto"><div class="num" id="st-receita" style="color:var(--gold2)">—</div><div class="lbl">Receita<br>em Estudos</div></div>
+        <div class="stat-chip" style="margin-left:auto"><div class="num" id="st-receita" style="color:var(--gold2)">—</div><div class="lbl">Receita Total<br>de Produtos</div></div>
       </div>
 
       <!-- FILTROS -->
@@ -754,7 +754,9 @@
     document.getElementById('st-andamento').textContent  = st('Em andamento');
     document.getElementById('st-finalizado').textContent = st('Finalizado');
     document.getElementById('st-declinado').textContent  = st('Declinado');
-    const receita = todosClientes.reduce((s,c) => s + num(c.valor_estudo), 0);
+    const receita = todosClientes.reduce((s,c) =>
+      s + num(c.valor_estudo) + num(c.valor_mensal_previdencia) + num(c.premio_mensal_seguro)
+        + num(c.valor_precatorio) + num(c.valor_pe) + num(c.valor_consorcio) + num(c.valor_juridico), 0);
     document.getElementById('st-receita').textContent = fmtR(receita);
   }
 
@@ -797,7 +799,8 @@
     tbody.innerHTML = slice.map(c => {
       const cons = consMap[c.consultor_id] || {};
       const prods = Object.keys(PRODUTOS_LABEL).filter(k => c[k]);
-      const receitaTotal = num(c.valor_estudo) + num(c.valor_precatorio) + num(c.valor_pe)
+      const receitaTotal = num(c.valor_estudo) + num(c.valor_mensal_previdencia) + num(c.premio_mensal_seguro)
+                         + num(c.valor_precatorio) + num(c.valor_pe)
                          + num(c.valor_consorcio) + num(c.valor_juridico);
       return `<tr>
         <td class="td-nome">${c.nome}<small>${c.pais_estado||''} ${c.indicado_por?'· via '+c.indicado_por:''}</small></td>

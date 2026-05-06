@@ -384,6 +384,10 @@
       <div class="section-title">Leads & Fechamentos</div>
       <div class="leads-grid" id="leads-grid"></div>
 
+      <!-- STVM DO MÊS -->
+      <div class="section-title" style="margin-top:26px">STVM — Transferências de Custódia</div>
+      <div id="stvm-section"></div>
+
       <!-- CLIENTES DO CONSULTOR -->
       <div class="section-title" style="margin-top:36px">Clientes <span id="clientes-count" style="font-size:11px;color:var(--muted);font-weight:500;margin-left:6px"></span></div>
       <div class="table-card">
@@ -421,13 +425,19 @@
       <button class="form-tab active" onclick="mudarTab('captacao', this)">Captação</button>
       <button class="form-tab" onclick="mudarTab('produtos', this)">Produtos</button>
       <button class="form-tab" onclick="mudarTab('leads', this)">Leads</button>
+      <button class="form-tab" onclick="mudarTab('stvm', this)">STVM</button>
     </div>
 
     <!-- TAB CAPTAÇÃO -->
     <div class="tab-pane active" id="tab-captacao">
       <div class="form-section-label">Patrimônio Líquido</div>
+      <div class="form-grid three">
+        <div class="form-group"><label>PL BTG (R$)</label><input type="number" id="e-pl-btg" placeholder="0" oninput="calcPLTotal()"></div>
+        <div class="form-group"><label>PL XP (R$)</label><input type="number" id="e-pl-xp" placeholder="0" oninput="calcPLTotal()"></div>
+        <div class="form-group"><label>PL Outros Bancos (R$)</label><input type="number" id="e-pl-outros" placeholder="0" oninput="calcPLTotal()"></div>
+      </div>
       <div class="form-grid">
-        <div class="form-group"><label>PL do Mês (R$)</label><input type="number" id="e-pl" placeholder="0"></div>
+        <div class="form-group"><label>PL Total (R$)</label><input type="number" id="e-pl" placeholder="0"></div>
         <div class="form-group"><label>Meta NNM Mensal (R$)</label><input type="number" id="e-meta-nnm" placeholder="0"></div>
       </div>
 
@@ -471,6 +481,20 @@
       </div>
     </div>
 
+    <!-- TAB STVM -->
+    <div class="tab-pane" id="tab-stvm">
+      <div class="form-section-label">STVM — Transferências de Custódia</div>
+      <div style="display:grid;grid-template-columns:1fr 120px 1fr 1fr 36px;gap:6px;margin-bottom:6px;padding:0 4px">
+        <span style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)">Cliente</span>
+        <span style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)">Valor (R$)</span>
+        <span style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)">Origem</span>
+        <span style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)">Corretora Destino</span>
+        <span></span>
+      </div>
+      <div id="stvm-lista"></div>
+      <button type="button" onclick="addSTVMRow()" style="margin-top:10px;background:none;border:1px dashed rgba(200,160,70,0.4);color:var(--gold);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;transition:all .15s" onmouseover="this.style.background='rgba(200,160,70,0.08)'" onmouseout="this.style.background='none'">＋ Adicionar STVM</button>
+    </div>
+
     <!-- TAB LEADS -->
     <div class="tab-pane" id="tab-leads">
       <div class="form-section-label">Reuniões & Contatos</div>
@@ -512,6 +536,7 @@
   let anoAtual = 2026, mesAtual = new Date().getMonth() + 1;
   let capData = null, prodData = null, leadsData = null;
   let capAnual = [], chartAnual = null;
+  let stvmData = [];
 
   const fmtM = v => { const a=Math.abs(v),s=v<0?'-':''; return a>=1e9?s+'R$ '+(a/1e9).toFixed(2)+'B':a>=1e6?s+'R$ '+(a/1e6).toFixed(2)+'M':a>=1e3?s+'R$ '+(a/1e3).toFixed(1)+'K':s+'R$ '+a.toFixed(0); };
   const fmtR = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
@@ -529,7 +554,7 @@
       return;
     }
 
-    const { data: cons } = await db.from('consultores').select('*').eq('ativo', true).order('id');
+    const { data: cons } = await db.from('consultores').select('*').eq('ativo', true).order('nome');
     todosConsultores = cons || [];
     consultor = todosConsultores.find(c => c.id === consultorId);
 
@@ -562,17 +587,19 @@
   async function carregar() {
     document.getElementById('periodo-label').textContent = MESES[mesAtual] + ' ' + anoAtual;
 
-    const [capRes, prodRes, leadsRes, capAnualRes] = await Promise.all([
+    const [capRes, prodRes, leadsRes, capAnualRes, stvmRes] = await Promise.all([
       db.from('captacao_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('produtos_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('leads_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('captacao_mensal').select('mes,nnm,captado,saida,pl').eq('consultor_id', consultorId).eq('ano', anoAtual).order('mes'),
+      db.from('stvm').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).order('created_at'),
     ]);
 
     capData   = capRes.data   || {};
     prodData  = prodRes.data  || {};
     leadsData = leadsRes.data || {};
     capAnual  = capAnualRes.data || [];
+    stvmData  = stvmRes.data  || [];
 
     renderPage();
   }
@@ -598,7 +625,11 @@
     document.getElementById('k-meta-sub').textContent = 'Meta: ' + fmtM(metaNNM);
 
     document.getElementById('k-pl').textContent = fmtM(pl);
-    document.getElementById('k-churn-sub').innerHTML = `Churn: <strong style="color:${churn>0.015?'var(--danger)':churn>0.008?'var(--warn)':'var(--ok)'}">${fmtP(churn)}</strong>`;
+    const plbtg = n(cap.pl_btg), plxp = n(cap.pl_xp), plout = n(cap.pl_outros);
+    const plBreakdown = (plbtg || plxp || plout)
+      ? `<span style="font-size:10px;opacity:0.7">BTG: ${fmtM(plbtg)} · XP: ${fmtM(plxp)} · Outros: ${fmtM(plout)}</span><br>`
+      : '';
+    document.getElementById('k-churn-sub').innerHTML = plBreakdown + `Churn: <strong style="color:${churn>0.015?'var(--danger)':churn>0.008?'var(--warn)':'var(--ok)'}">${fmtP(churn)}</strong>`;
 
     document.getElementById('k-reun').textContent = reun;
     document.getElementById('k-reun-sub').textContent = `Meta: ${metaR} — ${reun >= metaR ? '✅ atingido' : reun + ' realizadas'}`;
@@ -726,6 +757,7 @@
 
     // Clientes do consultor
     renderClientes();
+    renderSTVM();
   }
 
   async function renderClientes() {
@@ -771,6 +803,9 @@
 
     // Preenche campos
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+    set('e-pl-btg',      cap.pl_btg);
+    set('e-pl-xp',       cap.pl_xp);
+    set('e-pl-outros',   cap.pl_outros);
     set('e-pl',          cap.pl);
     set('e-meta-nnm',    cap.meta_nnm || consultor.meta_nnm_mensal);
     set('e-cap-btg',     cap.captado_btg);
@@ -803,6 +838,10 @@
     set('e-fech-outros', lead.fech_outros);
     set('e-bigdeal',     lead.clientes_bigdeal);
 
+    // Preenche STVM
+    document.getElementById('stvm-lista').innerHTML = '';
+    stvmData.forEach(e => addSTVMRow(e));
+
     document.getElementById('overlay').classList.add('open');
     document.getElementById('modal').classList.add('open');
     mudarTab('captacao', document.querySelector('.form-tab'));
@@ -833,9 +872,15 @@
     const saida    = saiBtg + saiXp;
     const nnm      = captado - saida;
 
+    const plBtg    = g('e-pl-btg');
+    const plXp     = g('e-pl-xp');
+    const plOutros = g('e-pl-outros');
+    const plTotal  = (plBtg + plXp + plOutros) > 0 ? (plBtg + plXp + plOutros) : g('e-pl');
+
     const capPayload = {
       consultor_id: consultorId, ano: anoAtual, mes: mesAtual,
-      pl: g('e-pl'), meta_nnm: g('e-meta-nnm'),
+      pl: plTotal, meta_nnm: g('e-meta-nnm'),
+      pl_btg: plBtg, pl_xp: plXp, pl_outros: plOutros,
       captado, saida, nnm,
       captado_btg: capBtg, saida_btg: saiBtg,
       captado_xp: capXp, saida_xp: saiXp,
@@ -865,17 +910,93 @@
       if (error) throw error;
     };
 
+    // Coleta entradas STVM do modal
+    const stvmRows   = document.querySelectorAll('.stvm-row');
+    const stvmPayload = Array.from(stvmRows).map(row => {
+      const ins = row.querySelectorAll('input');
+      return {
+        consultor_id: consultorId, ano: anoAtual, mes: mesAtual,
+        nome_cliente: ins[0].value.trim(),
+        valor: parseFloat(ins[1].value) || 0,
+        origem: ins[2].value.trim(),
+        corretora_destino: ins[3].value.trim(),
+      };
+    }).filter(r => r.nome_cliente);
+
     try {
       await Promise.all([
         upsert('captacao_mensal', capPayload),
         upsert('produtos_mensal', prodPayload),
         upsert('leads_mensal', leadPayload),
       ]);
+      // Substitui entradas STVM do mês
+      await db.from('stvm').delete().eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual);
+      if (stvmPayload.length > 0) await db.from('stvm').insert(stvmPayload);
+
       fecharModal();
       await carregar();
     } catch(e) {
       alert('Erro ao salvar: ' + e.message);
     }
+  }
+
+  // ── PL TOTAL AUTO-CÁLCULO ─────────────────────────────────
+  function calcPLTotal() {
+    const btg = parseFloat(document.getElementById('e-pl-btg').value) || 0;
+    const xp  = parseFloat(document.getElementById('e-pl-xp').value) || 0;
+    const out = parseFloat(document.getElementById('e-pl-outros').value) || 0;
+    const tot = btg + xp + out;
+    if (tot > 0) document.getElementById('e-pl').value = tot;
+  }
+
+  // ── STVM ──────────────────────────────────────────────────
+  function addSTVMRow(entry = {}) {
+    const div = document.createElement('div');
+    div.className = 'stvm-row';
+    div.style.cssText = 'display:grid;grid-template-columns:1fr 120px 1fr 1fr 36px;gap:6px;margin-bottom:8px;align-items:center';
+    const inp = (placeholder, val, type='text') =>
+      `<input type="${type}" placeholder="${placeholder}" value="${val||''}" style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:8px 10px;font-size:12px;font-family:inherit;width:100%;outline:none">`;
+    div.innerHTML =
+      inp('Nome do cliente', entry.nome_cliente) +
+      inp('Valor (R$)', entry.valor||'', 'number') +
+      inp('Origem (banco)', entry.origem) +
+      inp('Corretora destino', entry.corretora_destino) +
+      `<button onclick="this.closest('.stvm-row').remove()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;width:32px;height:32px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>`;
+    document.getElementById('stvm-lista').appendChild(div);
+  }
+
+  function renderSTVM() {
+    const el = document.getElementById('stvm-section');
+    if (!stvmData || !stvmData.length) {
+      el.innerHTML = `<div class="table-card" style="padding:18px 20px;text-align:center;color:var(--muted);font-size:13px">Nenhuma STVM registrada neste mês.</div>`;
+      return;
+    }
+    const totalVal = stvmData.reduce((s,r) => s + (r.valor||0), 0);
+    el.innerHTML = `
+      <div class="table-card">
+        <table>
+          <thead><tr>
+            <th style="text-align:left">Cliente</th>
+            <th style="text-align:right">Valor</th>
+            <th style="text-align:left">Origem</th>
+            <th style="text-align:left">Corretora Destino</th>
+          </tr></thead>
+          <tbody>
+            ${stvmData.map(r => `<tr>
+              <td style="font-weight:600">${r.nome_cliente||'—'}</td>
+              <td style="text-align:right;font-weight:700;color:var(--gold2)">${fmtM(r.valor||0)}</td>
+              <td style="text-align:left;color:var(--muted)">${r.origem||'—'}</td>
+              <td style="text-align:left;color:var(--muted)">${r.corretora_destino||'—'}</td>
+            </tr>`).join('')}
+          </tbody>
+          <tfoot><tr style="border-top:1px solid var(--border)">
+            <td style="padding:10px 16px;font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold);font-weight:700;background:rgba(0,0,0,0.15)">Total STVM</td>
+            <td style="padding:10px 16px;text-align:right;font-weight:800;color:var(--gold2);background:rgba(0,0,0,0.15)">${fmtM(totalVal)}</td>
+            <td style="background:rgba(0,0,0,0.15)"></td>
+            <td style="background:rgba(0,0,0,0.15)"></td>
+          </tr></tfoot>
+        </table>
+      </div>`;
   }
 
   // ── NAVEGAÇÃO ──────────────────────────────────────────────
