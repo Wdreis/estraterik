@@ -530,7 +530,7 @@
   const MESES   = ['','Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const MESES_S = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
-  let anoAtual = 2026;
+  let anoAtual = new Date().getFullYear();
   let meInicio = 1, meFim = new Date().getMonth() + 1;
   let consultores = [];
   let chartNNM = null, chartPL = null;

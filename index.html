@@ -595,7 +595,8 @@
   const { createClient } = supabase;
   const db = createClient(SUPA_URL, SUPA_KEY);
 
-  let anoAtual = 2026, mesAtual = 4;
+  const _hoje = new Date();
+  let anoAtual = _hoje.getFullYear(), mesAtual = _hoje.getMonth() + 1;
   let consultores = [];
   let chartBar = null, chartDoughnut = null;
 
