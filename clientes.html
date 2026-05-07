@@ -464,8 +464,8 @@
               <th>Produtos</th>
               <th>Indicação</th>
               <th>1ª Reunião</th>
-              <th style="text-align:right">Val. Estudo</th>
-              <th style="text-align:right">Receita Total</th>
+              <th style="text-align:right">Captado</th>
+              <th style="text-align:right">Receita Produtos</th>
               <th></th>
             </tr>
           </thead>
@@ -637,11 +637,15 @@
 
       <div class="form-section">
         <div class="form-section-title">Fechamentos — Valores dos Negócios</div>
+        <p style="font-size:11px;color:var(--ok);margin-bottom:14px;display:flex;align-items:center;gap:6px">
+          <span>✦</span> Os valores preenchidos aqui sobem automaticamente para os painéis mensais do consultor.
+        </p>
 
         <div class="fechamento-group">
-          <div class="fechamento-titulo">💼 Investimento</div>
-          <div class="form-grid full">
+          <div class="fechamento-titulo">💼 Investimento (Captação)</div>
+          <div class="form-grid">
             <div class="form-group"><label>Data de Fechamento</label><input type="date" id="f-dt-invest"></div>
+            <div class="form-group"><label>Valor Captado (R$)</label><input type="number" id="f-valor-invest" placeholder="0" step="0.01"></div>
           </div>
         </div>
         <div class="fechamento-group">
@@ -814,7 +818,7 @@
         <td><div class="produtos-flags">${prods.length?prods.map(k=>`<span class="prod-flag">${PRODUTOS_LABEL[k]}</span>`).join(''):'<span style="color:var(--muted2);font-size:12px">—</span>'}</div></td>
         <td style="color:var(--muted);font-size:12px">${fmtD(c.data_indicacao)}</td>
         <td style="color:var(--muted);font-size:12px">${fmtD(c.data_1a_reuniao)}</td>
-        <td class="valor-cell ${!c.valor_estudo?'zero':''}">${fmtR(c.valor_estudo)}</td>
+        <td class="valor-cell ${!c.valor_investimento?'zero':''}">${fmtR(c.valor_investimento)}</td>
         <td class="valor-cell ${!receitaTotal?'zero':''}">${receitaTotal?fmtR(receitaTotal):'—'}</td>
         <td>
           <button class="btn-edit" onclick='abrirDrawer(${JSON.stringify(c)})'>✏️ Editar</button>
@@ -866,7 +870,8 @@
       document.getElementById('f-valor-estudo').value   = c.valor_estudo||'';
       document.getElementById('f-pgto-estudo').value    = c.data_pgto_estudo||'';
       document.getElementById('f-andamento-estudo').value = c.andamento_estudo||'';
-      document.getElementById('f-dt-invest').value      = c.data_fechamento_investimento||'';
+      document.getElementById('f-dt-invest').value       = c.data_fechamento_investimento||'';
+      document.getElementById('f-valor-invest').value    = c.valor_investimento||'';
       document.getElementById('f-dt-prev').value        = c.data_fechamento_previdencia||'';
       document.getElementById('f-valor-prev').value     = c.valor_mensal_previdencia||'';
       document.getElementById('f-dt-seguro').value      = c.data_fechamento_seguro||'';
@@ -916,6 +921,14 @@
   async function salvarCliente(e) {
     e.preventDefault();
     const id = document.getElementById('f-id').value;
+
+    // Carrega dados antigos ANTES de salvar (para calcular delta)
+    let clienteAntigo = null;
+    if (id) {
+      const { data } = await db.from('clientes').select('*').eq('id', id).maybeSingle();
+      clienteAntigo = data;
+    }
+
     const payload = {
       nome: document.getElementById('f-nome').value.trim(),
       consultor_id: orNull(document.getElementById('f-consultor').value)||null,
@@ -945,6 +958,7 @@
       data_pgto_estudo: orNull(document.getElementById('f-pgto-estudo').value),
       andamento_estudo: orNull(document.getElementById('f-andamento-estudo').value),
       data_fechamento_investimento: orNull(document.getElementById('f-dt-invest').value),
+      valor_investimento: num(document.getElementById('f-valor-invest').value),
       data_fechamento_previdencia: orNull(document.getElementById('f-dt-prev').value),
       valor_mensal_previdencia: num(document.getElementById('f-valor-prev').value),
       data_fechamento_seguro: orNull(document.getElementById('f-dt-seguro').value),
@@ -965,15 +979,94 @@
       : await db.from('clientes').insert(payload);
 
     if (error) { alert('Erro ao salvar: ' + error.message); return; }
+
+    // Sincroniza automaticamente os painéis mensais
+    await sincronizarMensais(clienteAntigo, payload);
+
     fecharDrawer();
     await carregarClientes();
   }
 
   async function excluirCliente(id, nome) {
     if (!confirm(`Excluir o cliente "${nome}"?\n\nEsta ação não pode ser desfeita.`)) return;
+    const { data: clienteAntigo } = await db.from('clientes').select('*').eq('id', id).maybeSingle();
     const { error } = await db.from('clientes').delete().eq('id', id);
     if (error) { alert('Erro: ' + error.message); return; }
+    // Remove contribuições do cliente dos painéis mensais
+    if (clienteAntigo) await sincronizarMensais(clienteAntigo, {});
     await carregarClientes();
+  }
+
+  // ─── SYNC: cliente → painéis mensais ────────────────────────
+  // Extrai {ano, mes} de uma string de data 'YYYY-MM-DD'
+  function ym(dateStr) {
+    if (!dateStr) return null;
+    const parts = dateStr.split('-');
+    return { ano: parseInt(parts[0]), mes: parseInt(parts[1]) };
+  }
+
+  // Aplica delta em captacao_mensal.captado e recalcula nnm
+  async function deltaCaptacao(consultorId, ano, mes, delta) {
+    if (!delta || !consultorId) return;
+    const { data: row } = await db.from('captacao_mensal')
+      .select('captado,saida,nnm').eq('consultor_id', consultorId).eq('ano', ano).eq('mes', mes).maybeSingle();
+    const oldCaptado = num((row || {}).captado);
+    const oldSaida   = num((row || {}).saida);
+    const newCaptado = Math.max(0, oldCaptado + delta);
+    const newNNM     = newCaptado - oldSaida;
+    await db.from('captacao_mensal').upsert(
+      { consultor_id: consultorId, ano, mes, captado: newCaptado, nnm: newNNM },
+      { onConflict: 'consultor_id,ano,mes' }
+    );
+  }
+
+  // Aplica delta em produtos_mensal para uma coluna específica
+  async function deltaProdutos(consultorId, ano, mes, coluna, delta) {
+    if (!delta || !consultorId) return;
+    const { data: row } = await db.from('produtos_mensal')
+      .select(coluna).eq('consultor_id', consultorId).eq('ano', ano).eq('mes', mes).maybeSingle();
+    const current = num((row || {})[coluna]);
+    const newVal  = Math.max(0, current + delta);
+    await db.from('produtos_mensal').upsert(
+      { consultor_id: consultorId, ano, mes, [coluna]: newVal },
+      { onConflict: 'consultor_id,ano,mes' }
+    );
+  }
+
+  // Sincroniza cliente → tabelas mensais usando delta (novo - antigo)
+  // clienteAntigo = dados antes de salvar (null para novo cliente)
+  // novoPayload   = dados salvos ({} para exclusão)
+  async function sincronizarMensais(clienteAntigo, novoPayload) {
+    const old = clienteAntigo || {};
+    const nvo = novoPayload   || {};
+    const oldConsId = old.consultor_id ? parseInt(old.consultor_id) : null;
+    const newConsId = nvo.consultor_id ? parseInt(nvo.consultor_id) : null;
+
+    // ── Investimento → captacao_mensal.captado ──────────────────
+    const oldInvYM  = ym(old.data_fechamento_investimento);
+    const newInvYM  = ym(nvo.data_fechamento_investimento);
+    const oldInvVal = num(old.valor_investimento);
+    const newInvVal = num(nvo.valor_investimento);
+    if (oldConsId && oldInvYM && oldInvVal) await deltaCaptacao(oldConsId, oldInvYM.ano, oldInvYM.mes, -oldInvVal);
+    if (newConsId && newInvYM && newInvVal) await deltaCaptacao(newConsId, newInvYM.ano, newInvYM.mes, +newInvVal);
+
+    // ── Produtos → produtos_mensal ──────────────────────────────
+    const MAP = [
+      ['data_pgto_estudo',            'valor_estudo',             'estudos'       ],
+      ['data_fechamento_previdencia', 'valor_mensal_previdencia', 'previdencia'   ],
+      ['data_fechamento_seguro',      'premio_mensal_seguro',     'seguros'       ],
+      ['data_fechamento_pe',          'valor_pe',                 'private_equity'],
+      ['data_consorcio',              'valor_consorcio',          'consorcio'     ],
+      ['data_juridico',               'valor_juridico',           'juridico'      ],
+    ];
+    for (const [dateF, valF, col] of MAP) {
+      const oldYM  = ym(old[dateF]);
+      const newYM  = ym(nvo[dateF]);
+      const oldVal = num(old[valF]);
+      const newVal = num(nvo[valF]);
+      if (oldConsId && oldYM && oldVal) await deltaProdutos(oldConsId, oldYM.ano, oldYM.mes, col, -oldVal);
+      if (newConsId && newYM && newVal) await deltaProdutos(newConsId, newYM.ano, newYM.mes, col, +newVal);
+    }
   }
 
   init();
