@@ -390,7 +390,7 @@
     <!-- CONTENT -->
     <main>
 
-      <!-- SEÇÃO 0: Patrimônio da Oikos -->
+      <!-- 1: PATRIMÔNIO OIKOS -->
       <div class="section-title">Patrimônio da Oikos</div>
       <div class="kpi-grid-4">
         <div class="kpi-card" style="--kpi-color:var(--gold)">
@@ -415,9 +415,24 @@
         </div>
       </div>
 
-      <!-- SEÇÃO 1: KPIs -->
+      <!-- 2: CRESCIMENTO DE PATRIMÔNIO -->
+      <div class="section-title">Crescimento de Patrimônio — PL por Corretora</div>
+      <div class="chart-card">
+        <div class="chart-title">
+          Evolução do PL — Ano Completo <span id="ano-pl-label">2026</span>
+          <span id="pl-ultimo-label">Último: —</span>
+        </div>
+        <div class="chart-wrap" style="height:280px"><canvas id="chartPL"></canvas></div>
+      </div>
+
+      <!-- 3: KPIs DO PERÍODO -->
       <div class="section-title">KPIs do Período</div>
       <div class="kpi-grid-6" id="kpi-grid">
+        <div class="kpi-card" style="--kpi-color:var(--teal)">
+          <div class="kpi-label">Captação Total do Período</div>
+          <div class="kpi-value" id="kpi-captado">—</div>
+          <div class="kpi-sub" id="kpi-captado-sub">—</div>
+        </div>
         <div class="kpi-card" style="--kpi-color:var(--gold)">
           <div class="kpi-label">NNM Total do Período</div>
           <div class="kpi-value" id="kpi-nnm">—</div>
@@ -427,11 +442,6 @@
           <div class="kpi-label">% da Meta NNM</div>
           <div class="kpi-value" id="kpi-meta-pct">—</div>
           <div class="kpi-sub" id="kpi-meta-sub">—</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:var(--teal)">
-          <div class="kpi-label">Captação Total</div>
-          <div class="kpi-value" id="kpi-captado">—</div>
-          <div class="kpi-sub" id="kpi-captado-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--danger)">
           <div class="kpi-label">Saída Total</div>
@@ -450,37 +460,27 @@
         </div>
       </div>
 
-      <!-- SEÇÃO 2: Evolução Anual -->
-      <div class="section-title">Evolução Anual — NNM Mensal</div>
+      <!-- 4: EVOLUÇÃO ANUAL — CAPTADO MENSAL -->
+      <div class="section-title">Evolução Anual — Captado Mensal</div>
       <div class="chart-card">
         <div class="chart-title">
-          Net New Money — Jan a Dez <span id="ano-chart-label">2026</span>
-          <span id="ytd-label">YTD: —</span>
+          Captado Total — Jan a Dez <span id="ano-chart-label">2026</span>
+          <span id="ytd-label">Captado no período: —</span>
         </div>
         <div class="chart-wrap"><canvas id="chartNNM"></canvas></div>
       </div>
 
-      <!-- SEÇÃO 3: Crescimento de PL -->
-      <div class="section-title">Crescimento de Patrimônio — PL por Corretora</div>
-      <div class="chart-card">
-        <div class="chart-title">
-          Evolução do PL — Ano Completo <span id="ano-pl-label">2026</span>
-          <span id="pl-ultimo-label">Último: —</span>
-        </div>
-        <div class="chart-wrap" style="height:280px"><canvas id="chartPL"></canvas></div>
-      </div>
-
-      <!-- SEÇÃO 4: Ranking -->
-      <div class="section-title">Ranking do Período — Net New Money</div>
+      <!-- 5: RANKING DO PERÍODO -->
+      <div class="section-title">Ranking do Período — Captação Total</div>
       <div class="table-card" style="margin-bottom:28px">
         <table id="tabela-ranking">
           <thead>
             <tr>
               <th class="th-center" style="width:50px">Rank</th>
               <th>Consultor</th>
-              <th>NNM</th>
-              <th>% Meta</th>
               <th>Captado</th>
+              <th>% Meta NNM</th>
+              <th>NNM</th>
               <th>Saído</th>
               <th>Rec. Produtos</th>
               <th>Reuniões</th>
@@ -490,15 +490,15 @@
         </table>
       </div>
 
-      <!-- SEÇÃO 5: Detalhamento Mensal -->
+      <!-- 6: DETALHAMENTO MENSAL -->
       <div class="section-title">Detalhamento Mensal do Período</div>
       <div class="table-card" style="margin-bottom:28px">
         <table id="tabela-mensal">
           <thead>
             <tr>
               <th>Mês</th>
-              <th>NNM</th>
               <th>Captado</th>
+              <th>NNM</th>
               <th>Saído</th>
               <th>PL</th>
               <th>Rec. Produtos</th>
@@ -745,10 +745,10 @@
     renderMensalTable(cap, prod, leads, metaNNM);
   }
 
-  // ─── CHART NNM ───────────────────────────────────────────────
+  // ─── CHART CAPTADO ───────────────────────────────────────────
   function renderChartNNM(capAnual) {
-    const nnmMes = {};
-    capAnual.forEach(r => { nnmMes[r.mes] = (nnmMes[r.mes] || 0) + n(r.nnm); });
+    const capMes = {};
+    capAnual.forEach(r => { capMes[r.mes] = (capMes[r.mes] || 0) + n(r.captado); });
 
     const labels = MESES_S.slice(1);
     const data   = [];
@@ -756,23 +756,23 @@
     const borders = [];
 
     for (let m = 1; m <= 12; m++) {
-      const val = nnmMes[m] !== undefined ? nnmMes[m] : null;
+      const val = capMes[m] !== undefined ? capMes[m] : null;
       data.push(val);
       const inPeriod = m >= meInicio && m <= meFim;
       if (val === null) {
         colors.push('rgba(200,160,70,0.08)');
         borders.push('transparent');
       } else if (inPeriod) {
-        colors.push(val >= 0 ? 'rgba(200,160,70,0.6)' : 'rgba(239,68,68,0.6)');
-        borders.push(val >= 0 ? '#C8A046' : '#ef4444');
+        colors.push('rgba(40,80,90,0.8)');
+        borders.push('#28505A');
       } else {
         colors.push('rgba(200,160,70,0.12)');
         borders.push('rgba(200,160,70,0.2)');
       }
     }
 
-    const ytd = data.filter((v, i) => v !== null && (i+1) >= meInicio && (i+1) <= meFim).reduce((s,v) => s+v, 0);
-    document.getElementById('ytd-label').textContent = 'YTD período: ' + fmtM(ytd);
+    const total = data.filter((v, i) => v !== null && (i+1) >= meInicio && (i+1) <= meFim).reduce((s,v) => s+v, 0);
+    document.getElementById('ytd-label').textContent = 'Captado no período: ' + fmtM(total);
 
     if (chartNNM) chartNNM.destroy();
     chartNNM = new Chart(document.getElementById('chartNNM'), {
@@ -780,7 +780,7 @@
       data: {
         labels,
         datasets: [{
-          label: 'NNM (R$)',
+          label: 'Captado (R$)',
           data,
           backgroundColor: colors,
           borderColor: borders,
@@ -857,15 +857,17 @@
   function renderRankingTable(consAgg, numMeses, metaTotalNNM) {
     const metaPorConsultor = 25000000 / (consultores.length || 1) * numMeses;
 
-    const ordenado = [...consultores].sort((a, b) => (consAgg[b.id]||{}).nnm - (consAgg[a.id]||{}).nnm);
+    // Ordenado por captado (foco principal)
+    const ordenado = [...consultores].sort((a, b) => (consAgg[b.id]||{}).captado - (consAgg[a.id]||{}).captado);
     const tbody = document.getElementById('ranking-body');
     tbody.innerHTML = '';
 
     ordenado.forEach((c, i) => {
-      const agg  = consAgg[c.id] || {};
-      const nnm  = agg.nnm || 0;
-      const pct  = metaPorConsultor > 0 ? nnm / metaPorConsultor : 0;
-      const rank = i + 1;
+      const agg     = consAgg[c.id] || {};
+      const captado = agg.captado || 0;
+      const nnm     = agg.nnm || 0;
+      const pct     = metaPorConsultor > 0 ? nnm / metaPorConsultor : 0;
+      const rank    = i + 1;
       const badgeClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
       const rankLabel  = rank <= 3
         ? `<span class="rank-badge ${badgeClass}">${rank}º</span>`
@@ -876,9 +878,9 @@
       tbody.innerHTML += `<tr>
         <td class="td-center">${rankLabel}</td>
         <td><span class="rank-dot" style="background:${c.cor}"></span>${c.nome}</td>
-        <td class="${nnmClass}">${fmtM(nnm)}</td>
+        <td style="font-weight:700;color:var(--ok)">${fmtM(captado)}</td>
         <td class="${pctClass}">${fmtP(pct)}</td>
-        <td>${fmtM(agg.captado || 0)}</td>
+        <td class="${nnmClass}">${fmtM(nnm)}</td>
         <td class="${(agg.saida||0) > 0 ? 'td-warn' : ''}">${fmtM(agg.saida || 0)}</td>
         <td>${fmtR(agg.produtos || 0)}</td>
         <td>${agg.reunioes || 0}</td>
@@ -932,8 +934,8 @@
 
       tbody.innerHTML += `<tr>
         <td style="font-weight:600">${MESES_S[m]} ${anoAtual}</td>
+        <td style="font-weight:700;color:var(--ok)">${fmtM(d.captado)}</td>
         <td class="${nnmCls}">${fmtM(d.nnm)}</td>
-        <td>${fmtM(d.captado)}</td>
         <td class="${d.saida>0?'td-warn':''}">${fmtM(d.saida)}</td>
         <td>${d.pl > 0 ? fmtM(d.pl) : '<span class="td-zero">—</span>'}</td>
         <td>${d.produtos > 0 ? fmtR(d.produtos) : '<span class="td-zero">—</span>'}</td>
@@ -947,8 +949,8 @@
 
     document.getElementById('mensal-total').innerHTML = `
       <td>TOTAL / MÉDIA</td>
+      <td style="font-weight:800;color:var(--ok)">${fmtM(sCap)}</td>
       <td class="${sNNM>=0?'td-pos':'td-neg'}" style="font-weight:800">${fmtM(sNNM)}</td>
-      <td style="font-weight:800">${fmtM(sCap)}</td>
       <td style="font-weight:800">${fmtM(sSai)}</td>
       <td style="font-weight:700;color:var(--muted)">${lastPL > 0 ? fmtM(lastPL) : '—'}</td>
       <td style="font-weight:800">${fmtR(sProd)}</td>
