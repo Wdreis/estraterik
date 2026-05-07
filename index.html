@@ -504,6 +504,21 @@
           <div class="kpi-value" id="kpi-pl-outros">—</div>
           <div class="kpi-sub">Patrimônio em outros bancos</div>
         </div>
+        <div class="kpi-card" style="--kpi-color:#3B82F6">
+          <div class="kpi-label">Patrimônio Total BTG</div>
+          <div class="kpi-value" id="kpi-pl-btg">—</div>
+          <div class="kpi-sub">Total sob custódia BTG</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#EF4444">
+          <div class="kpi-label">Patrimônio Total XP</div>
+          <div class="kpi-value" id="kpi-pl-xp">—</div>
+          <div class="kpi-sub">Total sob custódia XP</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#F59E0B">
+          <div class="kpi-label">Patrimônio Total Outras Casas</div>
+          <div class="kpi-value" id="kpi-pl-outras-casas">—</div>
+          <div class="kpi-sub">Total em outras corretoras</div>
+        </div>
       </div>
 
       <!-- KPIs -->
@@ -537,7 +552,7 @@
 
       <!-- CARDS -->
       <br>
-      <div class="section-title">Consultores</div>
+      <div class="section-title">Ranking — Captação Consultores</div>
       <div class="cards-grid cards-section" id="cards-grid"></div>
 
       <!-- CHARTS -->
@@ -665,9 +680,12 @@
     const totalPLxp     = Object.values(capMap).reduce((s,r) => s + (r.pl_xp   || r.captado_xp   || 0), 0);
     const totalPLoutros = Object.values(capMap).reduce((s,r) => s + (r.pl_outros|| (r.captado_outros||0) + (r.captado_int||0)), 0);
     const totalPLoikos  = totalPLbtg + totalPLxp;
-    document.getElementById('kpi-pl-total').textContent  = fmtM(totalPL);
-    document.getElementById('kpi-pl-oikos').textContent  = fmtM(totalPLoikos);
-    document.getElementById('kpi-pl-outros').textContent = fmtM(totalPLoutros);
+    document.getElementById('kpi-pl-total').textContent        = fmtM(totalPL);
+    document.getElementById('kpi-pl-oikos').textContent        = fmtM(totalPLoikos);
+    document.getElementById('kpi-pl-outros').textContent       = fmtM(totalPLoutros);
+    document.getElementById('kpi-pl-btg').textContent          = fmtM(totalPLbtg);
+    document.getElementById('kpi-pl-xp').textContent           = fmtM(totalPLxp);
+    document.getElementById('kpi-pl-outras-casas').textContent = fmtM(totalPLoutros);
 
     document.getElementById('pl-header').textContent = fmtM(totalPL);
     document.getElementById('kpi-nnm').textContent   = fmtM(totalNNM);
