@@ -161,6 +161,11 @@
     .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
     /* ─── KPI GRID ─── */
+    .kpi-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px; margin-bottom: 28px;
+    }
     .kpi-grid-6 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -267,6 +272,7 @@
 
     /* ─── RESPONSIVE ─── */
     @media (max-width: 1200px) {
+      .kpi-grid-4 { grid-template-columns: repeat(2, 1fr); }
       .kpi-grid-6 { grid-template-columns: repeat(2, 1fr); }
     }
     @media (max-width: 900px) {
@@ -281,6 +287,7 @@
     @media (max-width: 700px) {
       main { padding: 16px; }
       .topbar { padding: 12px 16px; }
+      .kpi-grid-4 { grid-template-columns: 1fr; }
       .kpi-grid-6 { grid-template-columns: 1fr; }
       .custom-range { flex-wrap: wrap; }
     }
@@ -383,6 +390,31 @@
     <!-- CONTENT -->
     <main>
 
+      <!-- SEÇÃO 0: Patrimônio da Oikos -->
+      <div class="section-title">Patrimônio da Oikos</div>
+      <div class="kpi-grid-4">
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">PL Total Oikos</div>
+          <div class="kpi-value" id="kpi-pl-total">—</div>
+          <div class="kpi-sub" id="kpi-pl-total-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#3B82F6">
+          <div class="kpi-label">Patrimônio BTG</div>
+          <div class="kpi-value" id="kpi-pl-btg">—</div>
+          <div class="kpi-sub" id="kpi-pl-btg-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#EF4444">
+          <div class="kpi-label">Patrimônio XP</div>
+          <div class="kpi-value" id="kpi-pl-xp">—</div>
+          <div class="kpi-sub" id="kpi-pl-xp-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#F59E0B">
+          <div class="kpi-label">Outras Corretoras</div>
+          <div class="kpi-value" id="kpi-pl-outros">—</div>
+          <div class="kpi-sub" id="kpi-pl-outros-sub">—</div>
+        </div>
+      </div>
+
       <!-- SEÇÃO 1: KPIs -->
       <div class="section-title">KPIs do Período</div>
       <div class="kpi-grid-6" id="kpi-grid">
@@ -426,6 +458,16 @@
           <span id="ytd-label">YTD: —</span>
         </div>
         <div class="chart-wrap"><canvas id="chartNNM"></canvas></div>
+      </div>
+
+      <!-- SEÇÃO 3: Crescimento de PL -->
+      <div class="section-title">Crescimento de Patrimônio — PL por Corretora</div>
+      <div class="chart-card">
+        <div class="chart-title">
+          Evolução do PL — Ano Completo <span id="ano-pl-label">2026</span>
+          <span id="pl-ultimo-label">Último: —</span>
+        </div>
+        <div class="chart-wrap" style="height:280px"><canvas id="chartPL"></canvas></div>
       </div>
 
       <!-- SEÇÃO 4: Ranking -->
@@ -491,7 +533,7 @@
   let anoAtual = 2026;
   let meInicio = 1, meFim = new Date().getMonth() + 1;
   let consultores = [];
-  let chartNNM = null;
+  let chartNNM = null, chartPL = null;
 
   const fmtM = v => {
     const abs = Math.abs(v), sig = v < 0 ? '-' : '';
@@ -598,7 +640,7 @@
           .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
         db.from('leads_mensal').select('*')
           .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
-        db.from('captacao_mensal').select('mes,nnm,captado,saida,pl')
+        db.from('captacao_mensal').select('mes,nnm,captado,saida,pl,pl_btg,pl_xp,pl_outros')
           .eq('ano', anoAtual).order('mes'),
       ]);
 
@@ -630,10 +672,15 @@
     const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity','offshore','outros'];
     const totProd = prod.reduce((s, r) => s + PROD_KEYS.reduce((ps, k) => ps + n(r[k]), 0), 0);
 
-    // PL = último mês disponível no período
+    // PL = último mês disponível no período (patrimônio é saldo, não fluxo)
     const capMesesNoperiodo = cap.filter(r => r.mes >= meInicio && r.mes <= meFim);
-    const ultimoCapRow = capMesesNoperiodo.sort((a,b) => b.mes - a.mes)[0];
-    const ultimoPL = ultimoCapRow ? cap.filter(r => r.mes === ultimoCapRow.mes).reduce((s,r) => s + n(r.pl), 0) : 0;
+    const ultimoCapRow   = capMesesNoperiodo.sort((a,b) => b.mes - a.mes)[0];
+    const ultimoMes      = ultimoCapRow ? ultimoCapRow.mes : null;
+    const capUltimoMes   = ultimoMes ? cap.filter(r => r.mes === ultimoMes) : [];
+    const ultimoPL       = capUltimoMes.reduce((s,r) => s + n(r.pl), 0);
+    const ultimoPLbtg    = capUltimoMes.reduce((s,r) => s + n(r.pl_btg), 0);
+    const ultimoPLxp     = capUltimoMes.reduce((s,r) => s + n(r.pl_xp), 0);
+    const ultimoPLoutros = capUltimoMes.reduce((s,r) => s + n(r.pl_outros), 0);
 
     // Por consultor
     const consAgg = {};
@@ -675,8 +722,21 @@
     document.getElementById('kpi-reunioes').textContent = totReun;
     document.getElementById('kpi-reunioes-sub').textContent = `${consultores.length} consultores no período`;
 
+    // Cards de PL
+    const nomePos   = ultimoMes ? `Posição em ${MESES[ultimoMes]} ${anoAtual}` : '—';
+    const subCorret = v => (v === 0 && ultimoPL > 0) ? 'Preencha via Editar Mês' : nomePos;
+    document.getElementById('kpi-pl-total').textContent      = ultimoPL > 0 ? fmtM(ultimoPL) : '—';
+    document.getElementById('kpi-pl-total-sub').textContent  = nomePos;
+    document.getElementById('kpi-pl-btg').textContent        = ultimoPLbtg > 0 ? fmtM(ultimoPLbtg) : '—';
+    document.getElementById('kpi-pl-btg-sub').textContent    = subCorret(ultimoPLbtg);
+    document.getElementById('kpi-pl-xp').textContent         = ultimoPLxp > 0 ? fmtM(ultimoPLxp) : '—';
+    document.getElementById('kpi-pl-xp-sub').textContent     = subCorret(ultimoPLxp);
+    document.getElementById('kpi-pl-outros').textContent     = ultimoPLoutros > 0 ? fmtM(ultimoPLoutros) : '—';
+    document.getElementById('kpi-pl-outros-sub').textContent = subCorret(ultimoPLoutros);
+
     // Charts
     renderChartNNM(capAnual);
+    renderChartPL(capAnual);
 
     // Ranking
     renderRankingTable(consAgg, numMeses, metaNNM);
@@ -733,6 +793,57 @@
         plugins: {
           legend: { display: false },
           tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ' ' + fmtR(ctx.raw) : ' Sem dados' } }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
+          y: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } }
+        }
+      }
+    });
+  }
+
+  // ─── CHART PL ────────────────────────────────────────────────
+  function renderChartPL(capAnual) {
+    const plSet = new Set(capAnual.map(r => r.mes));
+    const plMes = {}, btgMes = {}, xpMes = {}, outrosMes = {};
+    capAnual.forEach(r => {
+      plMes[r.mes]     = (plMes[r.mes]     || 0) + n(r.pl);
+      btgMes[r.mes]    = (btgMes[r.mes]    || 0) + n(r.pl_btg);
+      xpMes[r.mes]     = (xpMes[r.mes]     || 0) + n(r.pl_xp);
+      outrosMes[r.mes] = (outrosMes[r.mes] || 0) + n(r.pl_outros);
+    });
+
+    const labels = MESES_S.slice(1);
+    const dataPL = [], dataBTG = [], dataXP = [], dataOutros = [];
+    for (let m = 1; m <= 12; m++) {
+      dataPL.push(plSet.has(m)     ? plMes[m]     : null);
+      dataBTG.push(plSet.has(m)    ? btgMes[m]    : null);
+      dataXP.push(plSet.has(m)     ? xpMes[m]     : null);
+      dataOutros.push(plSet.has(m) ? outrosMes[m] : null);
+    }
+
+    const lastTotal = dataPL.filter(v => v !== null).slice(-1)[0] || 0;
+    document.getElementById('pl-ultimo-label').textContent = 'Último: ' + fmtM(lastTotal);
+    document.getElementById('ano-pl-label').textContent    = anoAtual;
+
+    if (chartPL) chartPL.destroy();
+    chartPL = new Chart(document.getElementById('chartPL'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'PL Total',       data: dataPL,     borderColor: '#C8A046', backgroundColor: 'rgba(200,160,70,0.06)', borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 6, tension: 0.35, fill: false, spanGaps: true },
+          { label: 'BTG',            data: dataBTG,    borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.04)',  borderWidth: 2,   pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false, spanGaps: true },
+          { label: 'XP',             data: dataXP,     borderColor: '#EF4444', backgroundColor: 'rgba(239,68,68,0.04)',   borderWidth: 2,   pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false, spanGaps: true },
+          { label: 'Outras Casas',   data: dataOutros, borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.04)',  borderWidth: 2,   pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false, spanGaps: true },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: true, position: 'top', labels: { color: 'rgba(230,228,225,0.65)', font: { family: 'Jost', size: 11 }, padding: 16, boxWidth: 16, usePointStyle: true } },
+          tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ' ' + ctx.dataset.label + ': ' + fmtM(ctx.raw) : null } }
         },
         scales: {
           x: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
