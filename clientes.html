@@ -1020,6 +1020,19 @@
     );
   }
 
+  // Aplica delta em leads_mensal para uma coluna específica
+  async function deltaLeads(consultorId, ano, mes, campo, delta) {
+    if (!delta || !consultorId) return;
+    const { data: row } = await db.from('leads_mensal')
+      .select(campo).eq('consultor_id', consultorId).eq('ano', ano).eq('mes', mes).maybeSingle();
+    const current = num((row || {})[campo]);
+    const newVal  = Math.max(0, current + delta);
+    await db.from('leads_mensal').upsert(
+      { consultor_id: consultorId, ano, mes, [campo]: newVal },
+      { onConflict: 'consultor_id,ano,mes' }
+    );
+  }
+
   // Aplica delta em produtos_mensal para uma coluna específica
   async function deltaProdutos(consultorId, ano, mes, coluna, delta) {
     if (!delta || !consultorId) return;
@@ -1066,6 +1079,15 @@
       const newVal = num(nvo[valF]);
       if (oldConsId && oldYM && oldVal) await deltaProdutos(oldConsId, oldYM.ano, oldYM.mes, col, -oldVal);
       if (newConsId && newYM && newVal) await deltaProdutos(newConsId, newYM.ano, newYM.mes, col, +newVal);
+    }
+
+    // ── Reuniões → leads_mensal.reunioes ─────────────────────
+    const REUNIAO_CAMPOS = ['data_apresentacao', 'data_1a_reuniao', 'data_2a_reuniao'];
+    for (const dateF of REUNIAO_CAMPOS) {
+      const oldYM = ym(old[dateF]);
+      const newYM = ym(nvo[dateF]);
+      if (oldConsId && oldYM) await deltaLeads(oldConsId, oldYM.ano, oldYM.mes, 'reunioes', -1);
+      if (newConsId && newYM) await deltaLeads(newConsId, newYM.ano, newYM.mes, 'reunioes', +1);
     }
   }
 

@@ -428,8 +428,8 @@
             <tr>
               <th>Nome</th>
               <th>Status</th>
-              <th style="text-align:right">PL Atual</th>
               <th>Produtos</th>
+              <th style="text-align:right">Captado</th>
               <th style="text-align:center">Ação</th>
             </tr>
           </thead>
@@ -793,13 +793,20 @@
   }
 
   async function renderClientes() {
-    const STATUS_LABELS = { prospect:'Prospect', ativo:'Ativo', inativo:'Inativo', churn:'Churn' };
-    const STATUS_COR    = { prospect:'var(--gold)', ativo:'var(--ok)', inativo:'var(--muted)', churn:'var(--danger)' };
+    const STATUS_COR = {
+      'Prospect':'var(--gold)','Em andamento':'var(--warn)',
+      'Finalizado':'var(--ok)','Declinado':'var(--danger)',
+      'Adiado':'var(--muted)','Financeiro Cobrar':'#f97316'
+    };
+    const PROD_MAP = {
+      tem_estudo:'Estudo', tem_investimento:'Invest.', tem_previdencia:'Prev.',
+      tem_seguro:'Seguro', tem_pe:'Priv. Eq.', tem_consorcio:'Consórcio', tem_juridico:'Jurídico'
+    };
     const tbody = document.getElementById('clientes-body');
     tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Carregando...</td></tr>';
     try {
       const { data: clientes, error } = await db.from('clientes')
-        .select('id,nome,status,pl_atual,produtos')
+        .select('id,nome,status,valor_investimento,tem_estudo,tem_investimento,tem_previdencia,tem_seguro,tem_pe,tem_consorcio,tem_juridico')
         .eq('consultor_id', consultorId)
         .order('nome');
       if (error) throw error;
@@ -809,17 +816,18 @@
         return;
       }
       tbody.innerHTML = clientes.map(c => {
-        const prods = Array.isArray(c.produtos) ? c.produtos.join(', ') : (c.produtos || '—');
-        const pl    = c.pl_atual > 0 ? fmtM(c.pl_atual) : '—';
-        const cor   = STATUS_COR[c.status] || 'var(--muted)';
-        const lbl   = STATUS_LABELS[c.status] || c.status;
+        const prodsHtml = Object.keys(PROD_MAP).filter(k => c[k])
+          .map(k => `<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;background:rgba(200,160,70,0.12);color:var(--gold2)">${PROD_MAP[k]}</span>`)
+          .join(' ') || '<span style="color:var(--muted2)">—</span>';
+        const captado = n(c.valor_investimento) > 0 ? fmtR(n(c.valor_investimento)) : '—';
+        const cor = STATUS_COR[c.status] || 'var(--muted)';
         return `<tr>
           <td style="font-weight:600">${c.nome}</td>
-          <td><span style="color:${cor};font-size:11px;font-weight:700">${lbl}</span></td>
-          <td style="text-align:right">${pl}</td>
-          <td style="font-size:11px;color:var(--muted)">${prods}</td>
+          <td><span style="color:${cor};font-size:11px;font-weight:700">${c.status||'—'}</span></td>
+          <td style="font-size:11px">${prodsHtml}</td>
+          <td style="text-align:right;font-weight:700">${captado}</td>
           <td style="text-align:center">
-            <a href="clientes.html?id=${c.id}" style="color:var(--gold);font-size:11px;font-weight:600;text-decoration:none">Ver ›</a>
+            <a href="clientes.html" style="color:var(--gold);font-size:11px;font-weight:600;text-decoration:none">Ver ›</a>
           </td>
         </tr>`;
       }).join('');
