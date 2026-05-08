@@ -679,7 +679,7 @@
       const saldoCls = saldo >= 0 ? 'resumo-ok' : 'resumo-bad';
       return `<div class="corretora-card">
         <div class="corretora-nome">${c.nome}</div>
-        ${c.pl !== undefined ? `<div class="corretora-row"><span class="corretora-row-label">PL</span><span class="corretora-row-value" style="color:var(--muted)">${fmtM(c.pl)}</span></div>` : ''}
+        ${c.pl !== undefined ? `<div class="corretora-row"><span class="corretora-row-label" style="color:var(--text)">PATRIMÔNIO</span><span class="corretora-row-value" style="color:var(--text)">${fmtM(c.pl)}</span></div>` : ''}
         <div class="corretora-row"><span class="corretora-row-label">Captado</span><span class="corretora-row-value cap">${fmtM(c.cap)}</span></div>
         ${!c.extra ? `<div class="corretora-row"><span class="corretora-row-label">Saída</span><span class="corretora-row-value sai">${fmtM(c.sai)}</span></div>` : ''}
         <div class="corretora-saldo">
