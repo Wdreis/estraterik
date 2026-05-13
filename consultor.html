@@ -308,6 +308,7 @@
     .dias-chip.warn { background: rgba(245,158,11,0.15); color: var(--warn); }
     .dias-chip.slow { background: rgba(239,68,68,0.15);  color: var(--danger); }
     .dias-chip.none { color: var(--muted2); font-weight: 400; font-size: 11px; }
+    .dias-chip.live { box-shadow: 0 0 0 1.5px currentColor; animation: pulse 2s infinite; }
     .pipeline-table th { font-size: 9px; }
     .pipeline-table td { font-size: 12px; }
 
@@ -951,35 +952,49 @@
   }
 
   function renderPipeline(clientes) {
-    const diffDias = (d1, d2) => {
-      if (!d1 || !d2) return null;
-      const diff = Math.round((new Date(d2) - new Date(d1)) / 86400000);
-      return diff >= 0 ? diff : null;
+    const hoje = new Date().toISOString().split('T')[0];
+
+    // Calcula intervalo entre d1 e d2; se d2 não preenchido usa hoje (contador vivo)
+    const dias = (d1, d2) => {
+      if (!d1) return null;
+      const d = Math.round((new Date((d2||hoje) + 'T12:00:00') - new Date(d1 + 'T12:00:00')) / 86400000);
+      return d >= 0 ? d : null;
     };
-    const fmtDate = d => d
-      ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit'})
-      : '—';
 
-    _pipelineClientes = clientes.map(c => ({
-      ...c,
-      d_a1:  diffDias(c.data_apresentacao, c.data_1a_reuniao),
-      d_12:  diffDias(c.data_1a_reuniao,   c.data_2a_reuniao),
-      d_2f:  diffDias(c.data_2a_reuniao,   c.data_fechamento_investimento),
-      d_tot: diffDias(c.data_apresentacao, c.data_fechamento_investimento),
-    }));
+    // Statuses que ainda podem ter contador correndo
+    const statusAtivo = s => ['Prospect','Em andamento','Adiado','Financeiro Cobrar'].includes(s);
 
-    // KPI médias
+    _pipelineClientes = clientes.map(c => {
+      const ativo = statusAtivo(c.status);
+      return {
+        ...c,
+        // intervalo Apres → 1ª Reun
+        d_a1:      c.data_apresentacao ? dias(c.data_apresentacao, c.data_1a_reuniao) : null,
+        d_a1_vivo: ativo && !!c.data_apresentacao && !c.data_1a_reuniao,
+        // intervalo 1ª → 2ª Reun
+        d_12:      c.data_1a_reuniao   ? dias(c.data_1a_reuniao, c.data_2a_reuniao)   : null,
+        d_12_vivo: ativo && !!c.data_1a_reuniao   && !c.data_2a_reuniao,
+        // intervalo 2ª → Fechamento
+        d_2f:      c.data_2a_reuniao   ? dias(c.data_2a_reuniao, c.data_fechamento_investimento) : null,
+        d_2f_vivo: ativo && !!c.data_2a_reuniao   && !c.data_fechamento_investimento,
+        // total Apres → Fechamento
+        d_tot:     c.data_apresentacao ? dias(c.data_apresentacao, c.data_fechamento_investimento) : null,
+        d_tot_vivo: ativo && !!c.data_apresentacao && !c.data_fechamento_investimento,
+      };
+    });
+
+    // KPI médias — apenas intervalos CONCLUÍDOS (excluí contadores vivos para não distorcer a média)
     const avg = arr => arr.length ? Math.round(arr.reduce((s,v) => s+v, 0) / arr.length) : null;
-    const v_a1  = _pipelineClientes.filter(c => c.d_a1  !== null).map(c => c.d_a1);
-    const v_12  = _pipelineClientes.filter(c => c.d_12  !== null).map(c => c.d_12);
-    const v_2f  = _pipelineClientes.filter(c => c.d_2f  !== null).map(c => c.d_2f);
-    const v_tot = _pipelineClientes.filter(c => c.d_tot !== null).map(c => c.d_tot);
+    const v_a1  = _pipelineClientes.filter(c => c.d_a1  !== null && !c.d_a1_vivo).map(c => c.d_a1);
+    const v_12  = _pipelineClientes.filter(c => c.d_12  !== null && !c.d_12_vivo).map(c => c.d_12);
+    const v_2f  = _pipelineClientes.filter(c => c.d_2f  !== null && !c.d_2f_vivo).map(c => c.d_2f);
+    const v_tot = _pipelineClientes.filter(c => c.d_tot !== null && !c.d_tot_vivo).map(c => c.d_tot);
 
-    const mkKpi = (label, val, n, color) => `
+    const mkKpi = (label, val, cnt, color) => `
       <div class="kpi-card" style="--kpi-color:${color||'var(--teal)'}">
         <div class="kpi-label">${label}</div>
         <div class="kpi-value">${val !== null ? val : '—'}</div>
-        <div class="kpi-sub">${val !== null ? 'dias em média · ' + n + ' cliente' + (n===1?'':'s') : 'sem dados suficientes'}</div>
+        <div class="kpi-sub">${val !== null ? 'dias em média · ' + cnt + ' cliente' + (cnt===1?'':'s') : 'sem ciclos concluídos'}</div>
       </div>`;
 
     document.getElementById('pipeline-kpis').innerHTML =
@@ -1005,10 +1020,13 @@
       ? _pipelineClientes
       : _pipelineClientes.filter(c => c.status === status);
 
-    const chip = (v, [ok, warn]) => {
+    // vivo = contador rodando (sem data fim); chip pulsa para indicar que está contando
+    const chip = (v, vivo, [ok, warn]) => {
       if (v === null) return `<span class="dias-chip none">—</span>`;
       const cls = v <= ok ? 'ok' : v <= warn ? 'warn' : 'slow';
-      return `<span class="dias-chip ${cls}">${v}d</span>`;
+      const liveClass = vivo ? ' live' : '';
+      const title = vivo ? ' title="Contador em andamento — contando desde hoje"' : '';
+      return `<span class="dias-chip ${cls}${liveClass}"${title}>${v}d</span>`;
     };
     const fmtDate = d => d
       ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit',year:'2-digit'})
@@ -1027,12 +1045,12 @@
         <td><span style="color:${cor};font-weight:700">${c.status||'—'}</span></td>
         <td style="text-align:center;color:var(--muted)">${fmtDate(c.data_apresentacao)}</td>
         <td style="text-align:center;color:var(--muted)">${fmtDate(c.data_1a_reuniao)}</td>
-        <td style="text-align:center">${chip(c.d_a1,  [7, 15])}</td>
+        <td style="text-align:center">${chip(c.d_a1,  c.d_a1_vivo,  [7, 15])}</td>
         <td style="text-align:center;color:var(--muted)">${fmtDate(c.data_2a_reuniao)}</td>
-        <td style="text-align:center">${chip(c.d_12,  [14, 30])}</td>
+        <td style="text-align:center">${chip(c.d_12,  c.d_12_vivo,  [14, 30])}</td>
         <td style="text-align:center;color:var(--muted)">${fmtDate(c.data_fechamento_investimento)}</td>
-        <td style="text-align:center">${chip(c.d_2f,  [30, 60])}</td>
-        <td style="text-align:center">${chip(c.d_tot, [60, 90])}</td>
+        <td style="text-align:center">${chip(c.d_2f,  c.d_2f_vivo,  [30, 60])}</td>
+        <td style="text-align:center">${chip(c.d_tot, c.d_tot_vivo, [60, 90])}</td>
       </tr>`;
     }).join('');
   }
