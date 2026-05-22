@@ -492,11 +492,11 @@
     el.innerHTML = '';
     const sorted = [...consultores].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     sorted.forEach(c => {
-      const btn = document.createElement('button');
-      btn.className = 'nav-item';
-      btn.innerHTML = `<span class="nav-dot" style="background:${c.cor}"></span><span>${c.nome}</span>`;
-      btn.onclick = () => window.location.href = `consultor.html?id=${c.id}`;
-      el.appendChild(btn);
+      const item = document.createElement('div');
+      item.className = 'nav-item';
+      item.style.cursor = 'default';
+      item.innerHTML = `<span class="nav-dot" style="background:${c.cor}"></span><span>${c.nome}</span>`;
+      el.appendChild(item);
     });
   }
 
