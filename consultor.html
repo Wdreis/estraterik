@@ -545,38 +545,38 @@
     <div class="tab-pane active" id="tab-captacao">
       <div class="form-section-label">Patrimônio Líquido</div>
       <div class="form-grid" style="grid-template-columns:repeat(4,1fr)">
-        <div class="form-group"><label>PL BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl-btg" placeholder="0,00" oninput="formatarEntrada(this); calcPLTotal()"></div>
-        <div class="form-group"><label>PL XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl-xp" placeholder="0,00" oninput="formatarEntrada(this); calcPLTotal()"></div>
-        <div class="form-group"><label>PL Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl-outros" placeholder="0,00" oninput="formatarEntrada(this); calcPLTotal()"></div>
-        <div class="form-group"><label>PL Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl-int" placeholder="0,00" oninput="formatarEntrada(this); calcPLTotal()"></div>
+        <div class="form-group"><label>PL BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl-btg" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="calcPLTotal()"></div>
+        <div class="form-group"><label>PL XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl-xp" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="calcPLTotal()"></div>
+        <div class="form-group"><label>PL Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl-outros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="calcPLTotal()"></div>
+        <div class="form-group"><label>PL Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="calcPLTotal()"></div>
       </div>
       <div class="form-grid">
-        <div class="form-group"><label>PL Total (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Meta NNM Mensal (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-meta-nnm" placeholder="0,00" oninput="formatarEntrada(this)"></div>
+        <div class="form-group"><label>PL Total (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Meta NNM Mensal (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-meta-nnm" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
       </div>
 
       <div class="form-section-label">BTG</div>
       <div class="form-grid">
-        <div class="form-group"><label>Captado BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-btg" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Saída BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-btg" placeholder="0,00" oninput="formatarEntrada(this)"></div>
+        <div class="form-group"><label>Captado BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-btg" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Saída BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-btg" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
       </div>
 
       <div class="form-section-label">XP</div>
       <div class="form-grid">
-        <div class="form-group"><label>Captado XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-xp" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Saída XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-xp" placeholder="0,00" oninput="formatarEntrada(this)"></div>
+        <div class="form-group"><label>Captado XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-xp" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Saída XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-xp" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
       </div>
 
       <div class="form-section-label">Outros Bancos</div>
       <div class="form-grid">
-        <div class="form-group"><label>Captado Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-outros" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Saída Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-outros" placeholder="0,00" oninput="formatarEntrada(this)"></div>
+        <div class="form-group"><label>Captado Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-outros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Saída Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-outros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
       </div>
 
       <div class="form-section-label">Internacional</div>
       <div class="form-grid">
-        <div class="form-group"><label>Captado Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-int" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Saída Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-int" placeholder="0,00" oninput="formatarEntrada(this)"></div>
+        <div class="form-group"><label>Captado Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Saída Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
       </div>
     </div>
 
@@ -584,20 +584,20 @@
     <div class="tab-pane" id="tab-produtos">
       <div class="form-section-label">Receita de Produtos</div>
       <div class="form-grid three">
-        <div class="form-group"><label>Estudos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-estudos" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Previdência (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-previdencia" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Seguros (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-seguros" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Precatórios (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-precatorios" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Consórcio (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-consorcio" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Private Equity (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pe" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Jurídico (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-juridico" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Offshore (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-offshore" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Câmbio (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cambio" placeholder="0,00" oninput="formatarEntrada(this)"></div>
-        <div class="form-group"><label>Outros (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-outros-prod" placeholder="0,00" oninput="formatarEntrada(this)"></div>
+        <div class="form-group"><label>Estudos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-estudos" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Previdência (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-previdencia" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Seguros (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-seguros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Precatórios (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-precatorios" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Consórcio (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-consorcio" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Private Equity (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pe" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Jurídico (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-juridico" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Offshore (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-offshore" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Câmbio (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cambio" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div class="form-group"><label>Outros (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-outros-prod" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
       </div>
       <div class="form-section-label">Meta</div>
       <div class="form-grid">
-        <div class="form-group"><label>Meta de Produtos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-meta-prod" placeholder="0,00" oninput="formatarEntrada(this)"></div>
+        <div class="form-group"><label>Meta de Produtos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-meta-prod" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
       </div>
     </div>
 
@@ -663,43 +663,53 @@
   const fmtP = v => (v*100).toFixed(1)+'%';
   const n = v => parseFloat(v)||0;
 
-  // ── FORMATAÇÃO BR ─────────────────────────────────────────
+  // ── FORMATAÇÃO BR (estilo caixa eletrônico) ───────────────
   const parseBR = v => parseFloat((v||'').toString().replace(/\./g,'').replace(',','.')) || 0;
 
-  function formatBR(v) {
-    const num = parseFloat(v) || 0;
-    if (!num) return '';
-    return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Aplica valor numérico no elemento e sincroniza dataset.digits
+  function setMoeda(el, val) {
+    const num = parseFloat(val) || 0;
+    if (!num) { el.dataset.digits = ''; el.value = ''; return; }
+    el.dataset.digits = Math.round(num * 100).toString().replace(/^0+/, '');
+    el.value = num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  function formatarEntrada(input) {
-    const pos = input.selectionStart;
-    const oldLen = input.value.length;
+  // Formata string de dígitos → "1.234,56"
+  function digitosParaDisplay(digits) {
+    if (!digits) return '';
+    const padded = digits.padStart(3, '0');
+    const intPart = (padded.slice(0, -2).replace(/^0+/, '') || '0')
+                      .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return intPart + ',' + padded.slice(-2);
+  }
 
-    // Mantém apenas dígitos e uma vírgula
-    let v = input.value.replace(/[^\d,]/g, '');
-    const firstComma = v.indexOf(',');
-    if (firstComma !== -1) {
-      // Só uma vírgula, máximo 2 casas decimais
-      const dec = v.slice(firstComma + 1).replace(/,/g, '').slice(0, 2);
-      v = v.slice(0, firstComma) + ',' + dec;
+  // Máscara ATM: dígitos entram pela direita nos centavos
+  function mascaraMoeda(input, e) {
+    const permitidos = ['Tab','Enter','Escape','ArrowLeft','ArrowRight',
+                        'ArrowUp','ArrowDown','Home','End'];
+    if (permitidos.includes(e.key) || e.ctrlKey || e.metaKey || e.altKey) return;
+
+    if (!/^\d$/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete') {
+      e.preventDefault();
+      return;
+    }
+    e.preventDefault();
+
+    let digits = (input.dataset.digits || '');
+
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      digits = digits.slice(0, -1);
+    } else {
+      if (digits.length >= 13) return; // limite ~99 bilhões
+      digits += e.key;
     }
 
-    // Remove zeros à esquerda na parte inteira
-    const parts = v.split(',');
-    parts[0] = parts[0].replace(/^0+(\d)/, '$1') || '';
+    digits = digits.replace(/^0+/, '');
+    input.dataset.digits = digits;
+    input.value = digitosParaDisplay(digits);
 
-    // Insere pontos como separadores de milhar
-    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-    input.value = parts.join(',');
-
-    // Preserva posição do cursor
-    try {
-      const diff = input.value.length - oldLen;
-      const newPos = Math.max(0, pos + diff);
-      input.setSelectionRange(newPos, newPos);
-    } catch(e) {}
+    // Dispara oninput para campos com callbacks (ex: calcPLTotal)
+    input.dispatchEvent(new Event('input', { bubbles: false }));
   }
 
   // ── INIT ──────────────────────────────────────────────────
@@ -1114,7 +1124,7 @@
       const el = document.getElementById(id);
       if (!el) return;
       if (el.classList.contains('inp-brl')) {
-        el.value = formatBR(val);
+        setMoeda(el, val);
       } else {
         el.value = (val !== null && val !== undefined) ? val : '';
       }
@@ -1208,7 +1218,7 @@
         const curr = parseBR(inp.value);
         const add  = parseFloat(adder.querySelector('.adder-input').value) || 0;
         if (add !== 0) {
-          inp.value = formatBR(curr + add);
+          setMoeda(inp, curr + add);
           inp.dispatchEvent(new Event('input'));
         }
         adder.querySelector('.adder-input').value = '';
@@ -1326,7 +1336,7 @@
     const out = parseBR(document.getElementById('e-pl-outros').value);
     const int = parseBR(document.getElementById('e-pl-int').value);
     const tot = btg + xp + out + int;
-    if (tot > 0) document.getElementById('e-pl').value = formatBR(tot);
+    if (tot > 0) setMoeda(document.getElementById('e-pl'), tot);
   }
 
   // ── STVM ──────────────────────────────────────────────────
@@ -1336,10 +1346,12 @@
     div.style.cssText = 'display:grid;grid-template-columns:1fr 120px 1fr 1fr 36px;gap:6px;margin-bottom:8px;align-items:center';
     const inp = (placeholder, val, cls='') =>
       `<input type="text" placeholder="${placeholder}" value="${val||''}" ${cls} style="background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:8px 10px;font-size:12px;font-family:inherit;width:100%;outline:none">`;
-    const valorFmt = entry.valor ? formatBR(entry.valor) : '';
+    const num = parseFloat(entry.valor) || 0;
+    const valorDigits = num ? Math.round(num * 100).toString().replace(/^0+/, '') : '';
+    const valorFmt = digitosParaDisplay(valorDigits);
     div.innerHTML =
       inp('Nome do cliente', entry.nome_cliente) +
-      inp('Valor (R$)', valorFmt, 'inputmode="numeric" class="inp-brl" oninput="formatarEntrada(this)"') +
+      inp('Valor (R$)', valorFmt, `inputmode="numeric" class="inp-brl" data-digits="${valorDigits}" onkeydown="mascaraMoeda(this,event)"`) +
       inp('Origem (banco)', entry.origem) +
       inp('Corretora destino', entry.corretora_destino) +
       `<button onclick="this.closest('.stvm-row').remove()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;width:32px;height:32px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>`;
