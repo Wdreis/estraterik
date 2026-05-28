@@ -112,7 +112,7 @@
     .kpi-value.neg { color: var(--danger); }
 
     /* ── CAPTAÇÃO DETALHADA ── */
-    .captacao-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 26px; }
+    .captacao-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 26px; }
     .corretora-card {
       background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px;
     }
@@ -312,7 +312,8 @@
     .pipeline-table th { font-size: 9px; }
     .pipeline-table td { font-size: 12px; }
 
-    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .captacao-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 1400px) { .captacao-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 900px) {
       .sidebar { width: 62px; }
       .brand-text, .nav-item > span:last-child, .sidebar-section-label, .sidebar-footer .badge-live > span { display: none; }
@@ -543,10 +544,11 @@
     <!-- TAB CAPTAÇÃO -->
     <div class="tab-pane active" id="tab-captacao">
       <div class="form-section-label">Patrimônio Líquido</div>
-      <div class="form-grid three">
+      <div class="form-grid" style="grid-template-columns:repeat(4,1fr)">
         <div class="form-group"><label>PL BTG (R$)</label><input type="number" id="e-pl-btg" placeholder="0" oninput="calcPLTotal()"></div>
         <div class="form-group"><label>PL XP (R$)</label><input type="number" id="e-pl-xp" placeholder="0" oninput="calcPLTotal()"></div>
         <div class="form-group"><label>PL Outros Bancos (R$)</label><input type="number" id="e-pl-outros" placeholder="0" oninput="calcPLTotal()"></div>
+        <div class="form-group"><label>PL Internacional (R$)</label><input type="number" id="e-pl-int" placeholder="0" oninput="calcPLTotal()"></div>
       </div>
       <div class="form-grid">
         <div class="form-group"><label>PL Total (R$)</label><input type="number" id="e-pl" placeholder="0"></div>
@@ -565,10 +567,16 @@
         <div class="form-group"><label>Saída XP (R$)</label><input type="number" id="e-sai-xp" placeholder="0"></div>
       </div>
 
-      <div class="form-section-label">Outros</div>
+      <div class="form-section-label">Outros Bancos</div>
       <div class="form-grid">
         <div class="form-group"><label>Captado Outros Bancos (R$)</label><input type="number" id="e-cap-outros" placeholder="0"></div>
-        <div class="form-group"><label>Internacional (R$)</label><input type="number" id="e-cap-int" placeholder="0"></div>
+        <div class="form-group"><label>Saída Outros Bancos (R$)</label><input type="number" id="e-sai-outros" placeholder="0"></div>
+      </div>
+
+      <div class="form-section-label">Internacional</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Captado Internacional (R$)</label><input type="number" id="e-cap-int" placeholder="0"></div>
+        <div class="form-group"><label>Saída Internacional (R$)</label><input type="number" id="e-sai-int" placeholder="0"></div>
       </div>
     </div>
 
@@ -749,19 +757,19 @@
     // Captação por corretora
     const cgEl = document.getElementById('captacao-grid');
     const corretoras = [
-      { nome: 'BTG', cap: n(cap.captado_btg), sai: n(cap.saida_btg), pl: n(cap.pl_btg) },
-      { nome: 'XP',  cap: n(cap.captado_xp),  sai: n(cap.saida_xp),  pl: n(cap.pl_xp) },
-      { nome: 'Outros Bancos', cap: n(cap.captado_outros), sai: 0, extra: true, pl: n(cap.pl_outros) },
-      { nome: 'Internacional', cap: n(cap.captado_int),    sai: 0, extra: true },
+      { nome: 'BTG',          cap: n(cap.captado_btg),    sai: n(cap.saida_btg),    pl: n(cap.pl_btg) },
+      { nome: 'XP',           cap: n(cap.captado_xp),     sai: n(cap.saida_xp),     pl: n(cap.pl_xp) },
+      { nome: 'Outros Bancos',cap: n(cap.captado_outros), sai: n(cap.saida_outros), pl: n(cap.pl_outros) },
+      { nome: 'Internacional',cap: n(cap.captado_int),    sai: n(cap.saida_int),    pl: n(cap.pl_int) },
     ];
     cgEl.innerHTML = corretoras.map(c => {
       const saldo = c.cap - c.sai;
       const saldoCls = saldo >= 0 ? 'resumo-ok' : 'resumo-bad';
       return `<div class="corretora-card">
         <div class="corretora-nome">${c.nome}</div>
-        ${c.pl !== undefined ? `<div class="corretora-row"><span class="corretora-row-label" style="color:var(--text)">PATRIMÔNIO</span><span class="corretora-row-value" style="color:var(--text)">${fmtM(c.pl)}</span></div>` : ''}
+        <div class="corretora-row"><span class="corretora-row-label" style="color:var(--text)">PATRIMÔNIO</span><span class="corretora-row-value" style="color:var(--text)">${fmtM(c.pl)}</span></div>
         <div class="corretora-row"><span class="corretora-row-label">Captado</span><span class="corretora-row-value cap">${fmtM(c.cap)}</span></div>
-        ${!c.extra ? `<div class="corretora-row"><span class="corretora-row-label">Saída</span><span class="corretora-row-value sai">${fmtM(c.sai)}</span></div>` : ''}
+        <div class="corretora-row"><span class="corretora-row-label">Saída</span><span class="corretora-row-value sai">${fmtM(c.sai)}</span></div>
         <div class="corretora-saldo">
           <span class="corretora-saldo-label">Líquido</span>
           <span class="corretora-saldo-value ${saldoCls}">${fmtM(saldo)}</span>
@@ -1073,8 +1081,11 @@
     set('e-sai-btg',     cap.saida_btg);
     set('e-cap-xp',      cap.captado_xp);
     set('e-sai-xp',      cap.saida_xp);
+    set('e-pl-int',      cap.pl_int);
     set('e-cap-outros',  cap.captado_outros);
+    set('e-sai-outros',  cap.saida_outros);
     set('e-cap-int',     cap.captado_int);
+    set('e-sai-int',     cap.saida_int);
     set('e-estudos',     prod.estudos);
     set('e-previdencia', prod.previdencia);
     set('e-seguros',     prod.seguros);
@@ -1184,24 +1195,28 @@
     const capXp    = g('e-cap-xp');
     const saiXp    = g('e-sai-xp');
     const capOut   = g('e-cap-outros');
+    const saiOut   = g('e-sai-outros');
     const capInt   = g('e-cap-int');
+    const saiInt   = g('e-sai-int');
     const captado  = capBtg + capXp + capOut + capInt;
-    const saida    = saiBtg + saiXp;
+    const saida    = saiBtg + saiXp + saiOut + saiInt;
     const nnm      = captado - saida;
 
     const plBtg    = g('e-pl-btg');
     const plXp     = g('e-pl-xp');
     const plOutros = g('e-pl-outros');
-    const plTotal  = (plBtg + plXp + plOutros) > 0 ? (plBtg + plXp + plOutros) : g('e-pl');
+    const plInt    = g('e-pl-int');
+    const plTotal  = (plBtg + plXp + plOutros + plInt) > 0 ? (plBtg + plXp + plOutros + plInt) : g('e-pl');
 
     const capPayload = {
       consultor_id: consultorId, ano: anoAtual, mes: mesAtual,
       pl: plTotal, meta_nnm: g('e-meta-nnm'),
-      pl_btg: plBtg, pl_xp: plXp, pl_outros: plOutros,
+      pl_btg: plBtg, pl_xp: plXp, pl_outros: plOutros, pl_int: plInt,
       captado, saida, nnm,
       captado_btg: capBtg, saida_btg: saiBtg,
       captado_xp: capXp, saida_xp: saiXp,
-      captado_outros: capOut, captado_int: capInt,
+      captado_outros: capOut, saida_outros: saiOut,
+      captado_int: capInt, saida_int: saiInt,
     };
 
     const prodPayload = {
@@ -1262,7 +1277,8 @@
     const btg = parseFloat(document.getElementById('e-pl-btg').value) || 0;
     const xp  = parseFloat(document.getElementById('e-pl-xp').value) || 0;
     const out = parseFloat(document.getElementById('e-pl-outros').value) || 0;
-    const tot = btg + xp + out;
+    const int = parseFloat(document.getElementById('e-pl-int').value) || 0;
+    const tot = btg + xp + out + int;
     if (tot > 0) document.getElementById('e-pl').value = tot;
   }
 
