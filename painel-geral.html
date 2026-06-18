@@ -446,7 +446,7 @@
       <div class="section-title">KPIs do Período</div>
       <div class="kpi-grid-6" id="kpi-grid">
         <div class="kpi-card" style="--kpi-color:var(--teal)">
-          <div class="kpi-label">Captação Total do Período</div>
+          <div class="kpi-label">Captação Brasil</div>
           <div class="kpi-value" id="kpi-captado">—</div>
           <div class="kpi-sub" id="kpi-captado-sub">—</div>
         </div>
@@ -477,6 +477,21 @@
         </div>
       </div>
 
+      <!-- CAPTAÇÃO BRASIL vs INTERNACIONAL -->
+      <div class="section-title">Captação — Brasil vs. Internacional</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px">
+        <div class="kpi-card" style="--kpi-color:var(--teal)">
+          <div class="kpi-label">Net Captação Brasil</div>
+          <div class="kpi-value" id="kpi-net-brasil">—</div>
+          <div class="kpi-sub" id="kpi-net-brasil-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">Net Captação Internacional</div>
+          <div class="kpi-value" id="kpi-net-int">—</div>
+          <div class="kpi-sub" id="kpi-net-int-sub">—</div>
+        </div>
+      </div>
+
       <!-- 4: EVOLUÇÃO ANUAL — CAPTADO MENSAL -->
       <div class="section-title">Evolução Anual — Captado Mensal</div>
       <div class="chart-card">
@@ -495,10 +510,11 @@
             <tr>
               <th class="th-center" style="width:50px">Rank</th>
               <th>Consultor</th>
-              <th>Captado</th>
-              <th>% Meta NNM</th>
-              <th>NNM</th>
+              <th>Captado Brasil</th>
+              <th>Captado Int'l</th>
               <th>Saído</th>
+              <th>NNM</th>
+              <th>% Meta NNM</th>
               <th>Rec. Produtos</th>
               <th>Reuniões</th>
             </tr>
@@ -514,9 +530,10 @@
           <thead>
             <tr>
               <th>Mês</th>
-              <th>Captado</th>
-              <th>NNM</th>
+              <th>Captado Brasil</th>
+              <th>Captado Int'l</th>
               <th>Saído</th>
+              <th>NNM</th>
               <th>PL</th>
               <th>Rec. Produtos</th>
               <th>Reuniões</th>
@@ -666,7 +683,7 @@
           .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
         db.from('leads_mensal').select('*')
           .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
-        db.from('captacao_mensal').select('mes,nnm,captado,saida,pl,pl_btg,pl_xp,pl_outros')
+        db.from('captacao_mensal').select('mes,nnm,captado,saida,pl,pl_btg,pl_xp,pl_outros,captado_int,saida_int')
           .eq('ano', anoAtual).order('mes'),
       ]);
 
@@ -711,14 +728,18 @@
     // Por consultor
     const consAgg = {};
     consultores.forEach(c => {
-      consAgg[c.id] = { nnm: 0, captado: 0, saida: 0, produtos: 0, reunioes: 0, pl: 0 };
+      consAgg[c.id] = { nnm: 0, captado: 0, saida: 0, produtos: 0, reunioes: 0, pl: 0, captBrasil: 0, saidaBrasil: 0, captInt: 0, saidaInt: 0 };
     });
     cap.forEach(r => {
       if (!consAgg[r.consultor_id]) return;
-      consAgg[r.consultor_id].nnm     += n(r.nnm);
-      consAgg[r.consultor_id].captado += n(r.captado);
-      consAgg[r.consultor_id].saida   += n(r.saida);
-      consAgg[r.consultor_id].pl       = n(r.pl);
+      consAgg[r.consultor_id].nnm       += n(r.nnm);
+      consAgg[r.consultor_id].captado   += n(r.captado);
+      consAgg[r.consultor_id].saida     += n(r.saida);
+      consAgg[r.consultor_id].pl         = n(r.pl);
+      consAgg[r.consultor_id].captInt   += n(r.captado_int);
+      consAgg[r.consultor_id].saidaInt  += n(r.saida_int);
+      consAgg[r.consultor_id].captBrasil  += n(r.captado) - n(r.captado_int);
+      consAgg[r.consultor_id].saidaBrasil += n(r.saida) - n(r.saida_int);
     });
     prod.forEach(r => {
       if (!consAgg[r.consultor_id]) return;
@@ -728,6 +749,14 @@
       if (!consAgg[r.consultor_id]) return;
       consAgg[r.consultor_id].reunioes += n(r.reunioes);
     });
+
+    // Brasil vs Internacional
+    const totCaptBrasil  = Object.values(consAgg).reduce((s,r) => s + r.captBrasil, 0);
+    const totSaidaBrasil = Object.values(consAgg).reduce((s,r) => s + r.saidaBrasil, 0);
+    const totNetBrasil   = totCaptBrasil - totSaidaBrasil;
+    const totCaptInt     = Object.values(consAgg).reduce((s,r) => s + r.captInt, 0);
+    const totSaidaInt    = Object.values(consAgg).reduce((s,r) => s + r.saidaInt, 0);
+    const totNetInt      = totCaptInt - totSaidaInt;
 
     // KPIs
     const pctMeta = metaNNM > 0 ? totNNM / metaNNM : 0;
@@ -739,10 +768,23 @@
     pctEl.textContent  = fmtP(pctMeta);
     pctEl.style.color  = pctMeta >= 1 ? 'var(--ok)' : pctMeta >= 0.5 ? 'var(--warn)' : 'var(--danger)';
     document.getElementById('kpi-meta-sub').innerHTML  = `Meta pro-rata: <strong>${fmtM(metaNNM)}</strong> (R$25M × ${numMeses} meses)`;
-    document.getElementById('kpi-captado').textContent = fmtM(totCap);
-    document.getElementById('kpi-captado-sub').textContent = 'Bruto captado no período';
+    document.getElementById('kpi-captado').textContent = fmtM(totCaptBrasil);
+    document.getElementById('kpi-captado').style.color = totCaptBrasil >= 0 ? '' : 'var(--danger)';
+    document.getElementById('kpi-captado-sub').innerHTML = `Total captado no Brasil (excl. int'l)`;
     document.getElementById('kpi-saida').textContent   = fmtM(totSai);
     document.getElementById('kpi-saida-sub').innerHTML = `Saldo líquido: <strong class="${totNNM>=0?'ok':'bad'}">${fmtM(totNNM)}</strong>`;
+
+    // Net Brasil / Net Internacional
+    const netBrasilEl = document.getElementById('kpi-net-brasil');
+    netBrasilEl.textContent = fmtM(totNetBrasil);
+    netBrasilEl.style.color = totNetBrasil >= 0 ? '' : 'var(--danger)';
+    document.getElementById('kpi-net-brasil-sub').innerHTML =
+      `Captado: <strong>${fmtM(totCaptBrasil)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totSaidaBrasil)}</strong>`;
+    const netIntEl = document.getElementById('kpi-net-int');
+    netIntEl.textContent = fmtM(totNetInt);
+    netIntEl.style.color = totNetInt >= 0 ? '' : 'var(--danger)';
+    document.getElementById('kpi-net-int-sub').innerHTML =
+      `Captado: <strong>${fmtM(totCaptInt)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totSaidaInt)}</strong>`;
     document.getElementById('kpi-produtos').textContent = fmtR(totProd);
     document.getElementById('kpi-produtos-sub').textContent = 'Receita total de produtos';
     document.getElementById('kpi-reunioes').textContent = totReun;
@@ -771,58 +813,54 @@
     renderMensalTable(cap, prod, leads, metaNNM);
   }
 
-  // ─── CHART CAPTADO ───────────────────────────────────────────
+  // ─── CHART CAPTADO (Brasil vs Internacional — stacked) ──────
   function renderChartNNM(capAnual) {
-    const capMes = {};
-    capAnual.forEach(r => { capMes[r.mes] = (capMes[r.mes] || 0) + n(r.captado); });
+    const mesBrasil = {}, mesInt = {};
+    capAnual.forEach(r => {
+      const intVal    = n(r.captado_int);
+      const brasilVal = n(r.captado) - intVal;
+      mesBrasil[r.mes] = (mesBrasil[r.mes] || 0) + brasilVal;
+      mesInt[r.mes]    = (mesInt[r.mes]    || 0) + intVal;
+    });
 
     const labels = MESES_S.slice(1);
-    const data   = [];
-    const colors = [];
-    const borders = [];
+    const dataBrasil = [], dataInt = [], colorBrasil = [], colorInt = [];
 
     for (let m = 1; m <= 12; m++) {
-      const val = capMes[m] !== undefined ? capMes[m] : null;
-      data.push(val);
+      const hasDado  = mesBrasil[m] !== undefined;
       const inPeriod = m >= meInicio && m <= meFim;
-      if (val === null) {
-        colors.push('rgba(200,160,70,0.08)');
-        borders.push('transparent');
-      } else if (inPeriod) {
-        colors.push('rgba(40,80,90,0.8)');
-        borders.push('#28505A');
-      } else {
-        colors.push('rgba(200,160,70,0.12)');
-        borders.push('rgba(200,160,70,0.2)');
-      }
+      dataBrasil.push(hasDado ? mesBrasil[m] : null);
+      dataInt.push(hasDado ? (mesInt[m] || 0) : null);
+      colorBrasil.push(hasDado ? (inPeriod ? 'rgba(40,80,90,0.85)' : 'rgba(40,80,90,0.25)') : 'transparent');
+      colorInt.push(hasDado ? (inPeriod ? 'rgba(200,160,70,0.85)' : 'rgba(200,160,70,0.2)') : 'transparent');
     }
 
-    const total = data.filter((v, i) => v !== null && (i+1) >= meInicio && (i+1) <= meFim).reduce((s,v) => s+v, 0);
-    document.getElementById('ytd-label').textContent = 'Captado no período: ' + fmtM(total);
+    const totalBrasil = dataBrasil.filter((v,i) => v !== null && (i+1) >= meInicio && (i+1) <= meFim).reduce((s,v) => s+v, 0);
+    const totalInt    = dataInt.filter((v,i) => v !== null && (i+1) >= meInicio && (i+1) <= meFim).reduce((s,v) => s+v, 0);
+    document.getElementById('ytd-label').textContent =
+      "Brasil: " + fmtM(totalBrasil) + "  |  Int'l: " + fmtM(totalInt);
 
     if (chartNNM) chartNNM.destroy();
     chartNNM = new Chart(document.getElementById('chartNNM'), {
       type: 'bar',
       data: {
         labels,
-        datasets: [{
-          label: 'Captado (R$)',
-          data,
-          backgroundColor: colors,
-          borderColor: borders,
-          borderWidth: 2,
-          borderRadius: 6,
-        }]
+        datasets: [
+          { label: 'Brasil', data: dataBrasil, backgroundColor: colorBrasil,
+            borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 6, bottomRight: 6 }, stack: 'captado' },
+          { label: "Internacional", data: dataInt, backgroundColor: colorInt,
+            borderRadius: { topLeft: 6, topRight: 6, bottomLeft: 0, bottomRight: 0 }, stack: 'captado' },
+        ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ' ' + fmtR(ctx.raw) : ' Sem dados' } }
+          legend: { display: true, position: 'top', labels: { color: 'rgba(230,228,225,0.65)', font: { family: 'Jost', size: 11 }, padding: 16, boxWidth: 14 } },
+          tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ' ' + ctx.dataset.label + ': ' + fmtM(ctx.raw) : null } }
         },
         scales: {
-          x: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
-          y: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } }
+          x: { stacked: true, grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
+          y: { stacked: true, grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } }
         }
       }
     });
@@ -901,13 +939,16 @@
       const nnmClass = nnm >= 0 ? 'td-pos' : 'td-neg';
       const pctClass = pct >= 1 ? 'td-pos' : pct >= 0.5 ? 'td-warn' : 'td-neg';
 
+      const captBras = agg.captBrasil || 0;
+      const captInts = agg.captInt || 0;
       tbody.innerHTML += `<tr>
         <td class="td-center">${rankLabel}</td>
         <td><span class="rank-dot" style="background:${c.cor}"></span>${c.nome}</td>
-        <td style="font-weight:700;color:var(--ok)">${fmtM(captado)}</td>
-        <td class="${pctClass}">${fmtP(pct)}</td>
-        <td class="${nnmClass}">${fmtM(nnm)}</td>
+        <td style="font-weight:700;color:var(--ok)">${fmtM(captBras)}</td>
+        <td style="color:var(--gold)">${captInts > 0 ? fmtM(captInts) : '<span class="td-zero">—</span>'}</td>
         <td class="${(agg.saida||0) > 0 ? 'td-warn' : ''}">${fmtM(agg.saida || 0)}</td>
+        <td class="${nnmClass}">${fmtM(nnm)}</td>
+        <td class="${pctClass}">${fmtP(pct)}</td>
         <td>${fmtR(agg.produtos || 0)}</td>
         <td>${agg.reunioes || 0}</td>
       </tr>`;
@@ -922,15 +963,17 @@
 
     const porMes = {};
     for (let m = meInicio; m <= meFim; m++) {
-      porMes[m] = { nnm: 0, captado: 0, saida: 0, pl: 0, produtos: 0, reunioes: 0 };
+      porMes[m] = { nnm: 0, captado: 0, saida: 0, pl: 0, produtos: 0, reunioes: 0, captBrasil: 0, captInt: 0 };
     }
 
     cap.forEach(r => {
       if (!porMes[r.mes]) return;
-      porMes[r.mes].nnm     += n(r.nnm);
-      porMes[r.mes].captado += n(r.captado);
-      porMes[r.mes].saida   += n(r.saida);
-      porMes[r.mes].pl      += n(r.pl);
+      porMes[r.mes].nnm       += n(r.nnm);
+      porMes[r.mes].captado   += n(r.captado);
+      porMes[r.mes].saida     += n(r.saida);
+      porMes[r.mes].pl        += n(r.pl);
+      porMes[r.mes].captInt   += n(r.captado_int);
+      porMes[r.mes].captBrasil += n(r.captado) - n(r.captado_int);
     });
     prod.forEach(r => {
       if (!porMes[r.mes]) return;
@@ -944,25 +987,28 @@
     const tbody = document.getElementById('mensal-body');
     tbody.innerHTML = '';
 
-    let sNNM = 0, sCap = 0, sSai = 0, sProd = 0, sReun = 0, lastPL = 0;
+    let sNNM = 0, sCap = 0, sSai = 0, sProd = 0, sReun = 0, lastPL = 0, sCaptBrasil = 0, sCaptInt = 0;
 
     for (let m = meInicio; m <= meFim; m++) {
       const d   = porMes[m];
       const pct = metaPorMes > 0 ? d.nnm / metaPorMes : 0;
       const nnmCls = d.nnm >= 0 ? 'td-pos' : 'td-neg';
       const pctCls = pct >= 1 ? 'td-pos' : pct >= 0.5 ? 'td-warn' : 'td-neg';
-      sNNM  += d.nnm;
-      sCap  += d.captado;
-      sSai  += d.saida;
-      sProd += d.produtos;
-      sReun += d.reunioes;
+      sNNM       += d.nnm;
+      sCap       += d.captado;
+      sSai       += d.saida;
+      sProd      += d.produtos;
+      sReun      += d.reunioes;
+      sCaptBrasil += d.captBrasil;
+      sCaptInt   += d.captInt;
       lastPL = d.pl || lastPL;
 
       tbody.innerHTML += `<tr>
         <td style="font-weight:600">${MESES_S[m]} ${anoAtual}</td>
-        <td style="font-weight:700;color:var(--ok)">${fmtM(d.captado)}</td>
-        <td class="${nnmCls}">${fmtM(d.nnm)}</td>
+        <td style="font-weight:700;color:var(--ok)">${fmtM(d.captBrasil)}</td>
+        <td style="color:var(--gold)">${d.captInt > 0 ? fmtM(d.captInt) : '<span class="td-zero">—</span>'}</td>
         <td class="${d.saida>0?'td-warn':''}">${fmtM(d.saida)}</td>
+        <td class="${nnmCls}">${fmtM(d.nnm)}</td>
         <td>${d.pl > 0 ? fmtM(d.pl) : '<span class="td-zero">—</span>'}</td>
         <td>${d.produtos > 0 ? fmtR(d.produtos) : '<span class="td-zero">—</span>'}</td>
         <td>${d.reunioes}</td>
@@ -975,9 +1021,10 @@
 
     document.getElementById('mensal-total').innerHTML = `
       <td>TOTAL / MÉDIA</td>
-      <td style="font-weight:800;color:var(--ok)">${fmtM(sCap)}</td>
-      <td class="${sNNM>=0?'td-pos':'td-neg'}" style="font-weight:800">${fmtM(sNNM)}</td>
+      <td style="font-weight:800;color:var(--ok)">${fmtM(sCaptBrasil)}</td>
+      <td style="font-weight:800;color:var(--gold)">${fmtM(sCaptInt)}</td>
       <td style="font-weight:800">${fmtM(sSai)}</td>
+      <td class="${sNNM>=0?'td-pos':'td-neg'}" style="font-weight:800">${fmtM(sNNM)}</td>
       <td style="font-weight:700;color:var(--muted)">${lastPL > 0 ? fmtM(lastPL) : '—'}</td>
       <td style="font-weight:800">${fmtR(sProd)}</td>
       <td style="font-weight:800">${sReun}</td>

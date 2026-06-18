@@ -464,6 +464,25 @@
       <div class="form-hint" id="preview-prod">—</div>
     </div>
 
+    <hr style="border:none;border-top:1px solid rgba(200,160,70,0.14);margin:22px 0 18px">
+    <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);opacity:0.7;margin-bottom:14px">
+      Metas Geográficas <span style="color:var(--warn);font-size:9px;letter-spacing:0;text-transform:none;font-weight:500">— aguardando alinhamento com Pedro/liderança</span>
+    </div>
+    <div class="form-grid2">
+      <div class="form-field" style="margin-bottom:0">
+        <label class="form-label">Meta Brasil — Anual (R$)</label>
+        <input type="number" id="f-meta-brasil" class="form-input" placeholder="Ex: 1000000000"
+          min="0" step="10000000" oninput="atualizarPreviewBrasil()">
+        <div class="form-hint" id="preview-meta-brasil">—</div>
+      </div>
+      <div class="form-field" style="margin-bottom:0">
+        <label class="form-label">Meta América Latina — Anual (R$)</label>
+        <input type="number" id="f-meta-latam" class="form-input" placeholder="Ex: 500000000"
+          min="0" step="10000000" oninput="atualizarPreviewLatam()">
+        <div class="form-hint" id="preview-meta-latam">—</div>
+      </div>
+    </div>
+
     <div class="modal-footer">
       <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
       <button class="btn-salvar" onclick="salvarConsultor()">Salvar</button>
@@ -615,13 +634,17 @@
     const cor  = c?.cor  || '#3B82F6';
     document.getElementById('f-nome').value = nome;
     document.getElementById('f-cor').value  = cor;
-    document.getElementById('f-reun').value = c?.meta_reunioes_mensal ?? 10;
-    document.getElementById('f-nnm').value  = c?.meta_nnm_mensal   ?? '';
-    document.getElementById('f-prod').value = c?.meta_produtos_mensal ?? '';
+    document.getElementById('f-reun').value        = c?.meta_reunioes_mensal ?? 10;
+    document.getElementById('f-nnm').value          = c?.meta_nnm_mensal   ?? '';
+    document.getElementById('f-prod').value         = c?.meta_produtos_mensal ?? '';
+    document.getElementById('f-meta-brasil').value  = c?.meta_brasil ?? '';
+    document.getElementById('f-meta-latam').value   = c?.meta_latam  ?? '';
 
     onCorChange(cor);
     atualizarPreviewNNM();
     atualizarPreviewProd();
+    atualizarPreviewBrasil();
+    atualizarPreviewLatam();
 
     document.getElementById('modal').classList.add('open');
     setTimeout(() => document.getElementById('f-nome').focus(), 50);
@@ -660,6 +683,20 @@
       : '—';
   }
 
+  function atualizarPreviewBrasil() {
+    const v = parseFloat(document.getElementById('f-meta-brasil').value) || 0;
+    document.getElementById('preview-meta-brasil').innerHTML = v > 0
+      ? `= <strong>${fmtM(v)} por ano</strong>`
+      : '—';
+  }
+
+  function atualizarPreviewLatam() {
+    const v = parseFloat(document.getElementById('f-meta-latam').value) || 0;
+    document.getElementById('preview-meta-latam').innerHTML = v > 0
+      ? `= <strong>${fmtM(v)} por ano</strong>`
+      : '—';
+  }
+
   async function salvarConsultor() {
     const nome = document.getElementById('f-nome').value.trim();
     if (!nome) { showToast('Informe o nome do consultor.', 'err'); return; }
@@ -671,6 +708,8 @@
       meta_nnm_anual:       (parseFloat(document.getElementById('f-nnm').value)  || 0) * 12,
       meta_reunioes_mensal: parseInt(document.getElementById('f-reun').value)   || 10,
       meta_produtos_mensal: parseFloat(document.getElementById('f-prod').value) || 0,
+      meta_brasil:          parseFloat(document.getElementById('f-meta-brasil').value) || null,
+      meta_latam:           parseFloat(document.getElementById('f-meta-latam').value)  || null,
     };
 
     try {

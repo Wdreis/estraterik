@@ -431,6 +431,25 @@
         <div class="chart-wrap"><canvas id="chartAnual"></canvas></div>
       </div>
 
+      <!-- RESUMO ANUAL -->
+      <div class="section-title" style="margin-top:28px">Resumo Anual — Todos os Meses</div>
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left">Mês</th>
+              <th style="text-align:right">Captado Brasil</th>
+              <th style="text-align:right">Captado Int'l</th>
+              <th style="text-align:right">Saída</th>
+              <th style="text-align:right">NNM</th>
+              <th style="text-align:right">PL</th>
+            </tr>
+          </thead>
+          <tbody id="anual-body"></tbody>
+          <tfoot><tr id="anual-total"></tr></tfoot>
+        </table>
+      </div>
+
       <!-- PRODUTOS DO MÊS -->
       <div class="section-title">Produtos — Receita do Mês</div>
       <div class="table-card">
@@ -552,6 +571,9 @@
       </div>
       <div class="form-grid">
         <div class="form-group"><label>PL Total (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
+        <div style="font-size:11px;color:var(--gold);background:rgba(200,160,70,0.08);border:1px solid rgba(200,160,70,0.2);border-radius:6px;padding:8px 12px;margin:-4px 0 14px;line-height:1.5">
+          <strong>Regra 19/19:</strong> Registre o PL com a posição D+0 do dia <strong>19</strong> de cada mês (alguns fundos só fecham cotas depois do dia 1).
+        </div>
         <div class="form-group"><label>Meta NNM Mensal (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-meta-nnm" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
       </div>
 
@@ -753,6 +775,53 @@
     document.getElementById('loading').classList.add('hidden');
   }
 
+  function renderAnualTable(capAnual) {
+    const MESES_S = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const tbody = document.getElementById('anual-body');
+    const tfoot = document.getElementById('anual-total');
+    if (!tbody || !tfoot) return;
+    tbody.innerHTML = '';
+    let sCaptBrasil = 0, sCaptInt = 0, sSaida = 0, sNNM = 0, lastPL = 0;
+
+    for (let m = 1; m <= 12; m++) {
+      const row = capAnual.find(r => r.mes === m);
+      if (!row) {
+        tbody.innerHTML += `<tr style="opacity:0.35"><td>${MESES_S[m]}</td><td colspan="5" style="text-align:center;font-size:11px;color:var(--muted2)">—</td></tr>`;
+        continue;
+      }
+      const captInt    = n(row.captado_int);
+      const captBrasil = n(row.captado) - captInt;
+      const saida      = n(row.saida);
+      const nnm        = n(row.nnm);
+      const pl         = n(row.pl);
+      sCaptBrasil += captBrasil;
+      sCaptInt    += captInt;
+      sSaida      += saida;
+      sNNM        += nnm;
+      if (pl > 0) lastPL = pl;
+
+      const nnmCls = nnm >= 0 ? 'color:var(--ok)' : 'color:var(--danger)';
+      tbody.innerHTML += `<tr>
+        <td style="font-weight:600">${MESES_S[m]} ${anoAtual}</td>
+        <td style="text-align:right;font-weight:700;color:var(--ok)">${fmtM(captBrasil)}</td>
+        <td style="text-align:right;color:var(--gold)">${captInt > 0 ? fmtM(captInt) : '<span style="color:var(--muted2)">—</span>'}</td>
+        <td style="text-align:right;color:${saida>0?'var(--warn)':'var(--muted)'}">${fmtM(saida)}</td>
+        <td style="text-align:right;${nnmCls};font-weight:700">${fmtM(nnm)}</td>
+        <td style="text-align:right;color:var(--muted)">${pl > 0 ? fmtM(pl) : '<span style="color:var(--muted2)">—</span>'}</td>
+      </tr>`;
+    }
+
+    const nnmTotCls = sNNM >= 0 ? 'color:var(--ok)' : 'color:var(--danger)';
+    tfoot.innerHTML = `
+      <td style="font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold)">TOTAL ANO</td>
+      <td style="text-align:right;font-weight:800;color:var(--ok)">${fmtM(sCaptBrasil)}</td>
+      <td style="text-align:right;font-weight:800;color:var(--gold)">${fmtM(sCaptInt)}</td>
+      <td style="text-align:right;font-weight:800">${fmtM(sSaida)}</td>
+      <td style="text-align:right;font-weight:800;${nnmTotCls}">${fmtM(sNNM)}</td>
+      <td style="text-align:right;font-weight:700;color:var(--muted)">${lastPL > 0 ? fmtM(lastPL) : '—'}</td>
+    `;
+  }
+
   async function carregar() {
     document.getElementById('periodo-label').textContent = MESES[mesAtual] + ' ' + anoAtual;
 
@@ -760,7 +829,7 @@
       db.from('captacao_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('produtos_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('leads_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
-      db.from('captacao_mensal').select('mes,nnm,captado,saida,pl').eq('consultor_id', consultorId).eq('ano', anoAtual).order('mes'),
+      db.from('captacao_mensal').select('mes,nnm,captado,saida,pl,captado_int,saida_int').eq('consultor_id', consultorId).eq('ano', anoAtual).order('mes'),
       db.from('stvm').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).order('created_at'),
     ]);
 
@@ -874,6 +943,9 @@
         }
       }
     });
+
+    // Tabela anual
+    renderAnualTable(capAnual);
 
     // Tabela de produtos
     const PROD_LABELS = {
