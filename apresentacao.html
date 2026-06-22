@@ -328,6 +328,41 @@
         </div>
       </div>
 
+      <!-- PATRIMÔNIO -->
+      <div class="section-title">Patrimônio — Posição Atual</div>
+      <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 28px;">
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">Patrimônio Total</div>
+          <div class="kpi-value" id="kpi-pl-total">—</div>
+          <div class="kpi-sub">Nacional + Internacional</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--teal)">
+          <div class="kpi-label">PL Nacional</div>
+          <div class="kpi-value" id="kpi-pl-nacional">—</div>
+          <div class="kpi-sub">BTG + XP + Outros Bancos</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#A855F7">
+          <div class="kpi-label">PL Internacional</div>
+          <div class="kpi-value" id="kpi-pl-int">—</div>
+          <div class="kpi-sub">Patrimônio offshore / exterior</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#3B82F6">
+          <div class="kpi-label">Patrimônio BTG</div>
+          <div class="kpi-value" id="kpi-pl-btg">—</div>
+          <div class="kpi-sub">Total sob custódia BTG</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#EF4444">
+          <div class="kpi-label">Patrimônio XP</div>
+          <div class="kpi-value" id="kpi-pl-xp">—</div>
+          <div class="kpi-sub">Total sob custódia XP</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#F59E0B">
+          <div class="kpi-label">Outros Bancos</div>
+          <div class="kpi-value" id="kpi-pl-outros">—</div>
+          <div class="kpi-sub">Demais corretoras e bancos</div>
+        </div>
+      </div>
+
       <!-- RANKING NNM -->
       <div class="section-title">Ranking — Net New Money</div>
       <div class="ranking-grid ranking-section" id="ranking-grid"></div>
@@ -460,7 +495,9 @@ function setPeriodo(ini, fim, srcBtn) {
       const leadsAgg = {};
 
       consultores.forEach(c => {
-        capAgg[c.id]   = { captado: 0, nnm: 0, saida: 0, pl: 0, _lastMes: 0 };
+        capAgg[c.id]   = { captado: 0, nnm: 0, saida: 0, pl: 0, _lastMes: 0,
+                           captado_int: 0, saida_int: 0,
+                           pl_btg: 0, pl_xp: 0, pl_outros: 0, pl_int: 0 };
         prodAgg[c.id]  = {};
         PROD_KEYS.forEach(k => prodAgg[c.id][k] = 0);
         leadsAgg[c.id] = { reunioes: 0 };
@@ -468,11 +505,17 @@ function setPeriodo(ini, fim, srcBtn) {
 
       capRows.forEach(r => {
         if (!capAgg[r.consultor_id]) return;
-        capAgg[r.consultor_id].captado += n(r.captado);
-        capAgg[r.consultor_id].nnm     += n(r.nnm);
-        capAgg[r.consultor_id].saida   += n(r.saida);
+        capAgg[r.consultor_id].captado     += n(r.captado);
+        capAgg[r.consultor_id].nnm         += n(r.nnm);
+        capAgg[r.consultor_id].saida       += n(r.saida);
+        capAgg[r.consultor_id].captado_int += n(r.captado_int);
+        capAgg[r.consultor_id].saida_int   += n(r.saida_int);
         if (r.mes > capAgg[r.consultor_id]._lastMes) {
           capAgg[r.consultor_id].pl       = n(r.pl);
+          capAgg[r.consultor_id].pl_btg   = n(r.pl_btg);
+          capAgg[r.consultor_id].pl_xp    = n(r.pl_xp);
+          capAgg[r.consultor_id].pl_outros= n(r.pl_outros);
+          capAgg[r.consultor_id].pl_int   = n(r.pl_int);
           capAgg[r.consultor_id]._lastMes = r.mes;
         }
       });
@@ -507,6 +550,19 @@ function setPeriodo(ini, fim, srcBtn) {
     const totalSaida   = Object.values(capAgg).reduce((s,r) => s + r.saida, 0);
     const totalReun    = Object.values(leadsAgg).reduce((s,r) => s + r.reunioes, 0);
     const pctMeta      = metaNNM > 0 ? totalNNM / metaNNM : 0;
+
+    const totalPL       = Object.values(capAgg).reduce((s,r) => s + r.pl, 0);
+    const totalPLbtg    = Object.values(capAgg).reduce((s,r) => s + r.pl_btg, 0);
+    const totalPLxp     = Object.values(capAgg).reduce((s,r) => s + r.pl_xp, 0);
+    const totalPLoutros = Object.values(capAgg).reduce((s,r) => s + r.pl_outros, 0);
+    const totalPLint    = Object.values(capAgg).reduce((s,r) => s + r.pl_int, 0);
+    const totalPLnacional = totalPLbtg + totalPLxp + totalPLoutros;
+    document.getElementById('kpi-pl-total').textContent    = fmtM(totalPL);
+    document.getElementById('kpi-pl-nacional').textContent = fmtM(totalPLnacional);
+    document.getElementById('kpi-pl-int').textContent      = fmtM(totalPLint);
+    document.getElementById('kpi-pl-btg').textContent      = fmtM(totalPLbtg);
+    document.getElementById('kpi-pl-xp').textContent       = fmtM(totalPLxp);
+    document.getElementById('kpi-pl-outros').textContent   = fmtM(totalPLoutros);
 
     document.getElementById('kpi-nnm').textContent     = fmtM(totalNNM);
     document.getElementById('kpi-nnm').style.color     = totalNNM >= 0 ? '' : 'var(--danger)';
@@ -556,19 +612,21 @@ function setPeriodo(ini, fim, srcBtn) {
     cgEl.innerHTML = '';
     const consAlfabeticos = [...consultores].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     consAlfabeticos.forEach(c => {
-      const cap     = capAgg[c.id]   || {};
-      const lead    = leadsAgg[c.id] || {};
-      const rank    = rankMap[c.id];
-      const nnm     = cap.nnm     || 0;
-      const captado = cap.captado || 0;
-      const pl      = cap.pl      || 0;
-      const saida   = cap.saida   || 0;
-      const churn   = pl > 0 ? (saida / pl * 100) : 0;
-      const reun    = lead.reunioes || 0;
-      const metaR   = (c.meta_reunioes_mensal || 10) * numMeses;
-      const metaC   = c.meta_nnm_mensal * numMeses;
-      const pctN    = metaC > 0 ? clamp(nnm / metaC * 100, 0, 100) : 0;
-      const pctNR   = metaC > 0 ? Math.round(nnm / metaC * 100) : 0;
+      const cap      = capAgg[c.id]   || {};
+      const lead     = leadsAgg[c.id] || {};
+      const rank     = rankMap[c.id];
+      const nnm      = cap.nnm      || 0;
+      const captado  = cap.captado  || 0;
+      const pl       = cap.pl       || 0;
+      const saida    = cap.saida    || 0;
+      const nnmInt   = (cap.captado_int || 0) - (cap.saida_int || 0);
+      const nnmBrasil = nnm - nnmInt;
+      const churn    = pl > 0 ? (saida / pl * 100) : 0;
+      const reun     = lead.reunioes || 0;
+      const metaR    = (c.meta_reunioes_mensal || 10) * numMeses;
+      const metaC    = c.meta_nnm_mensal * numMeses;
+      const pctN     = metaC > 0 ? clamp(nnm / metaC * 100, 0, 100) : 0;
+      const pctNR    = metaC > 0 ? Math.round(nnm / metaC * 100) : 0;
       const badgeClass = rank===1?'g':rank===2?'s':rank===3?'b':'';
       const churnClass = churn > 1.5 ? 'bad' : churn > 0.8 ? 'warn' : 'ok';
       const reunClass  = reun >= metaR ? 'ok' : reun >= metaR*0.7 ? 'warn' : 'bad';
@@ -594,16 +652,24 @@ function setPeriodo(ini, fim, srcBtn) {
           </div>
           <div class="c-stats">
             <div class="c-stat">
-              <div class="c-stat-label">Captado</div>
-              <div class="c-stat-value ok">${fmtM(captado)}</div>
+              <div class="c-stat-label">NNM Brasil</div>
+              <div class="c-stat-value ${nnmBrasil>=0?'ok':'bad'}">${fmtM(nnmBrasil)}</div>
+            </div>
+            <div class="c-stat">
+              <div class="c-stat-label">NNM Internacional</div>
+              <div class="c-stat-value ${nnmInt>=0?'ok':'bad'}">${fmtM(nnmInt)}</div>
+            </div>
+            <div class="c-stat">
+              <div class="c-stat-label">Churn</div>
+              <div class="c-stat-value ${churnClass}">${churn.toFixed(2)}%</div>
             </div>
             <div class="c-stat">
               <div class="c-stat-label">Reuniões</div>
               <div class="c-stat-value ${reunClass}">${reun} / ${metaR}</div>
             </div>
             <div class="c-stat">
-              <div class="c-stat-label">Churn</div>
-              <div class="c-stat-value ${churnClass}">${churn.toFixed(2)}%</div>
+              <div class="c-stat-label">NNM Total</div>
+              <div class="c-stat-value ${nnm>=0?'ok':'bad'}">${fmtM(nnm)}</div>
             </div>
             <div class="c-stat">
               <div class="c-stat-label">Saída</div>
