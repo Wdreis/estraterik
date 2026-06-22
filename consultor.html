@@ -600,6 +600,17 @@
         <div class="form-group"><label>Captado Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
         <div class="form-group"><label>Saída Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)"></div>
       </div>
+
+      <div class="form-section-label" style="color:var(--warn)">↔ Transferência Nacional → Internacional</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Valor Transferido (R$)</label>
+          <input type="text" inputmode="numeric" class="inp-brl" id="e-transf-nac-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)">
+        </div>
+        <div style="font-size:11px;color:var(--warn);background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.2);border-radius:6px;padding:8px 12px;line-height:1.5;align-self:center">
+          Valor que saiu de corretoras nacionais (BTG/XP/Outros) e foi para conta internacional. <strong>Não conta como perda</strong> no NNM Brasil — é uma transição de custódia.
+        </div>
+      </div>
     </div>
 
     <!-- TAB PRODUTOS -->
@@ -789,14 +800,16 @@
         tbody.innerHTML += `<tr style="opacity:0.35"><td>${MESES_S[m]}</td><td colspan="5" style="text-align:center;font-size:11px;color:var(--muted2)">—</td></tr>`;
         continue;
       }
-      const captInt    = n(row.captado_int);
-      const captBrasil = n(row.captado) - captInt;
-      const saida      = n(row.saida);
-      const nnm        = n(row.nnm);
-      const pl         = n(row.pl);
+      const captInt      = n(row.captado_int);
+      const captBrasil   = n(row.captado) - captInt;
+      const saida        = n(row.saida);
+      const transf       = n(row.transf_nac_para_int);
+      const saidaEfetiva = saida - transf;
+      const nnm          = n(row.nnm);
+      const pl           = n(row.pl);
       sCaptBrasil += captBrasil;
       sCaptInt    += captInt;
-      sSaida      += saida;
+      sSaida      += saidaEfetiva;
       sNNM        += nnm;
       if (pl > 0) lastPL = pl;
 
@@ -805,7 +818,7 @@
         <td style="font-weight:600">${MESES_S[m]} ${anoAtual}</td>
         <td style="text-align:right;font-weight:700;color:var(--ok)">${fmtM(captBrasil)}</td>
         <td style="text-align:right;color:var(--gold)">${captInt > 0 ? fmtM(captInt) : '<span style="color:var(--muted2)">—</span>'}</td>
-        <td style="text-align:right;color:${saida>0?'var(--warn)':'var(--muted)'}">${fmtM(saida)}</td>
+        <td style="text-align:right;color:${saidaEfetiva>0?'var(--warn)':'var(--muted)'}">${fmtM(saidaEfetiva)}${transf > 0 ? `<span style="font-size:9px;color:var(--gold);margin-left:4px" title="Inclui transf. nac→int de ${fmtM(transf)}">↔</span>` : ''}</td>
         <td style="text-align:right;${nnmCls};font-weight:700">${fmtM(nnm)}</td>
         <td style="text-align:right;color:var(--muted)">${pl > 0 ? fmtM(pl) : '<span style="color:var(--muted2)">—</span>'}</td>
       </tr>`;
@@ -829,7 +842,7 @@
       db.from('captacao_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('produtos_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('leads_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
-      db.from('captacao_mensal').select('mes,nnm,captado,saida,pl,captado_int,saida_int').eq('consultor_id', consultorId).eq('ano', anoAtual).order('mes'),
+      db.from('captacao_mensal').select('mes,nnm,captado,saida,pl,captado_int,saida_int,transf_nac_para_int').eq('consultor_id', consultorId).eq('ano', anoAtual).order('mes'),
       db.from('stvm').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).order('created_at'),
     ]);
 
@@ -1213,8 +1226,9 @@
     set('e-pl-int',      cap.pl_int);
     set('e-cap-outros',  cap.captado_outros);
     set('e-sai-outros',  cap.saida_outros);
-    set('e-cap-int',     cap.captado_int);
-    set('e-sai-int',     cap.saida_int);
+    set('e-cap-int',         cap.captado_int);
+    set('e-sai-int',         cap.saida_int);
+    set('e-transf-nac-int',  cap.transf_nac_para_int);
     set('e-estudos',     prod.estudos);
     set('e-previdencia', prod.previdencia);
     set('e-seguros',     prod.seguros);
@@ -1319,17 +1333,18 @@
   async function salvarMes() {
     const g = id => parseBR(document.getElementById(id).value);
 
-    const capBtg   = g('e-cap-btg');
-    const saiBtg   = g('e-sai-btg');
-    const capXp    = g('e-cap-xp');
-    const saiXp    = g('e-sai-xp');
-    const capOut   = g('e-cap-outros');
-    const saiOut   = g('e-sai-outros');
-    const capInt   = g('e-cap-int');
-    const saiInt   = g('e-sai-int');
+    const capBtg       = g('e-cap-btg');
+    const saiBtg       = g('e-sai-btg');
+    const capXp        = g('e-cap-xp');
+    const saiXp        = g('e-sai-xp');
+    const capOut       = g('e-cap-outros');
+    const saiOut       = g('e-sai-outros');
+    const capInt       = g('e-cap-int');
+    const saiInt       = g('e-sai-int');
+    const transfNacInt = g('e-transf-nac-int');
     const captado  = capBtg + capXp + capOut + capInt;
     const saida    = saiBtg + saiXp + saiOut + saiInt;
-    const nnm      = captado - saida;
+    const nnm      = captado - saida + transfNacInt;
 
     const plBtg    = g('e-pl-btg');
     const plXp     = g('e-pl-xp');
@@ -1346,6 +1361,7 @@
       captado_xp: capXp, saida_xp: saiXp,
       captado_outros: capOut, saida_outros: saiOut,
       captado_int: capInt, saida_int: saiInt,
+      transf_nac_para_int: transfNacInt,
     };
 
     const prodPayload = {

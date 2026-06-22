@@ -753,7 +753,8 @@
     // Brasil vs Internacional
     const totCaptBrasil  = Object.values(consAgg).reduce((s,r) => s + r.captBrasil, 0);
     const totSaidaBrasil = Object.values(consAgg).reduce((s,r) => s + r.saidaBrasil, 0);
-    const totNetBrasil   = totCaptBrasil - totSaidaBrasil;
+    const totTransf      = cap.reduce((s,r) => s + n(r.transf_nac_para_int), 0);
+    const totNetBrasil   = totCaptBrasil - totSaidaBrasil + totTransf;
     const totCaptInt     = Object.values(consAgg).reduce((s,r) => s + r.captInt, 0);
     const totSaidaInt    = Object.values(consAgg).reduce((s,r) => s + r.saidaInt, 0);
     const totNetInt      = totCaptInt - totSaidaInt;
@@ -779,7 +780,7 @@
     netBrasilEl.textContent = fmtM(totNetBrasil);
     netBrasilEl.style.color = totNetBrasil >= 0 ? '' : 'var(--danger)';
     document.getElementById('kpi-net-brasil-sub').innerHTML =
-      `Captado: <strong>${fmtM(totCaptBrasil)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totSaidaBrasil)}</strong>`;
+      `Captado: <strong>${fmtM(totCaptBrasil)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totSaidaBrasil - totTransf)}</strong>`;
     const netIntEl = document.getElementById('kpi-net-int');
     netIntEl.textContent = fmtM(totNetInt);
     netIntEl.style.color = totNetInt >= 0 ? '' : 'var(--danger)';

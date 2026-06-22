@@ -750,8 +750,10 @@
 
     // Brasil vs Internacional
     const totalCaptBrasil  = Object.values(capMap).reduce((s,r) => s + (r.captado||0) - (r.captado_int||0), 0);
+    const totalTransf      = Object.values(capMap).reduce((s,r) => s + (r.transf_nac_para_int||0), 0);
     const totalSaidaBrasil = Object.values(capMap).reduce((s,r) => s + (r.saida||0) - (r.saida_int||0), 0);
-    const totalNetBrasil   = totalCaptBrasil - totalSaidaBrasil;
+    const totalSaidaBrasilEfetiva = totalSaidaBrasil - totalTransf;
+    const totalNetBrasil   = totalCaptBrasil - totalSaidaBrasilEfetiva;
     const totalCaptInt     = Object.values(capMap).reduce((s,r) => s + (r.captado_int||0), 0);
     const totalSaidaInt    = Object.values(capMap).reduce((s,r) => s + (r.saida_int||0), 0);
     const totalNetInt      = totalCaptInt - totalSaidaInt;
@@ -794,7 +796,7 @@
     netBrasilEl.textContent  = fmtM(totalNetBrasil);
     netBrasilEl.style.color  = totalNetBrasil >= 0 ? '' : 'var(--danger)';
     document.getElementById('kpi-net-brasil-sub').innerHTML =
-      `Captado: <strong>${fmtM(totalCaptBrasil)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totalSaidaBrasil)}</strong>`;
+      `Captado: <strong>${fmtM(totalCaptBrasil)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totalSaidaBrasilEfetiva)}</strong>`;
     const netIntEl = document.getElementById('kpi-net-int');
     netIntEl.textContent  = fmtM(totalNetInt);
     netIntEl.style.color  = totalNetInt >= 0 ? '' : 'var(--danger)';
@@ -809,14 +811,16 @@
     cgEl.innerHTML = '';
     const consAlfabeticos = [...consultores].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
     consAlfabeticos.forEach(c => {
-      const cap     = capMap[c.id]   || {};
-      const lead    = leadsMap[c.id] || {};
-      const rank    = rankMap[c.id];
-      const nnm     = cap.nnm     || 0;
-      const captado = cap.captado || 0;
-      const pl      = cap.pl      || 0;
-      const saida   = cap.saida   || 0;
-      const churn   = pl > 0 ? (saida / pl * 100) : 0;
+      const cap      = capMap[c.id]   || {};
+      const lead     = leadsMap[c.id] || {};
+      const rank     = rankMap[c.id];
+      const nnm      = cap.nnm      || 0;
+      const captado  = cap.captado  || 0;
+      const pl       = cap.pl       || 0;
+      const saida    = cap.saida    || 0;
+      const nnmInt   = (cap.captado_int||0) - (cap.saida_int||0);
+      const nnmBrasil = nnm - nnmInt;
+      const churn    = pl > 0 ? (saida / pl * 100) : 0;
       const reun    = lead.reunioes || 0;
       const metaR   = c.meta_reunioes_mensal || 10;
       const pctC    = c.meta_nnm_mensal > 0 ? clamp(captado / c.meta_nnm_mensal * 100, 0, 100) : 0;
@@ -848,6 +852,14 @@
           </div>
           <div class="c-stats">
             <div class="c-stat">
+              <div class="c-stat-label">NNM Brasil</div>
+              <div class="c-stat-value ${nnmBrasil>=0?'ok':'bad'}">${fmtM(nnmBrasil)}</div>
+            </div>
+            <div class="c-stat">
+              <div class="c-stat-label">NNM Internacional</div>
+              <div class="c-stat-value ${nnmInt>=0?'ok':'bad'}">${fmtM(nnmInt)}</div>
+            </div>
+            <div class="c-stat">
               <div class="c-stat-label">Churn</div>
               <div class="c-stat-value ${churnClass}">${churn.toFixed(2)}%</div>
             </div>
@@ -856,7 +868,7 @@
               <div class="c-stat-value ${reunClass}">${reun} / ${metaR}</div>
             </div>
             <div class="c-stat">
-              <div class="c-stat-label">Net New Money</div>
+              <div class="c-stat-label">NNM Total</div>
               <div class="c-stat-value ${nnm>=0?'ok':'bad'}">${fmtM(nnm)}</div>
             </div>
             <div class="c-stat">
