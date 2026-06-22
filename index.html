@@ -512,32 +512,32 @@
         <div class="kpi-card" style="--kpi-color:var(--gold)">
           <div class="kpi-label">Patrimônio Total</div>
           <div class="kpi-value" id="kpi-pl-total">—</div>
-          <div class="kpi-sub">Soma global dos consultores</div>
+          <div class="kpi-sub">Nacional + Internacional</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--teal)">
-          <div class="kpi-label">Base Oikos — BTG + XP</div>
+          <div class="kpi-label">PL Nacional</div>
           <div class="kpi-value" id="kpi-pl-oikos">—</div>
-          <div class="kpi-sub">Patrimônio nas corretoras principais</div>
+          <div class="kpi-sub">BTG + XP + Outros Bancos</div>
         </div>
-        <div class="kpi-card" style="--kpi-color:var(--ok)">
-          <div class="kpi-label">Outros Bancos</div>
+        <div class="kpi-card" style="--kpi-color:#A855F7">
+          <div class="kpi-label">PL Internacional</div>
           <div class="kpi-value" id="kpi-pl-outros">—</div>
-          <div class="kpi-sub">Patrimônio em outros bancos</div>
+          <div class="kpi-sub">Patrimônio offshore / exterior</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#3B82F6">
-          <div class="kpi-label">Patrimônio Total BTG</div>
+          <div class="kpi-label">Patrimônio BTG</div>
           <div class="kpi-value" id="kpi-pl-btg">—</div>
           <div class="kpi-sub">Total sob custódia BTG</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#EF4444">
-          <div class="kpi-label">Patrimônio Total XP</div>
+          <div class="kpi-label">Patrimônio XP</div>
           <div class="kpi-value" id="kpi-pl-xp">—</div>
           <div class="kpi-sub">Total sob custódia XP</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#F59E0B">
-          <div class="kpi-label">Patrimônio Total Outras Casas</div>
+          <div class="kpi-label">Outros Bancos</div>
           <div class="kpi-value" id="kpi-pl-outras-casas">—</div>
-          <div class="kpi-sub">Total em outras corretoras</div>
+          <div class="kpi-sub">Demais corretoras e bancos</div>
         </div>
       </div>
 
@@ -761,14 +761,15 @@
     const metaNNM      = 25000000;
     const pctMeta      = totalNNM / metaNNM;
 
-    // PL breakdown (BTG, XP, Outros) — usa pl_btg/pl_xp/pl_outros se preenchidos, senão usa captado como proxy
-    const totalPLbtg    = Object.values(capMap).reduce((s,r) => s + (r.pl_btg  || r.captado_btg  || 0), 0);
-    const totalPLxp     = Object.values(capMap).reduce((s,r) => s + (r.pl_xp   || r.captado_xp   || 0), 0);
-    const totalPLoutros = Object.values(capMap).reduce((s,r) => s + (r.pl_outros|| (r.captado_outros||0) + (r.captado_int||0)), 0);
-    const totalPLoikos  = totalPLbtg + totalPLxp;
+    // PL breakdown por corretora
+    const totalPLbtg      = Object.values(capMap).reduce((s,r) => s + (r.pl_btg    || r.captado_btg    || 0), 0);
+    const totalPLxp       = Object.values(capMap).reduce((s,r) => s + (r.pl_xp     || r.captado_xp     || 0), 0);
+    const totalPLoutros   = Object.values(capMap).reduce((s,r) => s + (r.pl_outros  || r.captado_outros  || 0), 0);
+    const totalPLint      = Object.values(capMap).reduce((s,r) => s + (r.pl_int     || 0), 0);
+    const totalPLnacional = totalPLbtg + totalPLxp + totalPLoutros;
     document.getElementById('kpi-pl-total').textContent        = fmtM(totalPL);
-    document.getElementById('kpi-pl-oikos').textContent        = fmtM(totalPLoikos);
-    document.getElementById('kpi-pl-outros').textContent       = fmtM(totalPLoutros);
+    document.getElementById('kpi-pl-oikos').textContent        = fmtM(totalPLnacional);
+    document.getElementById('kpi-pl-outros').textContent       = fmtM(totalPLint);
     document.getElementById('kpi-pl-btg').textContent          = fmtM(totalPLbtg);
     document.getElementById('kpi-pl-xp').textContent           = fmtM(totalPLxp);
     document.getElementById('kpi-pl-outras-casas').textContent = fmtM(totalPLoutros);
