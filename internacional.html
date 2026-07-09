@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>OIKOS FAMILY OFFICE — Painel Geral</title>
+  <title>OIKOS FAMILY OFFICE — Internacional</title>
   <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -161,16 +161,8 @@
     .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
     /* ─── KPI GRID ─── */
-    .kpi-grid-4 {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 14px; margin-bottom: 28px;
-    }
-    .kpi-grid-6 {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 14px; margin-bottom: 28px;
-    }
+    .kpi-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 28px; }
+    .kpi-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
     .kpi-card {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 12px; padding: 20px;
@@ -190,8 +182,6 @@
     .kpi-sub .bad { color: var(--danger); }
 
     /* ─── CHARTS ─── */
-    .charts-section { margin-bottom: 28px; }
-    .charts-col { display: flex; flex-direction: column; gap: 14px; }
     .chart-card {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 12px; padding: 20px 22px; margin-bottom: 14px;
@@ -224,7 +214,6 @@
     tbody td:first-child { text-align: left; }
     tbody td.td-center { text-align: center; }
     .td-zero { color: var(--muted2); font-weight: 400; }
-    .td-total { color: var(--gold2); font-weight: 800; }
     tfoot td {
       padding: 10px 16px; text-align: right;
       font-weight: 700; font-size: 13px; color: var(--text);
@@ -270,19 +259,10 @@
       font-size: 11px; color: var(--muted); letter-spacing: 0.3px;
     }
 
-    .btn-head-report {
-      display:flex;align-items:center;gap:7px;
-      background:none;border:1px solid rgba(200,160,70,0.18);
-      color:var(--muted);padding:7px 16px;border-radius:8px;
-      font-family:inherit;font-size:11px;font-weight:500;
-      cursor:pointer;letter-spacing:0.3px;transition:all 0.2s;
-    }
-    .btn-head-report:hover { border-color:var(--gold);color:var(--gold); }
-
     /* ─── RESPONSIVE ─── */
     @media (max-width: 1200px) {
       .kpi-grid-4 { grid-template-columns: repeat(2, 1fr); }
-      .kpi-grid-6 { grid-template-columns: repeat(2, 1fr); }
+      .kpi-grid-2 { grid-template-columns: 1fr; }
     }
     @media (max-width: 900px) {
       .sidebar { width: 62px; }
@@ -297,7 +277,6 @@
       main { padding: 16px; }
       .topbar { padding: 12px 16px; }
       .kpi-grid-4 { grid-template-columns: 1fr; }
-      .kpi-grid-6 { grid-template-columns: 1fr; }
       .custom-range { flex-wrap: wrap; }
     }
   </style>
@@ -307,7 +286,7 @@
 <div class="loading-overlay" id="loading">
   <img src="logo.svg" alt="Oikos" width="72" height="72" style="object-fit:contain;margin-bottom:10px">
   <div class="loading-logo">OIKOS</div>
-  <div class="loading-sub">Painel Geral</div>
+  <div class="loading-sub">Internacional</div>
   <div class="spinner"></div>
 </div>
 
@@ -327,7 +306,7 @@
 
     <div class="sidebar-section">
       <div class="sidebar-section-label">Menu</div>
-      <a href="painel-geral.html" class="nav-item active">
+      <a href="painel-geral.html" class="nav-item">
         <span class="nav-icon">◈</span>
         <span>Painel Geral</span>
       </a>
@@ -347,7 +326,7 @@
         <span class="nav-icon">⚙</span>
         <span>Gestão</span>
       </a>
-      <a href="internacional.html" class="nav-item">
+      <a href="internacional.html" class="nav-item active">
         <span class="nav-icon">🌐</span>
         <span>Internacional</span>
       </a>
@@ -375,8 +354,8 @@
     <div class="topbar">
       <div class="topbar-row1">
         <div>
-          <div class="topbar-title">Painel Geral</div>
-          <div class="topbar-subtitle">Visão anual e por período da Oikos</div>
+          <div class="topbar-title">Internacional</div>
+          <div class="topbar-subtitle">Movimentações e patrimônio internacional da Oikos</div>
         </div>
         <div class="ano-nav">
           <button class="btn-mes" id="btn-ano-prev">&#8249;</button>
@@ -411,88 +390,68 @@
     <!-- CONTENT -->
     <main>
 
-      <!-- 1: PATRIMÔNIO OIKOS -->
-      <div class="section-title">Patrimônio da Oikos — Brasil</div>
-      <div class="kpi-grid-4">
-        <div class="kpi-card" style="--kpi-color:var(--gold)">
-          <div class="kpi-label">PL Total Oikos</div>
+      <!-- 1: PATRIMÔNIO INTERNACIONAL -->
+      <div class="section-title">Patrimônio Internacional</div>
+      <div class="kpi-grid-2">
+        <div class="kpi-card" style="--kpi-color:#A855F7">
+          <div class="kpi-label">PL Internacional</div>
           <div class="kpi-value" id="kpi-pl-total">—</div>
           <div class="kpi-sub" id="kpi-pl-total-sub">—</div>
         </div>
-        <div class="kpi-card" style="--kpi-color:#3B82F6">
-          <div class="kpi-label">Patrimônio BTG</div>
-          <div class="kpi-value" id="kpi-pl-btg">—</div>
-          <div class="kpi-sub" id="kpi-pl-btg-sub">—</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:#EF4444">
-          <div class="kpi-label">Patrimônio XP</div>
-          <div class="kpi-value" id="kpi-pl-xp">—</div>
-          <div class="kpi-sub" id="kpi-pl-xp-sub">—</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:#F59E0B">
-          <div class="kpi-label">Outras Corretoras</div>
-          <div class="kpi-value" id="kpi-pl-outros">—</div>
-          <div class="kpi-sub" id="kpi-pl-outros-sub">—</div>
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">Transferido Nacional → Internacional</div>
+          <div class="kpi-value" id="kpi-transf">—</div>
+          <div class="kpi-sub" id="kpi-transf-sub">—</div>
         </div>
       </div>
 
       <!-- 2: CRESCIMENTO DE PATRIMÔNIO -->
-      <div class="section-title">Crescimento de Patrimônio — PL por Corretora</div>
+      <div class="section-title">Crescimento de Patrimônio Internacional</div>
       <div class="chart-card">
         <div class="chart-title">
-          Evolução do PL — Ano Completo <span id="ano-pl-label">2026</span>
+          Evolução do PL Internacional — Ano Completo <span id="ano-pl-label">2026</span>
           <span id="pl-ultimo-label">Último: —</span>
         </div>
         <div class="chart-wrap" style="height:280px"><canvas id="chartPL"></canvas></div>
       </div>
 
       <!-- 3: KPIs DO PERÍODO -->
-      <div class="section-title">KPIs do Período</div>
-      <div class="kpi-grid-6" id="kpi-grid">
+      <div class="section-title">Movimentação Internacional do Período</div>
+      <div class="kpi-grid-4" id="kpi-grid">
         <div class="kpi-card" style="--kpi-color:var(--teal)">
-          <div class="kpi-label">Captação Brasil</div>
+          <div class="kpi-label">Captação Internacional</div>
           <div class="kpi-value" id="kpi-captado">—</div>
           <div class="kpi-sub" id="kpi-captado-sub">—</div>
         </div>
+        <div class="kpi-card" style="--kpi-color:var(--danger)">
+          <div class="kpi-label">Saída Internacional</div>
+          <div class="kpi-value" id="kpi-saida">—</div>
+          <div class="kpi-sub" id="kpi-saida-sub">—</div>
+        </div>
         <div class="kpi-card" style="--kpi-color:var(--gold)">
-          <div class="kpi-label">NNM Total do Período</div>
+          <div class="kpi-label">NNM Internacional</div>
           <div class="kpi-value" id="kpi-nnm">—</div>
           <div class="kpi-sub" id="kpi-nnm-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#22c55e">
-          <div class="kpi-label">% da Meta NNM</div>
+          <div class="kpi-label">% da Meta LatAm</div>
           <div class="kpi-value" id="kpi-meta-pct">—</div>
           <div class="kpi-sub" id="kpi-meta-sub">—</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:var(--danger)">
-          <div class="kpi-label">Saída Total</div>
-          <div class="kpi-value" id="kpi-saida">—</div>
-          <div class="kpi-sub" id="kpi-saida-sub">—</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:var(--warn)">
-          <div class="kpi-label">Receita de Produtos</div>
-          <div class="kpi-value" id="kpi-produtos">—</div>
-          <div class="kpi-sub" id="kpi-produtos-sub">—</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:var(--beige)">
-          <div class="kpi-label">Reuniões Realizadas</div>
-          <div class="kpi-value" id="kpi-reunioes">—</div>
-          <div class="kpi-sub" id="kpi-reunioes-sub">—</div>
         </div>
       </div>
 
       <!-- 4: EVOLUÇÃO ANUAL — CAPTADO MENSAL -->
-      <div class="section-title">Evolução Anual — Captado Mensal</div>
+      <div class="section-title">Evolução Anual — Captado Internacional Mensal</div>
       <div class="chart-card">
         <div class="chart-title">
-          Captado Brasil — Jan a Dez <span id="ano-chart-label">2026</span>
+          Captado Internacional — Jan a Dez <span id="ano-chart-label">2026</span>
           <span id="ytd-label">Captado no período: —</span>
         </div>
         <div class="chart-wrap"><canvas id="chartNNM"></canvas></div>
       </div>
 
       <!-- 5: RANKING DO PERÍODO -->
-      <div class="section-title">Ranking do Período — Captação Total</div>
+      <div class="section-title">Ranking do Período — Captação Internacional</div>
       <div class="table-card" style="margin-bottom:28px">
         <table id="tabela-ranking">
           <thead>
@@ -502,9 +461,7 @@
               <th>Captado</th>
               <th>Saído</th>
               <th>NNM</th>
-              <th>% Meta NNM</th>
-              <th>Rec. Produtos</th>
-              <th>Reuniões</th>
+              <th>% Meta LatAm</th>
             </tr>
           </thead>
           <tbody id="ranking-body"></tbody>
@@ -522,22 +479,12 @@
               <th>Saído</th>
               <th>NNM</th>
               <th>PL</th>
-              <th>Rec. Produtos</th>
-              <th>Reuniões</th>
-              <th>% Meta NNM</th>
+              <th>Transf. Recebida</th>
             </tr>
           </thead>
           <tbody id="mensal-body"></tbody>
           <tfoot><tr id="mensal-total"></tr></tfoot>
         </table>
-      </div>
-
-      <!-- BOTÃO RELATÓRIO HEAD -->
-      <div style="margin-top:32px;padding-top:20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
-        <button class="btn-head-report" onclick="window.open('apresentacao.html', '_blank')">
-          <span style="font-size:13px">📊</span>
-          <span>Relatório Head</span>
-        </button>
       </div>
 
     </main>
@@ -572,7 +519,6 @@
     if (abs >= 1e3) return sig + 'R$ ' + (abs/1e3).toFixed(1) + 'K';
     return sig + 'R$ ' + abs.toFixed(0);
   };
-  const fmtR = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR', {minimumFractionDigits:0, maximumFractionDigits:0});
   const fmtP = v => (v * 100).toFixed(1) + '%';
   const n = v => parseFloat(v) || 0;
 
@@ -607,16 +553,6 @@
   }
 
   // ─── PERIODO BUTTONS ─────────────────────────────────────────
-  const PERIODOS = [
-    { label: 'Ano Completo', ini: 1,  fim: 12 },
-    { label: 'Q1 (Jan–Mar)', ini: 1,  fim: 3  },
-    { label: 'Q2 (Abr–Jun)', ini: 4,  fim: 6  },
-    { label: 'Q3 (Jul–Set)', ini: 7,  fim: 9  },
-    { label: 'Q4 (Out–Dez)', ini: 10, fim: 12 },
-    { label: '1° Sem',       ini: 1,  fim: 6  },
-    { label: '2° Sem',       ini: 7,  fim: 12 },
-  ];
-
   function setPeriodo(ini, fim, sourceBtnEl) {
     meInicio = ini;
     meFim    = fim;
@@ -655,7 +591,7 @@
   // ─── CARREGAR ────────────────────────────────────────────────
   async function carregar() {
     document.getElementById('loading').classList.remove('hidden');
-    document.getElementById('ano-label').textContent      = anoAtual;
+    document.getElementById('ano-label').textContent       = anoAtual;
     document.getElementById('ano-chart-label').textContent = anoAtual;
 
     try {
@@ -663,23 +599,16 @@
       consultores = cons || [];
       renderSidebar();
 
-      const [capRes, prodRes, leadsRes, capAnualRes] = await Promise.all([
-        db.from('captacao_mensal').select('*')
+      const [capRes, capAnualRes] = await Promise.all([
+        db.from('captacao_mensal')
+          .select('mes,consultor_id,captado_int,saida_int,pl_int,transf_nac_para_int')
           .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
-        db.from('produtos_mensal').select('*')
-          .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
-        db.from('leads_mensal').select('*')
-          .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
-        db.from('captacao_mensal').select('mes,nnm,captado,saida,pl,pl_btg,pl_xp,pl_outros,pl_int,captado_int,saida_int,transf_nac_para_int')
+        db.from('captacao_mensal')
+          .select('mes,captado_int,saida_int,pl_int,transf_nac_para_int')
           .eq('ano', anoAtual).order('mes'),
       ]);
 
-      renderUI(
-        capRes.data   || [],
-        prodRes.data  || [],
-        leadsRes.data || [],
-        capAnualRes.data || []
-      );
+      renderUI(capRes.data || [], capAnualRes.data || []);
     } catch(e) {
       console.error(e);
     }
@@ -689,113 +618,132 @@
   }
 
   // ─── RENDER UI ───────────────────────────────────────────────
-  function renderUI(cap, prod, leads, capAnual) {
+  function renderUI(cap, capAnual) {
     const numMeses = meFim - meInicio + 1;
-    const metaNNM  = 25000000 * numMeses;
 
-    // Totais globais — apenas Brasil (internacional fica em internacional.html)
-    const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity','offshore','outros'];
-    const totProd = prod.reduce((s, r) => s + PROD_KEYS.reduce((ps, k) => ps + n(r[k]), 0), 0);
-    const totReun = leads.reduce((s, r) => s + n(r.reunioes), 0);
-
-    // PL = último mês disponível no período (patrimônio é saldo, não fluxo) — soma das corretoras nacionais
+    // PL Internacional = último mês disponível no período (patrimônio é saldo, não fluxo)
     const capMesesNoperiodo = cap.filter(r => r.mes >= meInicio && r.mes <= meFim);
-    const ultimoCapRow   = capMesesNoperiodo.sort((a,b) => b.mes - a.mes)[0];
-    const ultimoMes      = ultimoCapRow ? ultimoCapRow.mes : null;
-    const capUltimoMes   = ultimoMes ? cap.filter(r => r.mes === ultimoMes) : [];
-    const ultimoPLbtg    = capUltimoMes.reduce((s,r) => s + n(r.pl_btg), 0);
-    const ultimoPLxp     = capUltimoMes.reduce((s,r) => s + n(r.pl_xp), 0);
-    const ultimoPLoutros = capUltimoMes.reduce((s,r) => s + n(r.pl_outros), 0);
-    const ultimoPL       = ultimoPLbtg + ultimoPLxp + ultimoPLoutros;
+    const ultimoCapRow = capMesesNoperiodo.sort((a,b) => b.mes - a.mes)[0];
+    const ultimoMes    = ultimoCapRow ? ultimoCapRow.mes : null;
+    const capUltimoMes = ultimoMes ? cap.filter(r => r.mes === ultimoMes) : [];
+    const ultimoPL      = capUltimoMes.reduce((s,r) => s + n(r.pl_int), 0);
 
-    // Por consultor — captado/saída já líquidos de internacional (saída já descontada de transferências nac→int)
+    // Por consultor
     const consAgg = {};
     consultores.forEach(c => {
-      consAgg[c.id] = { captado: 0, saida: 0, produtos: 0, reunioes: 0, pl: 0 };
+      consAgg[c.id] = { captado: 0, saida: 0, transf: 0, pl: 0 };
     });
     cap.forEach(r => {
       if (!consAgg[r.consultor_id]) return;
-      const captadoInt = n(r.captado_int), saidaInt = n(r.saida_int), transf = n(r.transf_nac_para_int);
-      consAgg[r.consultor_id].captado += n(r.captado) - captadoInt;
-      consAgg[r.consultor_id].saida   += (n(r.saida) - saidaInt) - transf;
-      consAgg[r.consultor_id].pl       = n(r.pl) - n(r.pl_int);
-    });
-    prod.forEach(r => {
-      if (!consAgg[r.consultor_id]) return;
-      consAgg[r.consultor_id].produtos += PROD_KEYS.reduce((s, k) => s + n(r[k]), 0);
-    });
-    leads.forEach(r => {
-      if (!consAgg[r.consultor_id]) return;
-      consAgg[r.consultor_id].reunioes += n(r.reunioes);
+      consAgg[r.consultor_id].captado += n(r.captado_int);
+      consAgg[r.consultor_id].saida   += n(r.saida_int);
+      consAgg[r.consultor_id].transf  += n(r.transf_nac_para_int);
+      consAgg[r.consultor_id].pl       = n(r.pl_int);
     });
 
-    const totCap = Object.values(consAgg).reduce((s,r) => s + r.captado, 0);
-    const totSai = Object.values(consAgg).reduce((s,r) => s + r.saida, 0);
-    const totNNM = totCap - totSai;
+    const totCap    = Object.values(consAgg).reduce((s,r) => s + r.captado, 0);
+    const totSai    = Object.values(consAgg).reduce((s,r) => s + r.saida, 0);
+    const totNNM    = totCap - totSai;
+    const totTransf = Object.values(consAgg).reduce((s,r) => s + r.transf, 0);
+
+    // Meta LatAm — soma apenas consultores com meta_latam preenchida (infra pronta, aguardando valores)
+    const metaLatamTotal = consultores.reduce((s,c) => s + (n(c.meta_latam) * numMeses), 0);
+    const pctMeta = metaLatamTotal > 0 ? totNNM / metaLatamTotal : 0;
 
     // KPIs
-    const pctMeta = metaNNM > 0 ? totNNM / metaNNM : 0;
-    const pctEl   = document.getElementById('kpi-meta-pct');
+    document.getElementById('kpi-pl-total').textContent     = ultimoPL > 0 ? fmtM(ultimoPL) : '—';
+    document.getElementById('kpi-pl-total-sub').textContent = ultimoMes ? `Posição em ${MESES[ultimoMes]} ${anoAtual}` : '—';
 
-    document.getElementById('kpi-nnm').textContent     = fmtM(totNNM);
-    document.getElementById('kpi-nnm').style.color     = totNNM >= 0 ? '' : 'var(--danger)';
-    document.getElementById('kpi-nnm-sub').innerHTML   = `Período: <strong>${MESES_S[meInicio]}–${MESES_S[meFim]} ${anoAtual}</strong>`;
-    pctEl.textContent  = fmtP(pctMeta);
-    pctEl.style.color  = pctMeta >= 1 ? 'var(--ok)' : pctMeta >= 0.5 ? 'var(--warn)' : 'var(--danger)';
-    document.getElementById('kpi-meta-sub').innerHTML  = `Meta pro-rata: <strong>${fmtM(metaNNM)}</strong> (R$25M × ${numMeses} meses)`;
-    document.getElementById('kpi-captado').textContent = fmtM(totCap);
-    document.getElementById('kpi-captado').style.color = totCap >= 0 ? '' : 'var(--danger)';
-    document.getElementById('kpi-captado-sub').innerHTML = `Total captado no Brasil (excl. int'l)`;
-    document.getElementById('kpi-saida').textContent   = fmtM(totSai);
-    document.getElementById('kpi-saida-sub').innerHTML = `Saldo líquido: <strong class="${totNNM>=0?'ok':'bad'}">${fmtM(totNNM)}</strong>`;
-    document.getElementById('kpi-produtos').textContent = fmtR(totProd);
-    document.getElementById('kpi-produtos-sub').textContent = 'Receita total de produtos';
-    document.getElementById('kpi-reunioes').textContent = totReun;
-    document.getElementById('kpi-reunioes-sub').textContent = `${consultores.length} consultores no período`;
+    document.getElementById('kpi-transf').textContent     = fmtM(totTransf);
+    document.getElementById('kpi-transf-sub').textContent = 'Não é captação nova — dinheiro que já era da Oikos no Brasil';
 
-    // Cards de PL
-    const nomePos   = ultimoMes ? `Posição em ${MESES[ultimoMes]} ${anoAtual}` : '—';
-    const subCorret = v => (v === 0 && ultimoPL > 0) ? 'Preencha via Editar Mês' : nomePos;
-    document.getElementById('kpi-pl-total').textContent      = ultimoPL > 0 ? fmtM(ultimoPL) : '—';
-    document.getElementById('kpi-pl-total-sub').textContent  = nomePos;
-    document.getElementById('kpi-pl-btg').textContent        = ultimoPLbtg > 0 ? fmtM(ultimoPLbtg) : '—';
-    document.getElementById('kpi-pl-btg-sub').textContent    = subCorret(ultimoPLbtg);
-    document.getElementById('kpi-pl-xp').textContent         = ultimoPLxp > 0 ? fmtM(ultimoPLxp) : '—';
-    document.getElementById('kpi-pl-xp-sub').textContent     = subCorret(ultimoPLxp);
-    document.getElementById('kpi-pl-outros').textContent     = ultimoPLoutros > 0 ? fmtM(ultimoPLoutros) : '—';
-    document.getElementById('kpi-pl-outros-sub').textContent = subCorret(ultimoPLoutros);
+    document.getElementById('kpi-captado').textContent     = fmtM(totCap);
+    document.getElementById('kpi-captado').style.color     = totCap >= 0 ? '' : 'var(--danger)';
+    document.getElementById('kpi-captado-sub').innerHTML   = `Período: <strong>${MESES_S[meInicio]}–${MESES_S[meFim]} ${anoAtual}</strong>`;
 
-    // Charts
-    renderChartNNM(capAnual);
-    renderChartPL(capAnual);
+    document.getElementById('kpi-saida').textContent     = fmtM(totSai);
+    document.getElementById('kpi-saida-sub').innerHTML   = `Saldo líquido: <strong class="${totNNM>=0?'ok':'bad'}">${fmtM(totNNM)}</strong>`;
 
-    // Ranking
-    renderRankingTable(consAgg, numMeses, metaNNM);
+    document.getElementById('kpi-nnm').textContent   = fmtM(totNNM);
+    document.getElementById('kpi-nnm').style.color   = totNNM >= 0 ? '' : 'var(--danger)';
+    document.getElementById('kpi-nnm-sub').innerHTML = `Captado: <strong>${fmtM(totCap)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totSai)}</strong>`;
 
-    // Mensal
-    renderMensalTable(cap, prod, leads, metaNNM);
-  }
-
-  // ─── CHART CAPTADO (Brasil) ──────────────────────────────────
-  function renderChartNNM(capAnual) {
-    const mesBrasil = {};
-    capAnual.forEach(r => {
-      const brasilVal = n(r.captado) - n(r.captado_int);
-      mesBrasil[r.mes] = (mesBrasil[r.mes] || 0) + brasilVal;
-    });
-
-    const labels = MESES_S.slice(1);
-    const dataBrasil = [], colorBrasil = [];
-
-    for (let m = 1; m <= 12; m++) {
-      const hasDado  = mesBrasil[m] !== undefined;
-      const inPeriod = m >= meInicio && m <= meFim;
-      dataBrasil.push(hasDado ? mesBrasil[m] : null);
-      colorBrasil.push(hasDado ? (inPeriod ? 'rgba(40,80,90,0.85)' : 'rgba(40,80,90,0.25)') : 'transparent');
+    const pctEl = document.getElementById('kpi-meta-pct');
+    if (metaLatamTotal > 0) {
+      pctEl.textContent = fmtP(pctMeta);
+      pctEl.style.color = pctMeta >= 1 ? 'var(--ok)' : pctMeta >= 0.5 ? 'var(--warn)' : 'var(--danger)';
+      document.getElementById('kpi-meta-sub').innerHTML = `Meta pro-rata: <strong>${fmtM(metaLatamTotal)}</strong>`;
+    } else {
+      pctEl.textContent = '—';
+      pctEl.style.color = '';
+      document.getElementById('kpi-meta-sub').textContent = 'Metas LatAm ainda não definidas (ver Gestão)';
     }
 
-    const totalBrasil = dataBrasil.filter((v,i) => v !== null && (i+1) >= meInicio && (i+1) <= meFim).reduce((s,v) => s+v, 0);
-    document.getElementById('ytd-label').textContent = "Captado no período: " + fmtM(totalBrasil);
+    // Charts
+    renderChartPL(capAnual);
+    renderChartNNM(capAnual);
+
+    // Ranking
+    renderRankingTable(consAgg, numMeses);
+
+    // Mensal
+    renderMensalTable(cap, ultimoMes);
+  }
+
+  // ─── CHART PL INTERNACIONAL ────────────────────────────────────
+  function renderChartPL(capAnual) {
+    const plSet = new Set(capAnual.map(r => r.mes));
+    const plMes = {};
+    capAnual.forEach(r => { plMes[r.mes] = (plMes[r.mes] || 0) + n(r.pl_int); });
+
+    const labels = MESES_S.slice(1);
+    const dataPL = [];
+    for (let m = 1; m <= 12; m++) dataPL.push(plSet.has(m) ? plMes[m] : null);
+
+    const lastTotal = dataPL.filter(v => v !== null).slice(-1)[0] || 0;
+    document.getElementById('pl-ultimo-label').textContent = 'Último: ' + fmtM(lastTotal);
+    document.getElementById('ano-pl-label').textContent    = anoAtual;
+
+    if (chartPL) chartPL.destroy();
+    chartPL = new Chart(document.getElementById('chartPL'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'PL Internacional', data: dataPL, borderColor: '#A855F7', backgroundColor: 'rgba(168,85,247,0.08)', borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 6, tension: 0.35, fill: true, spanGaps: true },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ' ' + fmtM(ctx.raw) : null } }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
+          y: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } }
+        }
+      }
+    });
+  }
+
+  // ─── CHART CAPTADO INTERNACIONAL ────────────────────────────────
+  function renderChartNNM(capAnual) {
+    const mesInt = {};
+    capAnual.forEach(r => { mesInt[r.mes] = (mesInt[r.mes] || 0) + n(r.captado_int); });
+
+    const labels = MESES_S.slice(1);
+    const dataInt = [], colorInt = [];
+    for (let m = 1; m <= 12; m++) {
+      const hasDado  = mesInt[m] !== undefined;
+      const inPeriod = m >= meInicio && m <= meFim;
+      dataInt.push(hasDado ? mesInt[m] : null);
+      colorInt.push(hasDado ? (inPeriod ? 'rgba(200,160,70,0.85)' : 'rgba(200,160,70,0.2)') : 'transparent');
+    }
+
+    const totalInt = dataInt.filter((v,i) => v !== null && (i+1) >= meInicio && (i+1) <= meFim).reduce((s,v) => s+v, 0);
+    document.getElementById('ytd-label').textContent = "Captado no período: " + fmtM(totalInt);
 
     if (chartNNM) chartNNM.destroy();
     chartNNM = new Chart(document.getElementById('chartNNM'), {
@@ -803,7 +751,7 @@
       data: {
         labels,
         datasets: [
-          { label: 'Captado Brasil', data: dataBrasil, backgroundColor: colorBrasil, borderRadius: 6 },
+          { label: 'Captado Internacional', data: dataInt, backgroundColor: colorInt, borderRadius: 6 },
         ]
       },
       options: {
@@ -820,61 +768,8 @@
     });
   }
 
-  // ─── CHART PL ────────────────────────────────────────────────
-  function renderChartPL(capAnual) {
-    const plSet = new Set(capAnual.map(r => r.mes));
-    const btgMes = {}, xpMes = {}, outrosMes = {};
-    capAnual.forEach(r => {
-      btgMes[r.mes]    = (btgMes[r.mes]    || 0) + n(r.pl_btg);
-      xpMes[r.mes]     = (xpMes[r.mes]     || 0) + n(r.pl_xp);
-      outrosMes[r.mes] = (outrosMes[r.mes] || 0) + n(r.pl_outros);
-    });
-
-    const labels = MESES_S.slice(1);
-    const dataPL = [], dataBTG = [], dataXP = [], dataOutros = [];
-    for (let m = 1; m <= 12; m++) {
-      dataBTG.push(plSet.has(m)    ? btgMes[m]    : null);
-      dataXP.push(plSet.has(m)     ? xpMes[m]     : null);
-      dataOutros.push(plSet.has(m) ? outrosMes[m] : null);
-      dataPL.push(plSet.has(m)     ? (btgMes[m] + xpMes[m] + outrosMes[m]) : null);
-    }
-
-    const lastTotal = dataPL.filter(v => v !== null).slice(-1)[0] || 0;
-    document.getElementById('pl-ultimo-label').textContent = 'Último: ' + fmtM(lastTotal);
-    document.getElementById('ano-pl-label').textContent    = anoAtual;
-
-    if (chartPL) chartPL.destroy();
-    chartPL = new Chart(document.getElementById('chartPL'), {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [
-          { label: 'PL Total',       data: dataPL,     borderColor: '#C8A046', backgroundColor: 'rgba(200,160,70,0.06)', borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 6, tension: 0.35, fill: false, spanGaps: true },
-          { label: 'BTG',            data: dataBTG,    borderColor: '#3B82F6', backgroundColor: 'rgba(59,130,246,0.04)',  borderWidth: 2,   pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false, spanGaps: true },
-          { label: 'XP',             data: dataXP,     borderColor: '#EF4444', backgroundColor: 'rgba(239,68,68,0.04)',   borderWidth: 2,   pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false, spanGaps: true },
-          { label: 'Outras Casas',   data: dataOutros, borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.04)',  borderWidth: 2,   pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false, spanGaps: true },
-        ]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          legend: { display: true, position: 'top', labels: { color: 'rgba(230,228,225,0.65)', font: { family: 'Jost', size: 11 }, padding: 16, boxWidth: 16, usePointStyle: true } },
-          tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ' ' + ctx.dataset.label + ': ' + fmtM(ctx.raw) : null } }
-        },
-        scales: {
-          x: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
-          y: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } }
-        }
-      }
-    });
-  }
-
   // ─── RANKING TABLE ───────────────────────────────────────────
-  function renderRankingTable(consAgg, numMeses, metaTotalNNM) {
-    const metaPorConsultor = 25000000 / (consultores.length || 1) * numMeses;
-
-    // Ordenado por captado (foco principal)
+  function renderRankingTable(consAgg, numMeses) {
     const ordenado = [...consultores].sort((a, b) => (consAgg[b.id]||{}).captado - (consAgg[a.id]||{}).captado);
     const tbody = document.getElementById('ranking-body');
     tbody.innerHTML = '';
@@ -884,105 +779,75 @@
       const captado = agg.captado || 0;
       const saida   = agg.saida || 0;
       const nnm     = captado - saida;
-      const pct     = metaPorConsultor > 0 ? nnm / metaPorConsultor : 0;
+      const metaC   = n(c.meta_latam) * numMeses;
+      const pct     = metaC > 0 ? nnm / metaC : null;
       const rank    = i + 1;
       const badgeClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
-      const rankLabel  = rank <= 3
-        ? `<span class="rank-badge ${badgeClass}">${rank}º</span>`
-        : `<span class="rank-badge">${rank}º</span>`;
+      const rankLabel  = `<span class="rank-badge ${badgeClass}">${rank}º</span>`;
       const nnmClass = nnm >= 0 ? 'td-pos' : 'td-neg';
-      const pctClass = pct >= 1 ? 'td-pos' : pct >= 0.5 ? 'td-warn' : 'td-neg';
+      const pctClass = pct === null ? '' : pct >= 1 ? 'td-pos' : pct >= 0.5 ? 'td-warn' : 'td-neg';
 
       tbody.innerHTML += `<tr>
         <td class="td-center">${rankLabel}</td>
         <td><span class="rank-dot" style="background:${c.cor}"></span>${c.nome}</td>
-        <td style="font-weight:700;color:var(--ok)">${fmtM(captado)}</td>
-        <td class="${saida > 0 ? 'td-warn' : ''}">${fmtM(saida)}</td>
+        <td style="font-weight:700;color:var(--ok)">${captado > 0 ? fmtM(captado) : '<span class="td-zero">—</span>'}</td>
+        <td class="${saida > 0 ? 'td-warn' : ''}">${saida > 0 ? fmtM(saida) : '<span class="td-zero">—</span>'}</td>
         <td class="${nnmClass}">${fmtM(nnm)}</td>
-        <td class="${pctClass}">${fmtP(pct)}</td>
-        <td>${fmtR(agg.produtos || 0)}</td>
-        <td>${agg.reunioes || 0}</td>
+        <td class="${pctClass}">${pct === null ? '<span class="td-zero">—</span>' : fmtP(pct)}</td>
       </tr>`;
     });
   }
 
   // ─── MENSAL TABLE ────────────────────────────────────────────
-  function renderMensalTable(cap, prod, leads, metaNNMTotal) {
-    const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity','offshore','outros'];
-    const numMeses  = meFim - meInicio + 1;
-    const metaPorMes = 25000000;
-
+  function renderMensalTable(cap, ultimoMes) {
     const porMes = {};
-    for (let m = meInicio; m <= meFim; m++) {
-      porMes[m] = { captado: 0, saida: 0, pl: 0, produtos: 0, reunioes: 0 };
-    }
+    for (let m = meInicio; m <= meFim; m++) porMes[m] = { captado: 0, saida: 0, pl: 0, transf: 0 };
 
     cap.forEach(r => {
       if (!porMes[r.mes]) return;
-      const captadoInt = n(r.captado_int), saidaInt = n(r.saida_int), transf = n(r.transf_nac_para_int);
-      porMes[r.mes].captado += n(r.captado) - captadoInt;
-      porMes[r.mes].saida   += (n(r.saida) - saidaInt) - transf;
-      porMes[r.mes].pl      += n(r.pl) - n(r.pl_int);
-    });
-    prod.forEach(r => {
-      if (!porMes[r.mes]) return;
-      porMes[r.mes].produtos += PROD_KEYS.reduce((s, k) => s + n(r[k]), 0);
-    });
-    leads.forEach(r => {
-      if (!porMes[r.mes]) return;
-      porMes[r.mes].reunioes += n(r.reunioes);
+      porMes[r.mes].captado += n(r.captado_int);
+      porMes[r.mes].saida   += n(r.saida_int);
+      porMes[r.mes].transf  += n(r.transf_nac_para_int);
+      porMes[r.mes].pl      += n(r.pl_int);
     });
 
     const tbody = document.getElementById('mensal-body');
     tbody.innerHTML = '';
 
-    let sNNM = 0, sCap = 0, sSai = 0, sProd = 0, sReun = 0, lastPL = 0;
+    let sCap = 0, sSai = 0, sTransf = 0, lastPL = 0;
 
     for (let m = meInicio; m <= meFim; m++) {
       const d   = porMes[m];
       const nnm = d.captado - d.saida;
-      const pct = metaPorMes > 0 ? nnm / metaPorMes : 0;
       const nnmCls = nnm >= 0 ? 'td-pos' : 'td-neg';
-      const pctCls = pct >= 1 ? 'td-pos' : pct >= 0.5 ? 'td-warn' : 'td-neg';
-      sNNM  += nnm;
-      sCap  += d.captado;
-      sSai  += d.saida;
-      sProd += d.produtos;
-      sReun += d.reunioes;
+      sCap    += d.captado;
+      sSai    += d.saida;
+      sTransf += d.transf;
       lastPL = d.pl || lastPL;
 
       tbody.innerHTML += `<tr>
         <td style="font-weight:600">${MESES_S[m]} ${anoAtual}</td>
-        <td style="font-weight:700;color:var(--ok)">${fmtM(d.captado)}</td>
-        <td class="${d.saida>0?'td-warn':''}">${fmtM(d.saida)}</td>
+        <td style="font-weight:700;color:var(--ok)">${d.captado > 0 ? fmtM(d.captado) : '<span class="td-zero">—</span>'}</td>
+        <td class="${d.saida>0?'td-warn':''}">${d.saida > 0 ? fmtM(d.saida) : '<span class="td-zero">—</span>'}</td>
         <td class="${nnmCls}">${fmtM(nnm)}</td>
         <td>${d.pl > 0 ? fmtM(d.pl) : '<span class="td-zero">—</span>'}</td>
-        <td>${d.produtos > 0 ? fmtR(d.produtos) : '<span class="td-zero">—</span>'}</td>
-        <td>${d.reunioes}</td>
-        <td class="${pctCls}">${fmtP(pct)}</td>
+        <td>${d.transf > 0 ? fmtM(d.transf) : '<span class="td-zero">—</span>'}</td>
       </tr>`;
     }
-
-    const pctTotal = metaNNMTotal > 0 ? sNNM / metaNNMTotal : 0;
-    const pctTotCls = pctTotal >= 1 ? 'td-pos' : pctTotal >= 0.5 ? 'td-warn' : 'td-neg';
 
     document.getElementById('mensal-total').innerHTML = `
       <td>TOTAL / MÉDIA</td>
       <td style="font-weight:800;color:var(--ok)">${fmtM(sCap)}</td>
       <td style="font-weight:800">${fmtM(sSai)}</td>
-      <td class="${sNNM>=0?'td-pos':'td-neg'}" style="font-weight:800">${fmtM(sNNM)}</td>
+      <td class="${(sCap-sSai)>=0?'td-pos':'td-neg'}" style="font-weight:800">${fmtM(sCap-sSai)}</td>
       <td style="font-weight:700;color:var(--muted)">${lastPL > 0 ? fmtM(lastPL) : '—'}</td>
-      <td style="font-weight:800">${fmtR(sProd)}</td>
-      <td style="font-weight:800">${sReun}</td>
-      <td class="${pctTotCls}" style="font-weight:800">${fmtP(pctTotal)}</td>
+      <td style="font-weight:800">${fmtM(sTransf)}</td>
     `;
   }
 
   // ─── INIT ────────────────────────────────────────────────────
   buildMesSelects();
-
-  // Ativa botão de período correspondente ao mês atual
-  (function() {
+  (function initPeriodoAtivo() {
     const agora = new Date().getMonth() + 1;
     const btn = document.querySelector(`.periodo-btn[data-ini="1"][data-fim="${agora}"]`);
     if (!btn) {

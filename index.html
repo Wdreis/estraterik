@@ -459,6 +459,10 @@
         <span class="nav-icon">⚙</span>
         <span>Gestão</span>
       </a>
+      <a href="internacional.html" class="nav-item">
+        <span class="nav-icon">🌐</span>
+        <span>Internacional</span>
+      </a>
     </div>
 
     <hr class="sidebar-divider">
@@ -507,22 +511,12 @@
     <main>
 
       <!-- PATRIMÔNIO DA OIKOS -->
-      <div class="section-title">Patrimônio da Oikos</div>
-      <div class="kpi-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 28px;">
+      <div class="section-title">Patrimônio da Oikos — Brasil</div>
+      <div class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 28px;">
         <div class="kpi-card" style="--kpi-color:var(--gold)">
           <div class="kpi-label">Patrimônio Total</div>
           <div class="kpi-value" id="kpi-pl-total">—</div>
-          <div class="kpi-sub">Nacional + Internacional</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:var(--teal)">
-          <div class="kpi-label">PL Nacional</div>
-          <div class="kpi-value" id="kpi-pl-oikos">—</div>
           <div class="kpi-sub">BTG + XP + Outros Bancos</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:#A855F7">
-          <div class="kpi-label">PL Internacional</div>
-          <div class="kpi-value" id="kpi-pl-outros">—</div>
-          <div class="kpi-sub">Patrimônio offshore / exterior</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#3B82F6">
           <div class="kpi-label">Patrimônio BTG</div>
@@ -542,10 +536,10 @@
       </div>
 
       <!-- KPIs -->
-      <div class="section-title">Visão Geral do Mês</div>
+      <div class="section-title">Visão Geral do Mês — Brasil</div>
       <div class="kpi-grid">
         <div class="kpi-card" style="--kpi-color:var(--gold)">
-          <div class="kpi-label">NNM Total</div>
+          <div class="kpi-label">NNM Brasil</div>
           <div class="kpi-value" id="kpi-nnm">—</div>
           <div class="kpi-sub" id="kpi-nnm-sub">—</div>
         </div>
@@ -555,7 +549,7 @@
           <div class="kpi-sub">Meta: <strong>R$ 25.000.000</strong></div>
         </div>
         <div class="kpi-card" style="--kpi-color:#28505A">
-          <div class="kpi-label">Captação Total</div>
+          <div class="kpi-label">Captação Brasil</div>
           <div class="kpi-value" id="kpi-captado">—</div>
           <div class="kpi-sub" id="kpi-saida-sub">—</div>
         </div>
@@ -563,21 +557,6 @@
           <div class="kpi-label">Reuniões Realizadas</div>
           <div class="kpi-value" id="kpi-reunioes">—</div>
           <div class="kpi-sub" id="kpi-reunioes-sub">—</div>
-        </div>
-      </div>
-
-      <!-- CAPTAÇÃO BRASIL vs INTERNACIONAL -->
-      <div class="section-title">Captação — Brasil vs. Internacional</div>
-      <div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 28px;">
-        <div class="kpi-card" style="--kpi-color:var(--teal)">
-          <div class="kpi-label">Net Captação Brasil</div>
-          <div class="kpi-value" id="kpi-net-brasil">—</div>
-          <div class="kpi-sub" id="kpi-net-brasil-sub">—</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:var(--gold)">
-          <div class="kpi-label">Net Captação Internacional</div>
-          <div class="kpi-value" id="kpi-net-int">—</div>
-          <div class="kpi-sub" id="kpi-net-int-sub">—</div>
         </div>
       </div>
 
@@ -692,7 +671,22 @@
       const { data: prod }  = await db.from('produtos_mensal').select('*').eq('ano', anoAtual).eq('mes', mesAtual);
       const { data: leads } = await db.from('leads_mensal').select('*').eq('ano', anoAtual).eq('mes', mesAtual);
 
-      const capMap   = {}; (cap   || []).forEach(r => capMap[r.consultor_id]   = r);
+      // Página mostra apenas visão Brasil — captado/saída/nnm/pl são recalculados
+      // subtraindo a parcela internacional (dados internacionais ficam em internacional.html)
+      const capMap = {};
+      (cap || []).forEach(r => {
+        const captadoInt = r.captado_int || 0, saidaInt = r.saida_int || 0;
+        const transf     = r.transf_nac_para_int || 0, plInt = r.pl_int || 0;
+        const captadoBrasil = (r.captado||0) - captadoInt;
+        const saidaBrasil   = ((r.saida||0) - saidaInt) - transf;
+        capMap[r.consultor_id] = {
+          ...r,
+          captado: captadoBrasil,
+          saida:   saidaBrasil,
+          nnm:     captadoBrasil - saidaBrasil,
+          pl:      (r.pl||0) - plInt,
+        };
+      });
       const prodMap  = {}; (prod  || []).forEach(r => prodMap[r.consultor_id]  = r);
       const leadsMap = {}; (leads || []).forEach(r => leadsMap[r.consultor_id] = r);
 
@@ -742,34 +736,20 @@
     const ordenadoCaptado = [...consultores].sort((a,b) => ((capMap[b.id]||{}).captado||0) - ((capMap[a.id]||{}).captado||0));
     const rankMap         = {}; ordenadoCaptado.forEach((c,i) => rankMap[c.id] = i + 1);
 
-    // KPIs
+    // KPIs — capMap já é Brasil-only (ver transformação em carregar())
     const totalNNM     = Object.values(capMap).reduce((s,r) => s + (r.nnm||0), 0);
     const totalCaptado = Object.values(capMap).reduce((s,r) => s + (r.captado||0), 0);
     const totalSaida   = Object.values(capMap).reduce((s,r) => s + (r.saida||0), 0);
     const totalPL      = Object.values(capMap).reduce((s,r) => s + (r.pl||0), 0);
-
-    // Brasil vs Internacional
-    const totalCaptBrasil  = Object.values(capMap).reduce((s,r) => s + (r.captado||0) - (r.captado_int||0), 0);
-    const totalTransf      = Object.values(capMap).reduce((s,r) => s + (r.transf_nac_para_int||0), 0);
-    const totalSaidaBrasil = Object.values(capMap).reduce((s,r) => s + (r.saida||0) - (r.saida_int||0), 0);
-    const totalSaidaBrasilEfetiva = totalSaidaBrasil - totalTransf;
-    const totalNetBrasil   = totalCaptBrasil - totalSaidaBrasilEfetiva;
-    const totalCaptInt     = Object.values(capMap).reduce((s,r) => s + (r.captado_int||0), 0);
-    const totalSaidaInt    = Object.values(capMap).reduce((s,r) => s + (r.saida_int||0), 0);
-    const totalNetInt      = totalCaptInt - totalSaidaInt;
     const totalReun    = Object.values(leadsMap).reduce((s,r) => s + (r.reunioes||0), 0);
     const metaNNM      = 25000000;
     const pctMeta      = totalNNM / metaNNM;
 
-    // PL breakdown por corretora
+    // PL breakdown por corretora (já nacional)
     const totalPLbtg      = Object.values(capMap).reduce((s,r) => s + (r.pl_btg    || r.captado_btg    || 0), 0);
     const totalPLxp       = Object.values(capMap).reduce((s,r) => s + (r.pl_xp     || r.captado_xp     || 0), 0);
     const totalPLoutros   = Object.values(capMap).reduce((s,r) => s + (r.pl_outros  || r.captado_outros  || 0), 0);
-    const totalPLint      = Object.values(capMap).reduce((s,r) => s + (r.pl_int     || 0), 0);
-    const totalPLnacional = totalPLbtg + totalPLxp + totalPLoutros;
     document.getElementById('kpi-pl-total').textContent        = fmtM(totalPL);
-    document.getElementById('kpi-pl-oikos').textContent        = fmtM(totalPLnacional);
-    document.getElementById('kpi-pl-outros').textContent       = fmtM(totalPLint);
     document.getElementById('kpi-pl-btg').textContent          = fmtM(totalPLbtg);
     document.getElementById('kpi-pl-xp').textContent           = fmtM(totalPLxp);
     document.getElementById('kpi-pl-outras-casas').textContent = fmtM(totalPLoutros);
@@ -792,18 +772,6 @@
     document.getElementById('kpi-reunioes-sub').innerHTML =
       `Meta: <strong>${metaReun}</strong> — <span class="${totalReun>=metaReun?'ok':''}">${Math.round(totalReun/metaReun*100)}% atingido</span>`;
 
-    // Brasil vs Internacional KPIs
-    const netBrasilEl = document.getElementById('kpi-net-brasil');
-    netBrasilEl.textContent  = fmtM(totalNetBrasil);
-    netBrasilEl.style.color  = totalNetBrasil >= 0 ? '' : 'var(--danger)';
-    document.getElementById('kpi-net-brasil-sub').innerHTML =
-      `Captado: <strong>${fmtM(totalCaptBrasil)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totalSaidaBrasilEfetiva)}</strong>`;
-    const netIntEl = document.getElementById('kpi-net-int');
-    netIntEl.textContent  = fmtM(totalNetInt);
-    netIntEl.style.color  = totalNetInt >= 0 ? '' : 'var(--danger)';
-    document.getElementById('kpi-net-int-sub').innerHTML =
-      `Captado: <strong>${fmtM(totalCaptInt)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totalSaidaInt)}</strong>`;
-
     // RANKING
     renderRanking(capMap);
 
@@ -815,12 +783,10 @@
       const cap      = capMap[c.id]   || {};
       const lead     = leadsMap[c.id] || {};
       const rank     = rankMap[c.id];
-      const nnm      = cap.nnm      || 0;
-      const captado  = cap.captado  || 0;
-      const pl       = cap.pl       || 0;
-      const saida    = cap.saida    || 0;
-      const nnmInt   = (cap.captado_int||0) - (cap.saida_int||0);
-      const nnmBrasil = nnm - nnmInt;
+      const nnm      = cap.nnm     || 0;
+      const captado  = cap.captado || 0;
+      const pl       = cap.pl      || 0;
+      const saida    = cap.saida   || 0;
       const churn    = pl > 0 ? (saida / pl * 100) : 0;
       const reun    = lead.reunioes || 0;
       const metaR   = c.meta_reunioes_mensal || 10;
@@ -854,11 +820,7 @@
           <div class="c-stats">
             <div class="c-stat">
               <div class="c-stat-label">NNM Brasil</div>
-              <div class="c-stat-value ${nnmBrasil>=0?'ok':'bad'}">${fmtM(nnmBrasil)}</div>
-            </div>
-            <div class="c-stat">
-              <div class="c-stat-label">NNM Internacional</div>
-              <div class="c-stat-value ${nnmInt>=0?'ok':'bad'}">${fmtM(nnmInt)}</div>
+              <div class="c-stat-value ${nnm>=0?'ok':'bad'}">${fmtM(nnm)}</div>
             </div>
             <div class="c-stat">
               <div class="c-stat-label">Churn</div>
@@ -867,10 +829,6 @@
             <div class="c-stat">
               <div class="c-stat-label">Reuniões</div>
               <div class="c-stat-value ${reunClass}">${reun} / ${metaR}</div>
-            </div>
-            <div class="c-stat">
-              <div class="c-stat-label">NNM Total</div>
-              <div class="c-stat-value ${nnm>=0?'ok':'bad'}">${fmtM(nnm)}</div>
             </div>
             <div class="c-stat">
               <div class="c-stat-label">Saída</div>
