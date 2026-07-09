@@ -570,6 +570,15 @@
         <div class="form-group"><label>PL Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl-outros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); calcPLTotal()"></div>
         <div class="form-group"><label>PL Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); calcPLTotal()"></div>
       </div>
+      <div style="display:flex;align-items:flex-end;gap:8px;margin:-6px 0 6px;padding:10px 12px;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.2);border-radius:8px">
+        <div class="form-group" style="flex:1;gap:4px">
+          <label style="font-size:10px">Aporte ou Resgate Internacional (R$)</label>
+          <input type="text" inputmode="numeric" class="inp-brl" id="e-pl-int-delta" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)">
+        </div>
+        <button type="button" onclick="aplicarDeltaPLInt(1)" style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.4);color:#22c55e;border-radius:6px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">+ Aporte</button>
+        <button type="button" onclick="aplicarDeltaPLInt(-1)" style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.4);color:#ef4444;border-radius:6px;padding:9px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap">− Resgate</button>
+      </div>
+      <div id="pl-int-baseline-info" style="font-size:11px;color:var(--gold);margin:-4px 0 14px;min-height:14px"></div>
       <div class="form-grid">
         <div class="form-group"><label>PL Total (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-pl" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div style="font-size:11px;color:var(--gold);background:rgba(200,160,70,0.08);border:1px solid rgba(200,160,70,0.2);border-radius:6px;padding:8px 12px;margin:-4px 0 14px;line-height:1.5">
@@ -689,6 +698,8 @@
   let consultorId = null, consultor = null, todosConsultores = [];
   let anoAtual = 2026, mesAtual = new Date().getMonth() + 1;
   let capData = null, prodData = null, leadsData = null;
+  let capRowExists = false;
+  let plIntBaseline = null;
   let capAnual = [], chartAnual = null;
   let stvmData = [];
 
@@ -846,19 +857,27 @@
   async function carregar() {
     document.getElementById('periodo-label').textContent = MESES[mesAtual] + ' ' + anoAtual;
 
-    const [capRes, prodRes, leadsRes, capAnualRes, stvmRes] = await Promise.all([
+    const [capRes, prodRes, leadsRes, capAnualRes, stvmRes, plIntBaseRes] = await Promise.all([
       db.from('captacao_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('produtos_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('leads_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('captacao_mensal').select('mes,nnm,captado,saida,pl,captado_int,saida_int,transf_nac_para_int').eq('consultor_id', consultorId).eq('ano', anoAtual).order('mes'),
       db.from('stvm').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).order('created_at'),
+      // Saldo mais recente de PL Internacional (qualquer ano/mês) para herdar como padrão em meses ainda não editados
+      db.from('captacao_mensal').select('ano,mes,pl_int').eq('consultor_id', consultorId)
+        .order('ano', { ascending: false }).order('mes', { ascending: false }).limit(24),
     ]);
 
-    capData   = capRes.data   || {};
-    prodData  = prodRes.data  || {};
-    leadsData = leadsRes.data || {};
-    capAnual  = capAnualRes.data || [];
-    stvmData  = stvmRes.data  || [];
+    capData      = capRes.data   || {};
+    capRowExists = !!capRes.data;
+    prodData     = prodRes.data  || {};
+    leadsData    = leadsRes.data || {};
+    capAnual     = capAnualRes.data || [];
+    stvmData     = stvmRes.data  || [];
+
+    const baseRows = (plIntBaseRes.data || [])
+      .filter(r => r.ano < anoAtual || (r.ano === anoAtual && r.mes < mesAtual));
+    plIntBaseline = baseRows.length ? baseRows[0] : null;
 
     renderPage();
   }
@@ -1231,7 +1250,21 @@
     set('e-sai-btg',     cap.saida_btg);
     set('e-cap-xp',      cap.captado_xp);
     set('e-sai-xp',      cap.saida_xp);
-    set('e-pl-int',      cap.pl_int);
+    // PL Internacional é acumulativo: se este mês ainda não foi salvo, herda o
+    // último saldo conhecido (de qualquer mês anterior) em vez de começar do zero.
+    set('e-pl-int-delta', null);
+    const baselineInfoEl = document.getElementById('pl-int-baseline-info');
+    if (capRowExists) {
+      set('e-pl-int', cap.pl_int);
+      baselineInfoEl.textContent = '';
+    } else if (plIntBaseline) {
+      set('e-pl-int', plIntBaseline.pl_int);
+      baselineInfoEl.textContent =
+        `Saldo herdado de ${MESES[plIntBaseline.mes]}/${plIntBaseline.ano} — use "+ Aporte" ou "− Resgate" abaixo se houve movimentação neste mês.`;
+    } else {
+      set('e-pl-int', null);
+      baselineInfoEl.textContent = '';
+    }
     set('e-cap-outros',  cap.captado_outros);
     set('e-sai-outros',  cap.saida_outros);
     set('e-cap-int',         cap.captado_int);
@@ -1423,6 +1456,19 @@
     } catch(e) {
       alert('Erro ao salvar: ' + e.message);
     }
+  }
+
+  // ── PL INTERNACIONAL — APORTE / RESGATE ───────────────────
+  function aplicarDeltaPLInt(sinal) {
+    const deltaEl = document.getElementById('e-pl-int-delta');
+    const delta = parseBR(deltaEl.value);
+    if (!delta) { alert('Digite o valor do aporte ou resgate antes de aplicar.'); return; }
+    const atual = parseBR(document.getElementById('e-pl-int').value);
+    const novo = atual + sinal * delta;
+    if (novo < 0) { alert('O resgate é maior que o saldo atual de PL Internacional. Confira o valor.'); return; }
+    setMoeda(document.getElementById('e-pl-int'), novo);
+    setMoeda(deltaEl, 0);
+    calcPLTotal();
   }
 
   // ── PL TOTAL AUTO-CÁLCULO ─────────────────────────────────
