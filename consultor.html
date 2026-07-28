@@ -349,7 +349,6 @@
     <div class="sidebar-section">
       <div class="sidebar-section-label">Menu</div>
       <a href="painel-geral.html" class="nav-item"><span class="nav-icon">◈</span><span>Painel Geral</span></a>
-      <a href="index.html" class="nav-item"><span class="nav-icon">▣</span><span>Dashboard</span></a>
       <a href="clientes.html" class="nav-item"><span class="nav-icon">⊞</span><span>Clientes</span></a>
       <a href="ata.html" class="nav-item"><span class="nav-icon">✦</span><span>Ata Reuniões</span></a>
       <a href="gestao.html" class="nav-item"><span class="nav-icon">⚙</span><span>Gestão</span></a>
@@ -776,7 +775,7 @@
     consultorId = parseInt(params.get('id'));
 
     if (!consultorId) {
-      document.querySelector('main').innerHTML = '<p style="padding:40px;color:var(--muted)">Consultor não encontrado. <a href="index.html" style="color:var(--gold)">Voltar ao dashboard</a></p>';
+      document.querySelector('main').innerHTML = '<p style="padding:40px;color:var(--muted)">Consultor não encontrado. <a href="painel-geral.html" style="color:var(--gold)">Voltar ao Painel Geral</a></p>';
       document.getElementById('loading').classList.add('hidden');
       return;
     }
