@@ -209,6 +209,44 @@
     }
     .chart-title span { color: var(--gold); font-size: 11px; font-weight: 400; }
     .chart-wrap { position: relative; height: 240px; }
+    .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 28px; }
+    @media (max-width: 1100px) { .charts-grid { grid-template-columns: 1fr; } }
+
+    /* ─── RANKING (portado de index.html na Fase 6) ─── */
+    .ranking-section { margin-bottom: 28px; }
+    .ranking-grid { display: grid; gap: 6px; }
+    .rank-row {
+      display: grid;
+      grid-template-columns: 36px 150px 1fr 165px 80px;
+      align-items: center; gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px; padding: 11px 16px;
+      transition: all 0.15s;
+    }
+    .rank-row:hover { border-color: var(--border2); background: var(--card2); }
+    .rank-badge { font-size: 13px; font-weight: 700; text-align: center; color: var(--muted); }
+    .rank-badge.gold   { color: #FFD700; }
+    .rank-badge.silver { color: #C0C0C0; }
+    .rank-badge.bronze { color: #CD7F32; }
+    .rank-name { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .rank-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .rank-bar-wrap { height: 5px; background: rgba(200,160,70,0.12); border-radius: 3px; overflow: hidden; }
+    .rank-bar { height: 100%; border-radius: 3px; transition: width 0.7s ease; }
+    .rank-value { font-size: 13px; font-weight: 700; text-align: right; }
+    .rank-value.pos { color: var(--ok); }
+    .rank-value.neg { color: var(--danger); }
+    .rank-meta { font-size: 11px; color: var(--muted); text-align: right; }
+    .rank-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .rank-header .section-title { margin-bottom: 0; flex: 1; }
+    .rank-toggle-group { display: flex; gap: 6px; flex-shrink: 0; }
+    .rank-toggle {
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--muted); border-radius: 20px;
+      padding: 4px 12px; font-size: 11px; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: all 0.15s;
+    }
+    .rank-toggle.active { background: rgba(200,160,70,0.18); border-color: var(--gold); color: var(--gold); }
 
     /* ─── TABLE SHARED ─── */
     .table-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
@@ -404,7 +442,9 @@
         </div>
       </div>
 
-      <div class="topbar-row2">
+      <div class="topbar-row2" id="topbar-row2">
+        <button class="periodo-btn" id="btn-modo-mensal" style="font-size:12px">📅 Mensal</button>
+
         <div class="periodo-bar" id="periodo-bar">
           <button class="periodo-btn" data-ini="1" data-fim="12">Ano Completo</button>
           <button class="periodo-btn" data-ini="1" data-fim="3">Q1 (Jan–Mar)</button>
@@ -415,14 +455,20 @@
           <button class="periodo-btn" data-ini="7" data-fim="12">2° Sem</button>
         </div>
 
-        <div class="divider-v"></div>
+        <div class="divider-v" id="divider-custom"></div>
 
-        <div class="custom-range">
+        <div class="custom-range" id="custom-range-wrap">
           <span>De:</span>
           <select id="mes-ini-sel"></select>
           <span>Até:</span>
           <select id="mes-fim-sel"></select>
           <button class="btn-aplicar" onclick="aplicarCustom()">Aplicar</button>
+        </div>
+
+        <div class="ano-nav" id="mes-nav" style="display:none">
+          <button class="btn-mes" id="btn-mes-prev">&#8249;</button>
+          <span id="mes-nav-label">—</span>
+          <button class="btn-mes" id="btn-mes-next">&#8250;</button>
         </div>
       </div>
     </div>
@@ -525,25 +571,38 @@
         <div class="chart-wrap"><canvas id="chartNNM"></canvas></div>
       </div>
 
-      <!-- 5: RANKING DO PERÍODO -->
-      <div class="section-title">Ranking do Período — Captação Total</div>
-      <div class="table-card" style="margin-bottom:28px">
-        <table id="tabela-ranking">
-          <thead>
-            <tr>
-              <th class="th-center" style="width:50px">Rank</th>
-              <th>Consultor</th>
-              <th>Captado</th>
-              <th>Saída</th>
-              <th>NNM</th>
-              <th>% Meta NNM</th>
-              <th>Rec. Produtos</th>
-              <th>Reuniões</th>
-            </tr>
-          </thead>
-          <tbody id="ranking-body"></tbody>
-        </table>
+      <!-- 5: RANKING DO PERÍODO (portado de index.html na Fase 6, com toggle NNM/Captação) -->
+      <div class="rank-header">
+        <div class="section-title">Ranking — Consultores</div>
+        <div class="rank-toggle-group">
+          <button id="toggle-nnm" class="rank-toggle active" onclick="setRankOrdem('nnm')">NNM</button>
+          <button id="toggle-cap" class="rank-toggle" onclick="setRankOrdem('captado')">Captação</button>
+        </div>
       </div>
+      <div class="ranking-grid ranking-section" id="ranking-grid"></div>
+
+      <!-- ANÁLISES (portado de index.html na Fase 6) -->
+      <div class="section-title">Análises</div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">Receita de Produtos do Período <span>por tipo de produto</span></div>
+          <div class="chart-wrap"><canvas id="chartBar"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">PL por Consultor <span>último mês do período</span></div>
+          <div class="chart-wrap"><canvas id="chartDoughnut"></canvas></div>
+        </div>
+      </div>
+
+      <!-- RANKING PRODUTOS (portado de index.html na Fase 6, com toggle Total/% Meta) -->
+      <div class="rank-header">
+        <div class="section-title">Produtos — Receita do Período</div>
+        <div class="rank-toggle-group">
+          <button id="toggle-prod-total" class="rank-toggle active" onclick="setRankOrdemProd('total')">Total</button>
+          <button id="toggle-prod-meta" class="rank-toggle" onclick="setRankOrdemProd('meta')">% Meta</button>
+        </div>
+      </div>
+      <div class="ranking-grid ranking-section" id="ranking-produtos"></div>
 
       <!-- 6: DETALHAMENTO MENSAL -->
       <div class="section-title">Detalhamento Mensal do Período</div>
@@ -597,8 +656,12 @@
   let anoAtual = new Date().getFullYear();
   let meInicio = 1, meFim = new Date().getMonth() + 1;
   let consultores = [];
-  let chartNNM = null, chartPL = null;
+  let chartNNM = null, chartPL = null, chartBar = null, chartDoughnut = null;
   const regiaoParam = new URLSearchParams(location.search).get('regiao'); // 'brasilia' | 'bh' | null (consolidado)
+
+  // Estado do ranking (portado de index.html na Fase 6)
+  let rankOrdem = 'nnm', rankOrdemProd = 'total';
+  let lastConsAgg = null, lastNumMeses = 1;
 
   const fmtM = v => {
     const abs = Math.abs(v), sig = v < 0 ? '-' : '';
@@ -668,6 +731,8 @@
   ];
 
   function setPeriodo(ini, fim, sourceBtnEl) {
+    modoMensal = false;
+    atualizarVisibilidadeModoMensal();
     meInicio = ini;
     meFim    = fim;
     document.getElementById('mes-ini-sel').value = ini;
@@ -684,6 +749,8 @@
       alert('O mês inicial não pode ser maior que o mês final.');
       return;
     }
+    modoMensal = false;
+    atualizarVisibilidadeModoMensal();
     document.querySelectorAll('.periodo-btn').forEach(b => b.classList.remove('active'));
     meInicio = ini;
     meFim    = fim;
@@ -691,6 +758,7 @@
   }
 
   document.querySelectorAll('.periodo-btn').forEach(btn => {
+    if (btn.id === 'btn-modo-mensal') return;
     btn.addEventListener('click', () => {
       const ini = parseInt(btn.dataset.ini);
       const fim  = parseInt(btn.dataset.fim);
@@ -698,9 +766,47 @@
     });
   });
 
+  // ─── MODO MENSAL ─────────────────────────────────────────────
+  let modoMensal = false;
+
+  function atualizarVisibilidadeModoMensal() {
+    document.getElementById('periodo-bar').style.display       = modoMensal ? 'none' : '';
+    document.getElementById('divider-custom').style.display    = modoMensal ? 'none' : '';
+    document.getElementById('custom-range-wrap').style.display  = modoMensal ? 'none' : '';
+    document.getElementById('mes-nav').style.display            = modoMensal ? 'flex' : 'none';
+    document.getElementById('btn-modo-mensal').classList.toggle('active', modoMensal);
+    if (modoMensal) {
+      document.getElementById('mes-nav-label').textContent = `${MESES[meFim]} ${anoAtual}`;
+    }
+  }
+
+  document.getElementById('btn-modo-mensal').addEventListener('click', () => {
+    modoMensal = true;
+    // Ao ativar, parte sempre do mês corrente (não herda o "fim" de Ano Completo/Q4, que confundiria)
+    const agora = new Date();
+    anoAtual = agora.getFullYear();
+    meInicio = meFim = agora.getMonth() + 1;
+    atualizarVisibilidadeModoMensal();
+    carregar();
+  });
+
+  document.getElementById('btn-mes-prev').addEventListener('click', () => {
+    meFim--; if (meFim < 1) { meFim = 12; anoAtual--; }
+    meInicio = meFim;
+    atualizarVisibilidadeModoMensal();
+    carregar();
+  });
+
+  document.getElementById('btn-mes-next').addEventListener('click', () => {
+    meFim++; if (meFim > 12) { meFim = 1; anoAtual++; }
+    meInicio = meFim;
+    atualizarVisibilidadeModoMensal();
+    carregar();
+  });
+
   // ─── ANO NAVIGATION ──────────────────────────────────────────
-  document.getElementById('btn-ano-prev').onclick = () => { anoAtual--; carregar(); };
-  document.getElementById('btn-ano-next').onclick = () => { anoAtual++; carregar(); };
+  document.getElementById('btn-ano-prev').onclick = () => { anoAtual--; if (modoMensal) atualizarVisibilidadeModoMensal(); carregar(); };
+  document.getElementById('btn-ano-next').onclick = () => { anoAtual++; if (modoMensal) atualizarVisibilidadeModoMensal(); carregar(); };
 
   // ─── CARREGAR ────────────────────────────────────────────────
   async function carregar() {
@@ -838,8 +944,13 @@
     renderChartNNM(capAnual);
     renderChartPL(capAnual);
 
-    // Ranking
-    renderRankingTable(consAgg, numMeses, metaNNM);
+    // Ranking + Análises + Ranking Produtos
+    lastConsAgg = consAgg;
+    lastNumMeses = numMeses;
+    renderRanking(consAgg);
+    renderChartBar(prod);
+    renderChartDoughnut(consAgg);
+    renderRankingProdutos(consAgg, numMeses);
 
     // Mensal
     renderMensalTable(cap, prod, leads, metaNNM);
@@ -938,39 +1049,136 @@
     });
   }
 
-  // ─── RANKING TABLE ───────────────────────────────────────────
-  function renderRankingTable(consAgg, numMeses, metaTotalNNM) {
-    const metaPorConsultor = 25000000 / (consultores.length || 1) * numMeses;
+  // ─── RANKING CONSULTORES (portado de index.html na Fase 6, toggle NNM/Captação) ──
+  function setRankOrdem(modo) {
+    rankOrdem = modo;
+    document.getElementById('toggle-nnm').classList.toggle('active', modo === 'nnm');
+    document.getElementById('toggle-cap').classList.toggle('active', modo === 'captado');
+    renderRanking(lastConsAgg);
+  }
 
-    // Ordenado por captado (foco principal)
-    const ordenado = [...consultores].sort((a, b) => (consAgg[b.id]||{}).captado - (consAgg[a.id]||{}).captado);
-    const tbody = document.getElementById('ranking-body');
-    tbody.innerHTML = '';
+  function renderRanking(consAgg) {
+    if (!consAgg) return;
+    const campo = rankOrdem === 'captado' ? 'captado' : 'nnm';
+    const valorDe = c => {
+      const agg = consAgg[c.id] || {};
+      return campo === 'captado' ? (agg.captado || 0) : (agg.captado || 0) - (agg.saida || 0);
+    };
+    const lista = [...consultores].sort((a,b) => valorDe(b) - valorDe(a));
+    const maxAbsVal = Math.max(...lista.map(c => Math.abs(valorDe(c))), 1);
+    const rgEl = document.getElementById('ranking-grid');
+    rgEl.innerHTML = '';
+    lista.forEach((c, i) => {
+      const agg = consAgg[c.id] || {};
+      const nnm = (agg.captado || 0) - (agg.saida || 0);
+      const val = valorDe(c);
+      const barW = Math.max(2, Math.abs(val) / maxAbsVal * 100);
+      const barColor = val >= 0 ? c.cor : 'var(--danger)';
+      const badgeClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      const metaMensal = c.meta_nnm_mensal || 0;
+      const metaPeriodo = metaMensal * (lastNumMeses || 1);
+      const metaP = metaPeriodo > 0 ? Math.min(Math.round((nnm / metaPeriodo) * 100), 999) : 0;
+      rgEl.innerHTML += `
+        <div class="rank-row">
+          <div class="rank-badge ${badgeClass}">${i+1}º</div>
+          <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}</div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:${barColor}"></div></div>
+          <div class="rank-value ${val>=0?'pos':'neg'}">${fmtM(val)}</div>
+          <div class="rank-meta">${metaP}% meta</div>
+        </div>`;
+    });
+  }
 
-    ordenado.forEach((c, i) => {
-      const agg     = consAgg[c.id] || {};
-      const captado = agg.captado || 0;
-      const saida   = agg.saida || 0;
-      const nnm     = captado - saida;
-      const pct     = metaPorConsultor > 0 ? nnm / metaPorConsultor : 0;
-      const rank    = i + 1;
-      const badgeClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
-      const rankLabel  = rank <= 3
-        ? `<span class="rank-badge ${badgeClass}">${rank}º</span>`
-        : `<span class="rank-badge">${rank}º</span>`;
-      const nnmClass = nnm >= 0 ? 'td-pos' : 'td-neg';
-      const pctClass = pct >= 1 ? 'td-pos' : pct >= 0.5 ? 'td-warn' : 'td-neg';
+  // ─── CHART BAR — Receita de Produtos (portado de index.html na Fase 6) ──
+  const PROD_NOMES = { estudos:'Estudos', previdencia:'Previdência', seguros:'Seguros', precatorios:'Precatórios',
+    consorcio:'Consórcio', private_equity:'Private Equity', juridico:'Jurídico', offshore:'Offshore', cambio:'Câmbio', outros:'Outros' };
+  const PROD_CORES = { estudos:'#C8A046', previdencia:'#A855F7', seguros:'#EF4444', precatorios:'#14B8A6',
+    consorcio:'#3B82F6', private_equity:'#EC4899', juridico:'#22c55e', offshore:'#F59E0B', cambio:'#28505A', outros:'#9CA3AF' };
 
-      tbody.innerHTML += `<tr>
-        <td class="td-center">${rankLabel}</td>
-        <td><span class="rank-dot" style="background:${c.cor}"></span>${c.nome}</td>
-        <td style="font-weight:700;color:var(--ok)">${fmtM(captado)}</td>
-        <td class="${saida > 0 ? 'td-warn' : ''}">${fmtM(saida)}</td>
-        <td class="${nnmClass}">${fmtM(nnm)}</td>
-        <td class="${pctClass}">${fmtP(pct)}</td>
-        <td>${fmtR(agg.produtos || 0)}</td>
-        <td>${agg.reunioes || 0}</td>
-      </tr>`;
+  function renderChartBar(prod) {
+    const prodTotais = PROD_KEYS.map(k => prod.reduce((s,r) => s + n(r[k]), 0));
+    const cores = PROD_KEYS.map(k => PROD_CORES[k]);
+    if (chartBar) chartBar.destroy();
+    chartBar = new Chart(document.getElementById('chartBar'), {
+      type: 'bar',
+      data: {
+        labels: PROD_KEYS.map(k => PROD_NOMES[k]),
+        datasets: [{ label: 'Receita (R$)', data: prodTotais,
+          backgroundColor: cores.map(c => c + '99'),
+          borderColor: cores, borderWidth: 2, borderRadius: 6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ' ' + fmtR(ctx.raw) } }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(200,160,70,0.08)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
+          y: { grid: { color: 'rgba(200,160,70,0.08)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 10 }, callback: v => fmtM(v) } }
+        }
+      }
+    });
+  }
+
+  // ─── CHART DOUGHNUT — PL por Consultor (portado de index.html na Fase 6) ──
+  function renderChartDoughnut(consAgg) {
+    const labelsD = consultores.map(c => c.nome);
+    const valuesD = consultores.map(c => (consAgg[c.id]||{}).pl || 0);
+    const colorsD = consultores.map(c => c.cor);
+    if (chartDoughnut) chartDoughnut.destroy();
+    chartDoughnut = new Chart(document.getElementById('chartDoughnut'), {
+      type: 'doughnut',
+      data: {
+        labels: labelsD,
+        datasets: [{ data: valuesD, backgroundColor: colorsD.map(c => c + 'cc'), borderColor: '#001a27', borderWidth: 3 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '65%',
+        plugins: {
+          legend: { position: 'right', labels: { color: 'rgba(230,228,225,0.65)', font: { family: 'Jost', size: 11 }, padding: 12, boxWidth: 12, boxHeight: 12 } },
+          tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + fmtM(ctx.raw) } }
+        }
+      }
+    });
+  }
+
+  // ─── RANKING PRODUTOS (portado de index.html na Fase 6, toggle Total/% Meta) ──
+  function setRankOrdemProd(modo) {
+    rankOrdemProd = modo;
+    document.getElementById('toggle-prod-total').classList.toggle('active', modo === 'total');
+    document.getElementById('toggle-prod-meta').classList.toggle('active', modo === 'meta');
+    renderRankingProdutos(lastConsAgg, lastNumMeses);
+  }
+
+  function renderRankingProdutos(consAgg, numMeses) {
+    if (!consAgg) return;
+    const metaDe = c => (c.meta_produtos_mensal || 15000) * (numMeses || 1);
+    const prodSorted = consultores.map(c => ({
+      c, total: (consAgg[c.id]||{}).produtos || 0, meta: metaDe(c)
+    })).sort((a,b) => rankOrdemProd === 'meta'
+      ? (b.meta > 0 ? b.total/b.meta : 0) - (a.meta > 0 ? a.total/a.meta : 0)
+      : b.total - a.total);
+
+    const maxProd = Math.max(...prodSorted.map(x => x.total), 1);
+    const rpEl = document.getElementById('ranking-produtos');
+    rpEl.innerHTML = '';
+
+    prodSorted.forEach((x, i) => {
+      const { c, total, meta } = x;
+      const pos = i + 1;
+      const metaPct = meta > 0 ? Math.round(total / meta * 100) : 0;
+      const barW    = Math.max(2, total / maxProd * 100);
+      const barColor = total >= meta ? 'var(--ok)' : total > 0 ? c.cor : 'rgba(200,160,70,0.15)';
+      const badgeClass = pos===1?'gold':pos===2?'silver':pos===3?'bronze':'';
+      rpEl.innerHTML += `
+        <div class="rank-row">
+          <div class="rank-badge ${badgeClass}">${pos}º</div>
+          <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}</div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:${barColor}"></div></div>
+          <div class="rank-value ${total>=meta?'pos':total>0?'':'neg'}">${total===0?'—':fmtR(total)}</div>
+          <div class="rank-meta">${metaPct}% meta</div>
+        </div>`;
     });
   }
 
