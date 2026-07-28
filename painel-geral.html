@@ -596,6 +596,21 @@
   const fmtP = v => (v * 100).toFixed(1) + '%';
   const n = v => parseFloat(v) || 0;
 
+  // Fonte única de verdade para categorias de produto — mesma lista usada em consultor.html
+  // (inclui precatorios, que faltava aqui e em index.html — causava subestimar receita total)
+  const PROD_KEYS = ['estudos','previdencia','seguros','precatorios','consorcio','private_equity','juridico','offshore','cambio','outros'];
+
+  // Fonte única de verdade para "líquido Brasil" — descontar captado/saída/PL internacional
+  // e a parcela de saída que na verdade foi transferência para custódia internacional (não é perda real).
+  function liquidoBrasil(row) {
+    const captadoInt = n(row.captado_int), saidaInt = n(row.saida_int);
+    const transf = n(row.transf_nac_para_int), plInt = n(row.pl_int);
+    const captado = n(row.captado) - captadoInt;
+    const saidaBruta = n(row.saida) - saidaInt;
+    const saida = saidaBruta - transf;
+    return { captado, saida, saidaBruta, transf, pl: n(row.pl) - plInt, nnm: captado - saida };
+  }
+
   // ─── SELECTS DE MÊS ─────────────────────────────────────────
   function buildMesSelects() {
     ['mes-ini-sel','mes-fim-sel'].forEach(id => {
@@ -714,7 +729,6 @@
     const metaNNM  = 25000000 * numMeses;
 
     // Totais globais — apenas Brasil (internacional fica em internacional.html)
-    const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity','offshore','outros'];
     const totProd = prod.reduce((s, r) => s + PROD_KEYS.reduce((ps, k) => ps + n(r[k]), 0), 0);
     const totReun = leads.reduce((s, r) => s + n(r.reunioes), 0);
 
@@ -729,20 +743,23 @@
     const ultimoPL       = ultimoPLbtg + ultimoPLxp + ultimoPLoutros;
     const ultimoPLint    = capUltimoMes.reduce((s,r) => s + n(r.pl_int), 0);
 
+    // PL por consultor = posição do último mês do período (não soma entre meses) — feito à parte
+    // da agregação abaixo pra não depender da ordem de retorno das linhas do Supabase.
+    const plPorConsultor = {};
+    capUltimoMes.forEach(r => { plPorConsultor[r.consultor_id] = n(r.pl) - n(r.pl_int); });
+
     // Por consultor — captado/saída já líquidos de internacional (saída já descontada de transferências nac→int)
     const consAgg = {};
     consultores.forEach(c => {
-      consAgg[c.id] = { captado: 0, saida: 0, saidaBruta: 0, transf: 0, produtos: 0, reunioes: 0, pl: 0 };
+      consAgg[c.id] = { captado: 0, saida: 0, saidaBruta: 0, transf: 0, produtos: 0, reunioes: 0, pl: plPorConsultor[c.id] || 0 };
     });
     cap.forEach(r => {
       if (!consAgg[r.consultor_id]) return;
-      const captadoInt = n(r.captado_int), saidaInt = n(r.saida_int), transf = n(r.transf_nac_para_int);
-      const saidaBruta = n(r.saida) - saidaInt;
-      consAgg[r.consultor_id].captado    += n(r.captado) - captadoInt;
-      consAgg[r.consultor_id].saidaBruta += saidaBruta;
-      consAgg[r.consultor_id].transf     += transf;
-      consAgg[r.consultor_id].saida      += saidaBruta - transf;
-      consAgg[r.consultor_id].pl          = n(r.pl) - n(r.pl_int);
+      const liq = liquidoBrasil(r);
+      consAgg[r.consultor_id].captado    += liq.captado;
+      consAgg[r.consultor_id].saidaBruta += liq.saidaBruta;
+      consAgg[r.consultor_id].transf     += liq.transf;
+      consAgg[r.consultor_id].saida      += liq.saida;
     });
     prod.forEach(r => {
       if (!consAgg[r.consultor_id]) return;
@@ -810,8 +827,7 @@
   function renderChartNNM(capAnual) {
     const mesBrasil = {};
     capAnual.forEach(r => {
-      const brasilVal = n(r.captado) - n(r.captado_int);
-      mesBrasil[r.mes] = (mesBrasil[r.mes] || 0) + brasilVal;
+      mesBrasil[r.mes] = (mesBrasil[r.mes] || 0) + liquidoBrasil(r).captado;
     });
 
     const labels = MESES_S.slice(1);
@@ -938,7 +954,6 @@
 
   // ─── MENSAL TABLE ────────────────────────────────────────────
   function renderMensalTable(cap, prod, leads, metaNNMTotal) {
-    const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity','offshore','outros'];
     const numMeses  = meFim - meInicio + 1;
     const metaPorMes = 25000000;
 
@@ -949,11 +964,11 @@
 
     cap.forEach(r => {
       if (!porMes[r.mes]) return;
-      const captadoInt = n(r.captado_int), saidaInt = n(r.saida_int), transf = n(r.transf_nac_para_int);
-      porMes[r.mes].captado += n(r.captado) - captadoInt;
-      porMes[r.mes].saida   += (n(r.saida) - saidaInt) - transf;
-      porMes[r.mes].transf  += transf;
-      porMes[r.mes].pl      += n(r.pl) - n(r.pl_int);
+      const liq = liquidoBrasil(r);
+      porMes[r.mes].captado += liq.captado;
+      porMes[r.mes].saida   += liq.saida;
+      porMes[r.mes].transf  += liq.transf;
+      porMes[r.mes].pl      += liq.pl;
     });
     prod.forEach(r => {
       if (!porMes[r.mes]) return;
