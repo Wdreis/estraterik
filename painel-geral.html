@@ -485,7 +485,7 @@
           <div class="kpi-sub" id="kpi-meta-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--danger)">
-          <div class="kpi-label">Saída Total</div>
+          <div class="kpi-label">Saída Efetiva</div>
           <div class="kpi-value" id="kpi-saida">—</div>
           <div class="kpi-sub" id="kpi-saida-sub">—</div>
         </div>
@@ -732,14 +732,17 @@
     // Por consultor — captado/saída já líquidos de internacional (saída já descontada de transferências nac→int)
     const consAgg = {};
     consultores.forEach(c => {
-      consAgg[c.id] = { captado: 0, saida: 0, produtos: 0, reunioes: 0, pl: 0 };
+      consAgg[c.id] = { captado: 0, saida: 0, saidaBruta: 0, transf: 0, produtos: 0, reunioes: 0, pl: 0 };
     });
     cap.forEach(r => {
       if (!consAgg[r.consultor_id]) return;
       const captadoInt = n(r.captado_int), saidaInt = n(r.saida_int), transf = n(r.transf_nac_para_int);
-      consAgg[r.consultor_id].captado += n(r.captado) - captadoInt;
-      consAgg[r.consultor_id].saida   += (n(r.saida) - saidaInt) - transf;
-      consAgg[r.consultor_id].pl       = n(r.pl) - n(r.pl_int);
+      const saidaBruta = n(r.saida) - saidaInt;
+      consAgg[r.consultor_id].captado    += n(r.captado) - captadoInt;
+      consAgg[r.consultor_id].saidaBruta += saidaBruta;
+      consAgg[r.consultor_id].transf     += transf;
+      consAgg[r.consultor_id].saida      += saidaBruta - transf;
+      consAgg[r.consultor_id].pl          = n(r.pl) - n(r.pl_int);
     });
     prod.forEach(r => {
       if (!consAgg[r.consultor_id]) return;
@@ -750,8 +753,10 @@
       consAgg[r.consultor_id].reunioes += n(r.reunioes);
     });
 
-    const totCap = Object.values(consAgg).reduce((s,r) => s + r.captado, 0);
-    const totSai = Object.values(consAgg).reduce((s,r) => s + r.saida, 0);
+    const totCap       = Object.values(consAgg).reduce((s,r) => s + r.captado, 0);
+    const totSai       = Object.values(consAgg).reduce((s,r) => s + r.saida, 0);
+    const totSaiBruta  = Object.values(consAgg).reduce((s,r) => s + r.saidaBruta, 0);
+    const totTransf    = Object.values(consAgg).reduce((s,r) => s + r.transf, 0);
     const totNNM = totCap - totSai;
 
     // KPIs
@@ -768,7 +773,9 @@
     document.getElementById('kpi-captado').style.color = totCap >= 0 ? '' : 'var(--danger)';
     document.getElementById('kpi-captado-sub').innerHTML = `Total captado no Brasil (excl. int'l)`;
     document.getElementById('kpi-saida').textContent   = fmtM(totSai);
-    document.getElementById('kpi-saida-sub').innerHTML = `Saldo líquido: <strong class="${totNNM>=0?'ok':'bad'}">${fmtM(totNNM)}</strong>`;
+    document.getElementById('kpi-saida-sub').innerHTML = totTransf > 0
+      ? `Bruta: ${fmtM(totSaiBruta)} · Transferido p/ Int'l: <strong>${fmtM(totTransf)}</strong>`
+      : `Saldo líquido: <strong class="${totNNM>=0?'ok':'bad'}">${fmtM(totNNM)}</strong>`;
     document.getElementById('kpi-produtos').textContent = fmtR(totProd);
     document.getElementById('kpi-produtos-sub').textContent = 'Receita total de produtos';
     document.getElementById('kpi-reunioes').textContent = totReun;
@@ -937,7 +944,7 @@
 
     const porMes = {};
     for (let m = meInicio; m <= meFim; m++) {
-      porMes[m] = { captado: 0, saida: 0, pl: 0, produtos: 0, reunioes: 0 };
+      porMes[m] = { captado: 0, saida: 0, transf: 0, pl: 0, produtos: 0, reunioes: 0 };
     }
 
     cap.forEach(r => {
@@ -945,6 +952,7 @@
       const captadoInt = n(r.captado_int), saidaInt = n(r.saida_int), transf = n(r.transf_nac_para_int);
       porMes[r.mes].captado += n(r.captado) - captadoInt;
       porMes[r.mes].saida   += (n(r.saida) - saidaInt) - transf;
+      porMes[r.mes].transf  += transf;
       porMes[r.mes].pl      += n(r.pl) - n(r.pl_int);
     });
     prod.forEach(r => {
@@ -977,7 +985,7 @@
       tbody.innerHTML += `<tr>
         <td style="font-weight:600">${MESES_S[m]} ${anoAtual}</td>
         <td style="font-weight:700;color:var(--ok)">${fmtM(d.captado)}</td>
-        <td class="${d.saida>0?'td-warn':''}">${fmtM(d.saida)}</td>
+        <td class="${d.saida>0?'td-warn':''}">${fmtM(d.saida)}${d.transf > 0 ? `<span style="font-size:9px;color:var(--gold);margin-left:4px" title="Inclui transf. nac→int de ${fmtM(d.transf)}">↔</span>` : ''}</td>
         <td class="${nnmCls}">${fmtM(nnm)}</td>
         <td>${d.pl > 0 ? fmtM(d.pl) : '<span class="td-zero">—</span>'}</td>
         <td>${d.produtos > 0 ? fmtR(d.produtos) : '<span class="td-zero">—</span>'}</td>
