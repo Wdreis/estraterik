@@ -361,6 +361,20 @@
     <hr class="sidebar-divider">
 
     <div class="sidebar-section">
+      <div class="sidebar-section-label">Regiões</div>
+      <a href="painel-geral.html?regiao=brasilia" class="nav-item">
+        <span class="nav-icon">◈</span>
+        <span>Oikos Brasília</span>
+      </a>
+      <a href="painel-geral.html?regiao=bh" class="nav-item">
+        <span class="nav-icon">◈</span>
+        <span>Oikos BH</span>
+      </a>
+    </div>
+
+    <hr class="sidebar-divider">
+
+    <div class="sidebar-section">
       <div class="sidebar-section-label">Consultores</div>
       <div id="sidebar-consultores"></div>
     </div>
@@ -380,7 +394,7 @@
     <div class="topbar">
       <div class="topbar-row1">
         <div>
-          <div class="topbar-title">Painel Geral</div>
+          <div class="topbar-title" id="topbar-title">Painel Geral</div>
           <div class="topbar-subtitle">Visão anual e por período da Oikos</div>
         </div>
         <div class="ano-nav">
@@ -584,6 +598,7 @@
   let meInicio = 1, meFim = new Date().getMonth() + 1;
   let consultores = [];
   let chartNNM = null, chartPL = null;
+  const regiaoParam = new URLSearchParams(location.search).get('regiao'); // 'brasilia' | 'bh' | null (consolidado)
 
   const fmtM = v => {
     const abs = Math.abs(v), sig = v < 0 ? '-' : '';
@@ -695,7 +710,7 @@
 
     try {
       const { data: cons } = await db.from('consultores').select('*').eq('ativo', true).order('id');
-      consultores = cons || [];
+      consultores = regiaoParam ? (cons || []).filter(c => c.regiao === regiaoParam) : (cons || []);
       renderSidebar();
 
       const [capRes, prodRes, leadsRes, capAnualRes] = await Promise.all([
@@ -705,15 +720,22 @@
           .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
         db.from('leads_mensal').select('*')
           .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
-        db.from('captacao_mensal').select('mes,nnm,captado,saida,pl,pl_btg,pl_xp,pl_outros,pl_int,captado_int,saida_int,transf_nac_para_int')
+        db.from('captacao_mensal').select('mes,consultor_id,nnm,captado,saida,pl,pl_btg,pl_xp,pl_outros,pl_int,captado_int,saida_int,transf_nac_para_int')
           .eq('ano', anoAtual).order('mes'),
       ]);
+
+      // capAnual alimenta os gráficos de evolução anual, que somam direto (sem passar pelo
+      // guard por consultor que cap/prod/leads já têm) — precisa filtrar por região aqui também.
+      const idsRegiao = new Set(consultores.map(c => c.id));
+      const capAnualFiltrado = regiaoParam
+        ? (capAnualRes.data || []).filter(r => idsRegiao.has(r.consultor_id))
+        : (capAnualRes.data || []);
 
       renderUI(
         capRes.data   || [],
         prodRes.data  || [],
         leadsRes.data || [],
-        capAnualRes.data || []
+        capAnualFiltrado
       );
     } catch(e) {
       console.error(e);
@@ -1025,6 +1047,12 @@
   }
 
   // ─── INIT ────────────────────────────────────────────────────
+  if (regiaoParam === 'bh') {
+    document.getElementById('topbar-title').textContent = 'Painel Geral — Oikos BH';
+  } else if (regiaoParam === 'brasilia') {
+    document.getElementById('topbar-title').textContent = 'Painel Geral — Oikos Brasília';
+  }
+
   buildMesSelects();
 
   // Ativa botão de período correspondente ao mês atual
