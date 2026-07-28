@@ -161,6 +161,11 @@
     .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 
     /* ─── KPI GRID ─── */
+    .kpi-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 14px; margin-bottom: 28px;
+    }
     .kpi-grid-4 {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -436,6 +441,21 @@
         </div>
       </div>
 
+      <!-- 1b: PATRIMÔNIO INTERNACIONAL -->
+      <div class="section-title">Patrimônio Internacional</div>
+      <div class="kpi-grid-2">
+        <div class="kpi-card" style="--kpi-color:#A855F7">
+          <div class="kpi-label">PL Internacional</div>
+          <div class="kpi-value" id="kpi-pl-int">—</div>
+          <div class="kpi-sub" id="kpi-pl-int-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">Detalhamento completo</div>
+          <div class="kpi-value" style="font-size:16px"><a href="internacional.html" style="color:var(--gold)">Ver página Internacional →</a></div>
+          <div class="kpi-sub">Ranking por consultor, transferências e evolução mensal</div>
+        </div>
+      </div>
+
       <!-- 2: CRESCIMENTO DE PATRIMÔNIO -->
       <div class="section-title">Crescimento de Patrimônio — PL por Corretora</div>
       <div class="chart-card">
@@ -707,6 +727,7 @@
     const ultimoPLxp     = capUltimoMes.reduce((s,r) => s + n(r.pl_xp), 0);
     const ultimoPLoutros = capUltimoMes.reduce((s,r) => s + n(r.pl_outros), 0);
     const ultimoPL       = ultimoPLbtg + ultimoPLxp + ultimoPLoutros;
+    const ultimoPLint    = capUltimoMes.reduce((s,r) => s + n(r.pl_int), 0);
 
     // Por consultor — captado/saída já líquidos de internacional (saída já descontada de transferências nac→int)
     const consAgg = {};
@@ -764,6 +785,8 @@
     document.getElementById('kpi-pl-xp-sub').textContent     = subCorret(ultimoPLxp);
     document.getElementById('kpi-pl-outros').textContent     = ultimoPLoutros > 0 ? fmtM(ultimoPLoutros) : '—';
     document.getElementById('kpi-pl-outros-sub').textContent = subCorret(ultimoPLoutros);
+    document.getElementById('kpi-pl-int').textContent        = ultimoPLint > 0 ? fmtM(ultimoPLint) : '—';
+    document.getElementById('kpi-pl-int-sub').textContent    = ultimoPLint > 0 ? nomePos : 'Sem posição internacional registrada';
 
     // Charts
     renderChartNNM(capAnual);
