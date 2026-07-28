@@ -438,6 +438,14 @@
     </div>
 
     <div class="form-field">
+      <label class="form-label">Região</label>
+      <select id="f-regiao" class="form-input">
+        <option value="brasilia">Oikos Brasília</option>
+        <option value="bh">Oikos BH</option>
+      </select>
+    </div>
+
+    <div class="form-field">
       <label class="form-label">Cor identificadora</label>
       <div class="color-pick-row" onclick="document.getElementById('f-cor').click()">
         <div id="color-swatch" style="background:#3B82F6"></div>
@@ -637,6 +645,7 @@
     const nome = c?.nome || '';
     const cor  = c?.cor  || '#3B82F6';
     document.getElementById('f-nome').value = nome;
+    document.getElementById('f-regiao').value = c?.regiao ?? 'brasilia';
     document.getElementById('f-cor').value  = cor;
     document.getElementById('f-reun').value        = c?.meta_reunioes_mensal ?? 10;
     document.getElementById('f-nnm').value          = c?.meta_nnm_mensal   ?? '';
@@ -707,6 +716,7 @@
 
     const payload = {
       nome,
+      regiao:               document.getElementById('f-regiao').value,
       cor:                  document.getElementById('f-cor').value,
       meta_nnm_mensal:      parseFloat(document.getElementById('f-nnm').value)  || 0,
       meta_nnm_anual:       (parseFloat(document.getElementById('f-nnm').value)  || 0) * 12,
