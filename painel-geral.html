@@ -826,18 +826,17 @@
           .eq('ano', anoAtual).order('mes'),
       ]);
 
-      // capAnual alimenta os gráficos de evolução anual, que somam direto (sem passar pelo
-      // guard por consultor que cap/prod/leads já têm) — precisa filtrar por região aqui também.
+      // Filtra por região aqui, na origem — nem todo consumidor de cap/prod/leads passa pelo
+      // guard por consultor do consAgg (ex: cards de Patrimônio, Receita Produtos, Reuniões,
+      // gráfico de categorias e a tabela de Detalhamento Mensal somam os arrays brutos direto).
       const idsRegiao = new Set(consultores.map(c => c.id));
-      const capAnualFiltrado = regiaoParam
-        ? (capAnualRes.data || []).filter(r => idsRegiao.has(r.consultor_id))
-        : (capAnualRes.data || []);
+      const filtrarRegiao = arr => regiaoParam ? arr.filter(r => idsRegiao.has(r.consultor_id)) : arr;
 
       renderUI(
-        capRes.data   || [],
-        prodRes.data  || [],
-        leadsRes.data || [],
-        capAnualFiltrado
+        filtrarRegiao(capRes.data   || []),
+        filtrarRegiao(prodRes.data  || []),
+        filtrarRegiao(leadsRes.data || []),
+        filtrarRegiao(capAnualRes.data || [])
       );
     } catch(e) {
       console.error(e);
