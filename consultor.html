@@ -599,21 +599,24 @@
       </div>
 
       <div class="form-section-label">BTG</div>
-      <div class="form-grid">
+      <div class="form-grid three">
         <div class="form-group"><label>Captado BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-btg" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div class="form-group"><label>Saída BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-btg" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label style="color:var(--muted)" title="Da Saída BTG acima, quanto foi transferência p/ conta internacional (não é perda real, é transição de custódia)">↔ Transferências Internacionais (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-transf-btg-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarTransfPreview()"></div>
       </div>
 
       <div class="form-section-label">XP</div>
-      <div class="form-grid">
+      <div class="form-grid three">
         <div class="form-group"><label>Captado XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-xp" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div class="form-group"><label>Saída XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-xp" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label style="color:var(--muted)" title="Da Saída XP acima, quanto foi transferência p/ conta internacional (não é perda real, é transição de custódia)">↔ Transferências Internacionais (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-transf-xp-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarTransfPreview()"></div>
       </div>
 
       <div class="form-section-label">Outros Bancos</div>
-      <div class="form-grid">
+      <div class="form-grid three">
         <div class="form-group"><label>Captado Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-outros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div class="form-group"><label>Saída Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-outros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label style="color:var(--muted)" title="Da Saída Outros Bancos acima, quanto foi transferência p/ conta internacional (não é perda real, é transição de custódia)">↔ Transferências Internacionais (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-transf-outros-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarTransfPreview()"></div>
       </div>
 
       <div class="form-section-label">Internacional</div>
@@ -621,16 +624,8 @@
         <div class="form-group"><label>Captado Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div class="form-group"><label>Saída Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
       </div>
-
-      <div class="form-section-label" style="color:var(--warn)">↔ Transferência Nacional → Internacional</div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label>Valor Transferido (R$)</label>
-          <input type="text" inputmode="numeric" class="inp-brl" id="e-transf-nac-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)">
-        </div>
-        <div style="font-size:11px;color:var(--warn);background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.2);border-radius:6px;padding:8px 12px;line-height:1.5;align-self:center">
-          Valor que saiu de corretoras nacionais (BTG/XP/Outros) e foi para conta internacional. <strong>Não conta como perda</strong> no NNM Brasil — é uma transição de custódia.
-        </div>
+      <div style="font-size:10px;color:var(--muted);margin:10px 0 4px;line-height:1.5">
+        ↔ Transferências Internacionais: parte da saída de cada corretora nacional que na verdade foi para a conta internacional do cliente, não uma retirada de capital — não entra no cálculo de saída/NNM do consultor. Total do mês: <strong id="transf-total-preview">R$ 0,00</strong>
       </div>
     </div>
 
@@ -952,19 +947,19 @@
     // Captação por corretora
     const cgEl = document.getElementById('captacao-grid');
     const corretoras = [
-      { nome: 'BTG',          cap: n(cap.captado_btg),    sai: n(cap.saida_btg),    pl: n(cap.pl_btg) },
-      { nome: 'XP',           cap: n(cap.captado_xp),     sai: n(cap.saida_xp),     pl: n(cap.pl_xp) },
-      { nome: 'Outros Bancos',cap: n(cap.captado_outros), sai: n(cap.saida_outros), pl: n(cap.pl_outros) },
-      { nome: 'Internacional',cap: n(cap.captado_int),    sai: n(cap.saida_int),    pl: n(cap.pl_int) },
+      { nome: 'BTG',          cap: n(cap.captado_btg),    sai: n(cap.saida_btg),    pl: n(cap.pl_btg),    transf: n(cap.transf_btg_int) },
+      { nome: 'XP',           cap: n(cap.captado_xp),     sai: n(cap.saida_xp),     pl: n(cap.pl_xp),     transf: n(cap.transf_xp_int) },
+      { nome: 'Outros Bancos',cap: n(cap.captado_outros), sai: n(cap.saida_outros), pl: n(cap.pl_outros), transf: n(cap.transf_outros_int) },
+      { nome: 'Internacional',cap: n(cap.captado_int),    sai: n(cap.saida_int),    pl: n(cap.pl_int),    transf: 0 },
     ];
     cgEl.innerHTML = corretoras.map(c => {
-      const saldo = c.cap - c.sai;
+      const saldo = c.cap - (c.sai - c.transf);
       const saldoCls = saldo >= 0 ? 'resumo-ok' : 'resumo-bad';
       return `<div class="corretora-card">
         <div class="corretora-nome">${c.nome}</div>
         <div class="corretora-row"><span class="corretora-row-label" style="color:var(--text)">PATRIMÔNIO</span><span class="corretora-row-value" style="color:var(--text)">${fmtM(c.pl)}</span></div>
         <div class="corretora-row"><span class="corretora-row-label">Captado</span><span class="corretora-row-value cap">${fmtM(c.cap)}</span></div>
-        <div class="corretora-row"><span class="corretora-row-label">Saída</span><span class="corretora-row-value sai">${fmtM(c.sai)}</span></div>
+        <div class="corretora-row"><span class="corretora-row-label">Saída</span><span class="corretora-row-value sai">${fmtM(c.sai)}${c.transf > 0 ? `<span style="font-size:9px;color:var(--gold);margin-left:4px" title="Não é perda real — foi para conta internacional">↔ ${fmtM(c.transf)}</span>` : ''}</span></div>
         <div class="corretora-saldo">
           <span class="corretora-saldo-label">Líquido</span>
           <span class="corretora-saldo-value ${saldoCls}">${fmtM(saldo)}</span>
@@ -1321,7 +1316,10 @@
     set('e-sai-outros',  cap.saida_outros);
     set('e-cap-int',         cap.captado_int);
     set('e-sai-int',         cap.saida_int);
-    set('e-transf-nac-int',  cap.transf_nac_para_int);
+    set('e-transf-btg-int',    cap.transf_btg_int);
+    set('e-transf-xp-int',     cap.transf_xp_int);
+    set('e-transf-outros-int', cap.transf_outros_int);
+    atualizarTransfPreview();
     set('e-estudos',     prod.estudos);
     set('e-previdencia', prod.previdencia);
     set('e-seguros',     prod.seguros);
@@ -1434,7 +1432,10 @@
     const saiOut       = g('e-sai-outros');
     const capInt       = g('e-cap-int');
     const saiInt       = g('e-sai-int');
-    const transfNacInt = g('e-transf-nac-int');
+    const transfBtgInt    = g('e-transf-btg-int');
+    const transfXpInt     = g('e-transf-xp-int');
+    const transfOutrosInt = g('e-transf-outros-int');
+    const transfNacInt = transfBtgInt + transfXpInt + transfOutrosInt;
     const captado  = capBtg + capXp + capOut + capInt;
     const saida    = saiBtg + saiXp + saiOut + saiInt;
     const nnm      = captado - saida + transfNacInt;
@@ -1455,6 +1456,7 @@
       captado_outros: capOut, saida_outros: saiOut,
       captado_int: capInt, saida_int: saiInt,
       transf_nac_para_int: transfNacInt,
+      transf_btg_int: transfBtgInt, transf_xp_int: transfXpInt, transf_outros_int: transfOutrosInt,
     };
 
     const prodPayload = {
@@ -1531,6 +1533,14 @@
     const int = parseBR(document.getElementById('e-pl-int').value);
     const tot = btg + xp + out + int;
     if (tot > 0) setMoeda(document.getElementById('e-pl'), tot);
+  }
+
+  // ── TRANSFERÊNCIAS INTERNACIONAIS — PREVIEW DO TOTAL ───────
+  function atualizarTransfPreview() {
+    const btg = parseBR(document.getElementById('e-transf-btg-int').value);
+    const xp  = parseBR(document.getElementById('e-transf-xp-int').value);
+    const out = parseBR(document.getElementById('e-transf-outros-int').value);
+    document.getElementById('transf-total-preview').textContent = fmtR(btg + xp + out);
   }
 
   // ── STVM ──────────────────────────────────────────────────
