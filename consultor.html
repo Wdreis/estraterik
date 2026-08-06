@@ -394,9 +394,14 @@
       <div class="section-title">Visão do Mês</div>
       <div class="kpi-grid" id="kpi-grid">
         <div class="kpi-card" style="--kpi-color:var(--gold)">
-          <div class="kpi-label">Net New Money</div>
+          <div class="kpi-label">NNM Brasil</div>
           <div class="kpi-value" id="k-nnm">—</div>
           <div class="kpi-sub" id="k-nnm-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#0ea5e9">
+          <div class="kpi-label">NNM Internacional</div>
+          <div class="kpi-value" id="k-nnm-int">—</div>
+          <div class="kpi-sub" id="k-nnm-int-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#22c55e">
           <div class="kpi-label">% da Meta NNM</div>
@@ -446,8 +451,9 @@
               <th style="text-align:left">Mês</th>
               <th style="text-align:right">Captado Brasil</th>
               <th style="text-align:right">Captado Int'l</th>
-              <th style="text-align:right">Saída</th>
-              <th style="text-align:right">NNM</th>
+              <th style="text-align:right">Saída Brasil</th>
+              <th style="text-align:right">NNM Brasil</th>
+              <th style="text-align:right">NNM Int'l</th>
               <th style="text-align:right">PL</th>
             </tr>
           </thead>
@@ -713,6 +719,23 @@
   const fmtP = v => (v*100).toFixed(1)+'%';
   const n = v => parseFloat(v)||0;
 
+  // Mesma fonte única de verdade usada em painel-geral.html/internacional.html: separar
+  // nacional e internacional em vez de usar os campos brutos (captado/saida/nnm), que vêm
+  // com os dois somados. Transferência nac→int não conta como perda no Brasil nem como
+  // captação nova no Internacional — é só uma mudança de custódia, mostrada à parte.
+  function liquidoBrasil(row) {
+    const captadoInt = n(row.captado_int), saidaInt = n(row.saida_int);
+    const transf = n(row.transf_nac_para_int);
+    const captado = n(row.captado) - captadoInt;
+    const saidaBruta = n(row.saida) - saidaInt;
+    const saida = saidaBruta - transf;
+    return { captado, saida, saidaBruta, transf, nnm: captado - saida };
+  }
+  function liquidoInternacional(row) {
+    const captado = n(row.captado_int), saida = n(row.saida_int);
+    return { captado, saida, nnm: captado - saida };
+  }
+
   // ── FORMATAÇÃO BR (estilo caixa eletrônico) ───────────────
   const parseBR = v => parseFloat((v||'').toString().replace(/\./g,'').replace(',','.')) || 0;
 
@@ -816,45 +839,46 @@
     const tfoot = document.getElementById('anual-total');
     if (!tbody || !tfoot) return;
     tbody.innerHTML = '';
-    let sCaptBrasil = 0, sCaptInt = 0, sSaida = 0, sNNM = 0, lastPL = 0;
+    let sCaptBrasil = 0, sCaptInt = 0, sSaida = 0, sNNMBrasil = 0, sNNMInt = 0, lastPL = 0;
 
     for (let m = 1; m <= 12; m++) {
       const row = capAnual.find(r => r.mes === m);
       if (!row) {
-        tbody.innerHTML += `<tr style="opacity:0.35"><td>${MESES_S[m]}</td><td colspan="5" style="text-align:center;font-size:11px;color:var(--muted2)">—</td></tr>`;
+        tbody.innerHTML += `<tr style="opacity:0.35"><td>${MESES_S[m]}</td><td colspan="6" style="text-align:center;font-size:11px;color:var(--muted2)">—</td></tr>`;
         continue;
       }
-      const captInt      = n(row.captado_int);
-      const captBrasil   = n(row.captado) - captInt;
-      const saida        = n(row.saida);
-      const transf       = n(row.transf_nac_para_int);
-      const saidaEfetiva = saida - transf;
-      const nnm          = n(row.nnm);
-      const pl           = n(row.pl);
-      sCaptBrasil += captBrasil;
-      sCaptInt    += captInt;
-      sSaida      += saidaEfetiva;
-      sNNM        += nnm;
+      const liqBr  = liquidoBrasil(row);
+      const liqInt = liquidoInternacional(row);
+      const pl     = n(row.pl);
+      sCaptBrasil += liqBr.captado;
+      sCaptInt    += liqInt.captado;
+      sSaida      += liqBr.saida;
+      sNNMBrasil  += liqBr.nnm;
+      sNNMInt     += liqInt.nnm;
       if (pl > 0) lastPL = pl;
 
-      const nnmCls = nnm >= 0 ? 'color:var(--ok)' : 'color:var(--danger)';
+      const nnmBrCls  = liqBr.nnm >= 0 ? 'color:var(--ok)' : 'color:var(--danger)';
+      const nnmIntCls = liqInt.nnm >= 0 ? 'color:var(--ok)' : 'color:var(--danger)';
       tbody.innerHTML += `<tr>
         <td style="font-weight:600">${MESES_S[m]} ${anoAtual}</td>
-        <td style="text-align:right;font-weight:700;color:var(--ok)">${fmtM(captBrasil)}</td>
-        <td style="text-align:right;color:var(--gold)">${captInt > 0 ? fmtM(captInt) : '<span style="color:var(--muted2)">—</span>'}</td>
-        <td style="text-align:right;color:${saidaEfetiva>0?'var(--warn)':'var(--muted)'}">${fmtM(saidaEfetiva)}${transf > 0 ? `<span style="font-size:9px;color:var(--gold);margin-left:4px" title="Inclui transf. nac→int de ${fmtM(transf)}">↔</span>` : ''}</td>
-        <td style="text-align:right;${nnmCls};font-weight:700">${fmtM(nnm)}</td>
+        <td style="text-align:right;font-weight:700;color:var(--ok)">${fmtM(liqBr.captado)}</td>
+        <td style="text-align:right;color:var(--gold)">${liqInt.captado > 0 ? fmtM(liqInt.captado) : '<span style="color:var(--muted2)">—</span>'}</td>
+        <td style="text-align:right;color:${liqBr.saida>0?'var(--warn)':'var(--muted)'}">${fmtM(liqBr.saida)}${liqBr.transf > 0 ? `<span style="font-size:9px;color:var(--gold);margin-left:4px" title="Não conta como saída: ${fmtM(liqBr.transf)} foi transferido para custódia internacional, não perdido">↔</span>` : ''}</td>
+        <td style="text-align:right;${nnmBrCls};font-weight:700">${fmtM(liqBr.nnm)}</td>
+        <td style="text-align:right;${nnmIntCls}">${(liqInt.captado || liqInt.saida) ? fmtM(liqInt.nnm) : '<span style="color:var(--muted2)">—</span>'}</td>
         <td style="text-align:right;color:var(--muted)">${pl > 0 ? fmtM(pl) : '<span style="color:var(--muted2)">—</span>'}</td>
       </tr>`;
     }
 
-    const nnmTotCls = sNNM >= 0 ? 'color:var(--ok)' : 'color:var(--danger)';
+    const nnmBrTotCls  = sNNMBrasil >= 0 ? 'color:var(--ok)' : 'color:var(--danger)';
+    const nnmIntTotCls = sNNMInt >= 0 ? 'color:var(--ok)' : 'color:var(--danger)';
     tfoot.innerHTML = `
       <td style="font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold)">TOTAL ANO</td>
       <td style="text-align:right;font-weight:800;color:var(--ok)">${fmtM(sCaptBrasil)}</td>
       <td style="text-align:right;font-weight:800;color:var(--gold)">${fmtM(sCaptInt)}</td>
       <td style="text-align:right;font-weight:800">${fmtM(sSaida)}</td>
-      <td style="text-align:right;font-weight:800;${nnmTotCls}">${fmtM(sNNM)}</td>
+      <td style="text-align:right;font-weight:800;${nnmBrTotCls}">${fmtM(sNNMBrasil)}</td>
+      <td style="text-align:right;font-weight:800;${nnmIntTotCls}">${fmtM(sNNMInt)}</td>
       <td style="text-align:right;font-weight:700;color:var(--muted)">${lastPL > 0 ? fmtM(lastPL) : '—'}</td>
     `;
   }
@@ -889,18 +913,26 @@
 
   function renderPage() {
     const cap  = capData, prod = prodData, lead = leadsData;
-    const nnm  = n(cap.nnm), pl = n(cap.pl), captado = n(cap.captado), saida = n(cap.saida);
+    const pl = n(cap.pl), captado = n(cap.captado), saida = n(cap.saida);
+    const liqBr  = liquidoBrasil(cap);
+    const liqInt = liquidoInternacional(cap);
     const metaNNM = n(cap.meta_nnm) || n(consultor.meta_nnm_mensal);
-    const pctMeta = metaNNM > 0 ? nnm / metaNNM : 0;
+    const pctMeta = metaNNM > 0 ? liqBr.nnm / metaNNM : 0;
     const churn   = pl > 0 ? (saida / pl) : 0;
     const reun    = n(lead.reunioes);
     const metaR   = n(lead.meta_reunioes) || n(consultor.meta_reunioes_mensal) || 10;
 
-    // KPIs
+    // KPIs — NNM Brasil e Internacional sempre separados (nunca somar os dois num único número)
     const nnmEl = document.getElementById('k-nnm');
-    nnmEl.textContent = fmtM(nnm);
-    nnmEl.className = 'kpi-value ' + (nnm >= 0 ? 'pos' : 'neg');
-    document.getElementById('k-nnm-sub').innerHTML = `Captado: <strong>${fmtM(captado)}</strong> | Saída: <strong>${fmtM(saida)}</strong>`;
+    nnmEl.textContent = fmtM(liqBr.nnm);
+    nnmEl.className = 'kpi-value ' + (liqBr.nnm >= 0 ? 'pos' : 'neg');
+    document.getElementById('k-nnm-sub').innerHTML = `Captado: <strong>${fmtM(liqBr.captado)}</strong> | Saída: <strong>${fmtM(liqBr.saida)}</strong>`
+      + (liqBr.transf > 0 ? `<br><span style="color:var(--gold)">↔ ${fmtM(liqBr.transf)} transferido p/ Internacional</span>` : '');
+
+    const nnmIntEl = document.getElementById('k-nnm-int');
+    nnmIntEl.textContent = fmtM(liqInt.nnm);
+    nnmIntEl.className = 'kpi-value ' + (liqInt.nnm >= 0 ? 'pos' : 'neg');
+    document.getElementById('k-nnm-int-sub').innerHTML = `Captado: <strong>${fmtM(liqInt.captado)}</strong> | Saída: <strong>${fmtM(liqInt.saida)}</strong>`;
 
     const pctEl = document.getElementById('k-meta-pct');
     pctEl.textContent = fmtP(pctMeta);
@@ -955,32 +987,47 @@
     document.getElementById('r-prod-meta').innerHTML  = `Meta: ${fmtR(metaProd)} &nbsp; <span style="color:${pctProd>=1?'var(--ok)':'var(--warn)'}">${fmtP(pctProd)}</span>`;
     document.getElementById('r-churn').innerHTML      = `<span class="${churnCls}">${fmtP(churn)}</span>`;
 
-    // Chart anual
+    // Chart anual — NNM Brasil e Internacional como séries separadas (nunca somadas)
     const allMeses = MESES.slice(1);
-    const nnmPorMes = allMeses.map((_,i) => {
+    const nnmBrasilPorMes = allMeses.map((_,i) => {
       const row = capAnual.find(r => r.mes === i+1);
-      return row ? n(row.nnm) : null;
+      return row ? liquidoBrasil(row).nnm : null;
     });
-    const ytd = nnmPorMes.filter(v => v !== null).reduce((s,v) => s+v, 0);
-    document.getElementById('chart-ytd').textContent = 'YTD: ' + fmtM(ytd);
+    const nnmIntPorMes = allMeses.map((_,i) => {
+      const row = capAnual.find(r => r.mes === i+1);
+      return row ? liquidoInternacional(row).nnm : null;
+    });
+    const ytdBrasil = nnmBrasilPorMes.filter(v => v !== null).reduce((s,v) => s+v, 0);
+    const ytdInt    = nnmIntPorMes.filter(v => v !== null).reduce((s,v) => s+v, 0);
+    document.getElementById('chart-ytd').textContent = `YTD Brasil: ${fmtM(ytdBrasil)}` + (ytdInt !== 0 ? ` · YTD Int'l: ${fmtM(ytdInt)}` : '');
 
     if (chartAnual) chartAnual.destroy();
     chartAnual = new Chart(document.getElementById('chartAnual'), {
       type: 'bar',
       data: {
         labels: allMeses,
-        datasets: [{
-          data: nnmPorMes,
-          backgroundColor: nnmPorMes.map(v => v === null ? 'rgba(200,160,70,0.1)' : v >= 0 ? consultor.cor + '99' : '#ef444499'),
-          borderColor:     nnmPorMes.map(v => v === null ? 'transparent' : v >= 0 ? consultor.cor : '#ef4444'),
-          borderWidth: 2, borderRadius: 6,
-        }]
+        datasets: [
+          {
+            label: 'NNM Brasil',
+            data: nnmBrasilPorMes,
+            backgroundColor: nnmBrasilPorMes.map(v => v === null ? 'rgba(200,160,70,0.1)' : v >= 0 ? consultor.cor + '99' : '#ef444499'),
+            borderColor:     nnmBrasilPorMes.map(v => v === null ? 'transparent' : v >= 0 ? consultor.cor : '#ef4444'),
+            borderWidth: 2, borderRadius: 6,
+          },
+          {
+            label: "NNM Internacional",
+            data: nnmIntPorMes,
+            backgroundColor: 'rgba(200,160,70,0.6)',
+            borderColor: 'var(--gold)',
+            borderWidth: 2, borderRadius: 6,
+          }
+        ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ' ' + fmtR(ctx.raw) : ' Sem dados' } }
+          legend: { display: true, labels: { color: 'rgba(230,228,225,0.7)', font: { family: 'Jost', size: 10 } } },
+          tooltip: { callbacks: { label: ctx => ctx.raw !== null ? ` ${ctx.dataset.label}: ${fmtR(ctx.raw)}` : ' Sem dados' } }
         },
         scales: {
           x: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },

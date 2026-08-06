@@ -67,15 +67,15 @@
 
     .topbar-row2 { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
     .periodo-bar { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-    .periodo-btn {
+    .periodo-btn, .regiao-btn {
       background: var(--card); border: 1px solid var(--border);
       color: var(--muted); border-radius: 20px;
       padding: 4px 12px; font-size: 11px; font-weight: 600;
       cursor: pointer; font-family: inherit;
       transition: all 0.15s; letter-spacing: 0.2px;
     }
-    .periodo-btn:hover { border-color: rgba(200,160,70,0.4); color: var(--text); }
-    .periodo-btn.active { background: rgba(200,160,70,0.18); border-color: var(--gold); color: var(--gold); }
+    .periodo-btn:hover, .regiao-btn:hover { border-color: rgba(200,160,70,0.4); color: var(--text); }
+    .periodo-btn.active, .regiao-btn.active { background: rgba(200,160,70,0.18); border-color: var(--gold); color: var(--gold); }
     .custom-range {
       display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
       font-size: 11px; color: var(--muted);
@@ -268,7 +268,7 @@
       <div class="topbar-row1">
         <div>
           <div class="topbar-title">Relatório Head — Equipe de Consultores</div>
-          <div class="topbar-subtitle">Visão consolidada por período · Oikos Family Office</div>
+          <div class="topbar-subtitle" id="topbar-subtitle">Visão consolidada por período · Oikos Family Office</div>
         </div>
         <div class="ano-nav">
           <button class="btn-mes" id="btn-ano-prev">&#8249;</button>
@@ -297,6 +297,14 @@
           <select id="mes-fim-sel"></select>
           <button class="btn-aplicar" onclick="aplicarCustom()">Aplicar</button>
         </div>
+
+        <div class="divider-v"></div>
+
+        <div class="periodo-bar" id="regiao-bar">
+          <button class="regiao-btn active" data-regiao="">Consolidado</button>
+          <button class="regiao-btn" data-regiao="brasilia">Oikos Brasília</button>
+          <button class="regiao-btn" data-regiao="bh">Oikos BH</button>
+        </div>
       </div>
     </div>
 
@@ -305,11 +313,16 @@
 
       <!-- KPIs -->
       <div class="section-title">Visão Geral do Período</div>
-      <div class="kpi-grid">
+      <div class="kpi-grid" style="grid-template-columns: repeat(5, 1fr);">
         <div class="kpi-card" style="--kpi-color:var(--gold)">
-          <div class="kpi-label">NNM Total</div>
+          <div class="kpi-label">NNM Brasil</div>
           <div class="kpi-value" id="kpi-nnm">—</div>
           <div class="kpi-sub" id="kpi-nnm-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#0ea5e9">
+          <div class="kpi-label">NNM Internacional</div>
+          <div class="kpi-value" id="kpi-nnm-int">—</div>
+          <div class="kpi-sub" id="kpi-nnm-int-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#22c55e">
           <div class="kpi-label">% da Meta NNM</div>
@@ -317,7 +330,7 @@
           <div class="kpi-sub" id="kpi-meta-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#28505A">
-          <div class="kpi-label">Captação Total</div>
+          <div class="kpi-label">Captação Brasil</div>
           <div class="kpi-value" id="kpi-captado">—</div>
           <div class="kpi-sub" id="kpi-saida-sub">—</div>
         </div>
@@ -417,6 +430,7 @@
 
   let anoAtual = new Date().getFullYear();
   let meInicio = 1, meFim = new Date().getMonth() + 1;
+  let regiaoAtual = null; // null = consolidado | 'brasilia' | 'bh'
   let consultores = [];
   let chartBar = null, chartDoughnut = null;
 
@@ -431,6 +445,23 @@
   const fmtP = v => (v*100).toFixed(1) + '%';
   const clamp = (v,mn,mx) => Math.min(Math.max(v,mn),mx);
   const n = v => parseFloat(v) || 0;
+
+  // Mesma fonte única de verdade usada em painel-geral.html/consultor.html: separar
+  // nacional e internacional em vez de somar (campos brutos captado/saida/nnm vêm com
+  // os dois juntos). Transferência nac→int não conta como perda no Brasil nem como
+  // captação nova no Internacional — é mudança de custódia, mostrada à parte.
+  function liquidoBrasil(row) {
+    const captadoInt = n(row.captado_int), saidaInt = n(row.saida_int);
+    const transf = n(row.transf_nac_para_int);
+    const captado = n(row.captado) - captadoInt;
+    const saidaBruta = n(row.saida) - saidaInt;
+    const saida = saidaBruta - transf;
+    return { captado, saida, saidaBruta, transf, nnm: captado - saida };
+  }
+  function liquidoInternacional(row) {
+    const captado = n(row.captado_int), saida = n(row.saida_int);
+    return { captado, saida, nnm: captado - saida };
+  }
 
   function buildMesSelects() {
     ['mes-ini-sel','mes-fim-sel'].forEach(id => {
@@ -464,6 +495,19 @@ function setPeriodo(ini, fim, srcBtn) {
     carregar();
   }
 
+  function setRegiao(regiao, srcBtn) {
+    regiaoAtual = regiao || null;
+    document.querySelectorAll('#regiao-bar .regiao-btn').forEach(b => b.classList.remove('active'));
+    srcBtn.classList.add('active');
+    const nomeRegiao = regiao === 'brasilia' ? 'Oikos Brasília' : regiao === 'bh' ? 'Oikos BH' : 'consolidada';
+    document.getElementById('topbar-subtitle').textContent =
+      (regiao ? `Visão ${nomeRegiao}` : 'Visão consolidada') + ' por período · Oikos Family Office';
+    carregar();
+  }
+  document.querySelectorAll('#regiao-bar .regiao-btn').forEach(btn => {
+    btn.addEventListener('click', () => setRegiao(btn.dataset.regiao, btn));
+  });
+
   document.querySelectorAll('.periodo-btn').forEach(btn => {
     btn.addEventListener('click', () => setPeriodo(parseInt(btn.dataset.ini), parseInt(btn.dataset.fim), btn));
   });
@@ -477,7 +521,7 @@ function setPeriodo(ini, fim, srcBtn) {
 
     try {
       const { data: cons } = await db.from('consultores').select('*').eq('ativo', true).order('id');
-      consultores = cons || [];
+      consultores = regiaoAtual ? (cons || []).filter(c => c.regiao === regiaoAtual) : (cons || []);
 
       const [capRes, prodRes, leadsRes] = await Promise.all([
         db.from('captacao_mensal').select('*').eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
@@ -496,7 +540,7 @@ function setPeriodo(ini, fim, srcBtn) {
 
       consultores.forEach(c => {
         capAgg[c.id]   = { captado: 0, nnm: 0, saida: 0, pl: 0, _lastMes: 0,
-                           captado_int: 0, saida_int: 0,
+                           captado_int: 0, saida_int: 0, transf_nac_para_int: 0,
                            pl_btg: 0, pl_xp: 0, pl_outros: 0, pl_int: 0 };
         prodAgg[c.id]  = {};
         PROD_KEYS.forEach(k => prodAgg[c.id][k] = 0);
@@ -510,6 +554,7 @@ function setPeriodo(ini, fim, srcBtn) {
         capAgg[r.consultor_id].saida       += n(r.saida);
         capAgg[r.consultor_id].captado_int += n(r.captado_int);
         capAgg[r.consultor_id].saida_int   += n(r.saida_int);
+        capAgg[r.consultor_id].transf_nac_para_int += n(r.transf_nac_para_int);
         if (r.mes > capAgg[r.consultor_id]._lastMes) {
           capAgg[r.consultor_id].pl       = n(r.pl);
           capAgg[r.consultor_id].pl_btg   = n(r.pl_btg);
@@ -541,15 +586,21 @@ function setPeriodo(ini, fim, srcBtn) {
     const numMeses = meFim - meInicio + 1;
     const metaNNM  = 25000000 * numMeses;
 
-    const ordenadoNNM     = [...consultores].sort((a,b) => (capAgg[b.id]||{}).nnm - (capAgg[a.id]||{}).nnm);
-    const ordenadoCaptado = [...consultores].sort((a,b) => (capAgg[b.id]||{}).captado - (capAgg[a.id]||{}).captado);
-    const rankMap         = {}; ordenadoCaptado.forEach((c,i) => rankMap[c.id] = i + 1);
+    // NNM Brasil e Internacional sempre separados (nunca somados num único total).
+    // Ranking usa NNM Brasil — é o número que conta pra meta da empresa.
+    const liqPorConsultor = {};
+    Object.keys(capAgg).forEach(id => { liqPorConsultor[id] = liquidoBrasil(capAgg[id]); });
 
-    const totalNNM     = Object.values(capAgg).reduce((s,r) => s + r.nnm, 0);
-    const totalCaptado = Object.values(capAgg).reduce((s,r) => s + r.captado, 0);
-    const totalSaida   = Object.values(capAgg).reduce((s,r) => s + r.saida, 0);
+    const ordenadoNNM     = [...consultores].sort((a,b) => (liqPorConsultor[b.id]||{}).nnm - (liqPorConsultor[a.id]||{}).nnm);
+    const ordenadoCaptado = [...consultores].sort((a,b) => (liqPorConsultor[b.id]||{}).captado - (liqPorConsultor[a.id]||{}).captado);
+    const rankMap         = {}; ordenadoCaptado.forEach((c,i) => rankMap[c.id] = i + 1);
+    const totalNNMBrasil = Object.values(liqPorConsultor).reduce((s,r) => s + r.nnm, 0);
+    const totalNNMInt    = Object.values(capAgg).reduce((s,r) => s + liquidoInternacional(r).nnm, 0);
+    const totalCaptBrasil = Object.values(liqPorConsultor).reduce((s,r) => s + r.captado, 0);
+    const totalSaiBrasil  = Object.values(liqPorConsultor).reduce((s,r) => s + r.saida, 0);
+    const totalTransf     = Object.values(liqPorConsultor).reduce((s,r) => s + r.transf, 0);
     const totalReun    = Object.values(leadsAgg).reduce((s,r) => s + r.reunioes, 0);
-    const pctMeta      = metaNNM > 0 ? totalNNM / metaNNM : 0;
+    const pctMeta      = metaNNM > 0 ? totalNNMBrasil / metaNNM : 0;
 
     const totalPL       = Object.values(capAgg).reduce((s,r) => s + r.pl, 0);
     const totalPLbtg    = Object.values(capAgg).reduce((s,r) => s + r.pl_btg, 0);
@@ -564,10 +615,16 @@ function setPeriodo(ini, fim, srcBtn) {
     document.getElementById('kpi-pl-xp').textContent       = fmtM(totalPLxp);
     document.getElementById('kpi-pl-outros').textContent   = fmtM(totalPLoutros);
 
-    document.getElementById('kpi-nnm').textContent     = fmtM(totalNNM);
-    document.getElementById('kpi-nnm').style.color     = totalNNM >= 0 ? '' : 'var(--danger)';
+    document.getElementById('kpi-nnm').textContent     = fmtM(totalNNMBrasil);
+    document.getElementById('kpi-nnm').style.color     = totalNNMBrasil >= 0 ? '' : 'var(--danger)';
     document.getElementById('kpi-nnm-sub').innerHTML   =
-      `Captado: <strong>${fmtM(totalCaptado)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totalSaida)}</strong>`;
+      `Captado: <strong>${fmtM(totalCaptBrasil)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totalSaiBrasil)}</strong>`
+      + (totalTransf > 0 ? `<br><span style="color:var(--gold)">↔ ${fmtM(totalTransf)} transferido p/ Internacional</span>` : '');
+
+    document.getElementById('kpi-nnm-int').textContent = fmtM(totalNNMInt);
+    document.getElementById('kpi-nnm-int').style.color = totalNNMInt >= 0 ? '' : 'var(--danger)';
+    document.getElementById('kpi-nnm-int-sub').innerHTML =
+      `Captado: <strong>${fmtM(Object.values(capAgg).reduce((s,r)=>s+n(r.captado_int),0))}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(Object.values(capAgg).reduce((s,r)=>s+n(r.saida_int),0))}</strong>`;
 
     const pctEl = document.getElementById('kpi-meta-pct');
     pctEl.textContent = fmtP(pctMeta);
@@ -575,22 +632,21 @@ function setPeriodo(ini, fim, srcBtn) {
     document.getElementById('kpi-meta-sub').innerHTML =
       `Meta: <strong>${fmtM(metaNNM)}</strong> (R$25M × ${numMeses} ${numMeses === 1 ? 'mês' : 'meses'})`;
 
-    document.getElementById('kpi-captado').textContent = fmtM(totalCaptado);
+    document.getElementById('kpi-captado').textContent = fmtM(totalCaptBrasil);
     document.getElementById('kpi-saida-sub').innerHTML =
-      `Saída total: <strong class="${totalSaida > totalCaptado ? 'bad' : 'ok'}">${fmtM(totalSaida)}</strong>`;
+      `Saída Brasil: <strong class="${totalSaiBrasil > totalCaptBrasil ? 'bad' : 'ok'}">${fmtM(totalSaiBrasil)}</strong>`;
 
     document.getElementById('kpi-reunioes').textContent = totalReun;
     const metaReun = consultores.length * 10 * numMeses;
     document.getElementById('kpi-reunioes-sub').innerHTML =
       `Meta: <strong>${metaReun}</strong> — <span class="${totalReun >= metaReun ? 'ok' : ''}">${Math.round(totalReun / metaReun * 100)}% atingido</span>`;
 
-    // RANKING NNM
-    const maxAbsNNM = Math.max(...ordenadoNNM.map(c => Math.abs((capAgg[c.id]||{}).nnm||0)), 1);
+    // RANKING NNM (Brasil)
+    const maxAbsNNM = Math.max(...ordenadoNNM.map(c => Math.abs((liqPorConsultor[c.id]||{}).nnm||0)), 1);
     const rgEl = document.getElementById('ranking-grid');
     rgEl.innerHTML = '';
     ordenadoNNM.forEach((c, i) => {
-      const cap  = capAgg[c.id] || {};
-      const nnm  = cap.nnm || 0;
+      const nnm  = (liqPorConsultor[c.id]||{}).nnm || 0;
       const pos  = i + 1;
       const barW = Math.max(2, Math.abs(nnm) / maxAbsNNM * 100);
       const barColor   = nnm >= 0 ? c.cor : 'var(--danger)';
@@ -615,18 +671,17 @@ function setPeriodo(ini, fim, srcBtn) {
       const cap      = capAgg[c.id]   || {};
       const lead     = leadsAgg[c.id] || {};
       const rank     = rankMap[c.id];
-      const nnm      = cap.nnm      || 0;
-      const captado  = cap.captado  || 0;
+      const nnmBrasil = (liqPorConsultor[c.id]||{}).nnm || 0;
+      const nnmInt    = liquidoInternacional(cap).nnm;
+      const nnm       = nnmBrasil + nnmInt; // só p/ exibir "NNM Total" informativo, nunca usado sozinho
       const pl       = cap.pl       || 0;
       const saida    = cap.saida    || 0;
-      const nnmInt   = (cap.captado_int || 0) - (cap.saida_int || 0);
-      const nnmBrasil = nnm - nnmInt;
       const churn    = pl > 0 ? (saida / pl * 100) : 0;
       const reun     = lead.reunioes || 0;
       const metaR    = (c.meta_reunioes_mensal || 10) * numMeses;
       const metaC    = c.meta_nnm_mensal * numMeses;
-      const pctN     = metaC > 0 ? clamp(nnm / metaC * 100, 0, 100) : 0;
-      const pctNR    = metaC > 0 ? Math.round(nnm / metaC * 100) : 0;
+      const pctN     = metaC > 0 ? clamp(nnmBrasil / metaC * 100, 0, 100) : 0;
+      const pctNR    = metaC > 0 ? Math.round(nnmBrasil / metaC * 100) : 0;
       const badgeClass = rank===1?'g':rank===2?'s':rank===3?'b':'';
       const churnClass = churn > 1.5 ? 'bad' : churn > 0.8 ? 'warn' : 'ok';
       const reunClass  = reun >= metaR ? 'ok' : reun >= metaR*0.7 ? 'warn' : 'bad';
@@ -639,8 +694,8 @@ function setPeriodo(ini, fim, srcBtn) {
             <div class="c-name"><div class="dot" style="background:${c.cor}"></div>${c.nome}</div>
             <div class="c-rank-badge ${badgeClass}">${rank}º lugar</div>
           </div>
-          <div class="c-nnm-label">Net New Money</div>
-          <div class="c-nnm-value ${nnm>=0?'pos':'neg'}">${fmtM(nnm)}</div>
+          <div class="c-nnm-label">Net New Money — Brasil</div>
+          <div class="c-nnm-value ${nnmBrasil>=0?'pos':'neg'}">${fmtM(nnmBrasil)}</div>
           <div class="c-progress-wrap">
             <div class="c-progress-label">
               <span>Meta: ${fmtM(metaC)}</span>
