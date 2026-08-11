@@ -409,14 +409,24 @@
           <div class="kpi-sub" id="k-meta-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--teal)">
-          <div class="kpi-label">PL Atual</div>
+          <div class="kpi-label">PL Nacional</div>
           <div class="kpi-value" id="k-pl">—</div>
           <div class="kpi-sub" id="k-churn-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#0ea5e9">
+          <div class="kpi-label">PL Internacional</div>
+          <div class="kpi-value" id="k-pl-int">—</div>
+          <div class="kpi-sub" id="k-pl-int-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--beige)">
           <div class="kpi-label">Reuniões</div>
           <div class="kpi-value" id="k-reun">—</div>
           <div class="kpi-sub" id="k-reun-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">Receita Produtos</div>
+          <div class="kpi-value" id="k-prod">—</div>
+          <div class="kpi-sub" id="k-prod-sub">—</div>
         </div>
       </div>
 
@@ -916,6 +926,10 @@
     const churn   = pl > 0 ? (saida / pl) : 0;
     const reun    = n(lead.reunioes);
     const metaR   = n(lead.meta_reunioes) || n(consultor.meta_reunioes_mensal) || 10;
+    const metaProd = n(prod.meta_produtos) || n(consultor.meta_produtos_mensal) || 15000;
+    const prodCols = ['estudos','previdencia','seguros','precatorios','consorcio','private_equity','juridico','offshore','cambio','outros'];
+    const receitaProd = prodCols.reduce((s,k) => s + n(prod[k]), 0);
+    const pctProd = metaProd > 0 ? receitaProd / metaProd : 0;
 
     // KPIs — NNM Brasil e Internacional sempre separados (nunca somar os dois num único número)
     const nnmEl = document.getElementById('k-nnm');
@@ -934,15 +948,23 @@
     pctEl.style.color = pctMeta >= 1 ? 'var(--ok)' : pctMeta >= 0.5 ? 'var(--warn)' : 'var(--danger)';
     document.getElementById('k-meta-sub').textContent = 'Meta: ' + fmtM(metaNNM);
 
-    document.getElementById('k-pl').textContent = fmtM(pl);
     const plbtg = n(cap.pl_btg), plxp = n(cap.pl_xp), plout = n(cap.pl_outros);
+    const plNacional = plbtg + plxp + plout;
+    const plInternacional = n(cap.pl_int);
+    document.getElementById('k-pl').textContent = fmtM(plNacional);
     const plBreakdown = (plbtg || plxp || plout)
       ? `<span style="font-size:10px;opacity:0.7">BTG: ${fmtM(plbtg)} · XP: ${fmtM(plxp)} · Outros: ${fmtM(plout)}</span><br>`
       : '';
     document.getElementById('k-churn-sub').innerHTML = plBreakdown + `Churn: <strong style="color:${churn>0.015?'var(--danger)':churn>0.008?'var(--warn)':'var(--ok)'}">${fmtP(churn)}</strong>`;
 
+    document.getElementById('k-pl-int').textContent = fmtM(plInternacional);
+    document.getElementById('k-pl-int-sub').textContent = `PL Total: ${fmtM(plNacional + plInternacional)}`;
+
     document.getElementById('k-reun').textContent = reun;
     document.getElementById('k-reun-sub').textContent = `Meta: ${metaR} — ${reun >= metaR ? '✅ atingido' : reun + ' realizadas'}`;
+
+    document.getElementById('k-prod').textContent = fmtR(receitaProd);
+    document.getElementById('k-prod-sub').innerHTML = `Meta: ${fmtR(metaProd)} &nbsp; <span style="color:${pctProd>=1?'var(--ok)':'var(--warn)'}">${fmtP(pctProd)}</span>`;
 
     // Captação por corretora
     const cgEl = document.getElementById('captacao-grid');
@@ -968,10 +990,6 @@
     }).join('');
 
     // Resumo executivo
-    const metaProd = n(prod.meta_produtos) || n(consultor.meta_produtos_mensal) || 15000;
-    const prodCols = ['estudos','previdencia','seguros','precatorios','consorcio','private_equity','juridico','offshore','cambio','outros'];
-    const receitaProd = prodCols.reduce((s,k) => s + n(prod[k]), 0);
-    const pctProd = metaProd > 0 ? receitaProd / metaProd : 0;
     const churnCls = churn > 0.015 ? 'resumo-bad' : churn > 0.008 ? 'resumo-warn' : 'resumo-ok';
 
     document.getElementById('r-cap').textContent      = fmtM(captado);

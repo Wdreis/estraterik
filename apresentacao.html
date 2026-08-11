@@ -314,6 +314,11 @@
       <!-- KPIs -->
       <div class="section-title">Visão Geral do Período</div>
       <div class="kpi-grid" style="grid-template-columns: repeat(5, 1fr);">
+        <div class="kpi-card" style="--kpi-color:#28505A">
+          <div class="kpi-label">Captação Brasil</div>
+          <div class="kpi-value" id="kpi-captado">—</div>
+          <div class="kpi-sub" id="kpi-saida-sub">—</div>
+        </div>
         <div class="kpi-card" style="--kpi-color:var(--gold)">
           <div class="kpi-label">NNM Brasil</div>
           <div class="kpi-value" id="kpi-nnm">—</div>
@@ -328,11 +333,6 @@
           <div class="kpi-label">% da Meta NNM</div>
           <div class="kpi-value" id="kpi-meta-pct">—</div>
           <div class="kpi-sub" id="kpi-meta-sub">—</div>
-        </div>
-        <div class="kpi-card" style="--kpi-color:#28505A">
-          <div class="kpi-label">Captação Brasil</div>
-          <div class="kpi-value" id="kpi-captado">—</div>
-          <div class="kpi-sub" id="kpi-saida-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--beige)">
           <div class="kpi-label">Reuniões Realizadas</div>
@@ -379,6 +379,10 @@
       <!-- RANKING NNM -->
       <div class="section-title">Ranking — Net New Money</div>
       <div class="ranking-grid ranking-section" id="ranking-grid"></div>
+
+      <!-- RANKING SAÍDA -->
+      <div class="section-title">Ranking — Saída</div>
+      <div class="ranking-grid ranking-section" id="ranking-saida"></div>
 
       <!-- CARDS -->
       <br>
@@ -663,11 +667,32 @@ function setPeriodo(ini, fim, srcBtn) {
         </div>`;
     });
 
-    // CARDS — ordem alfabética
+    // RANKING SAÍDA (Brasil) — quem teve mais saída no período
+    const ordenadoSaida = [...consultores].sort((a,b) => (liqPorConsultor[b.id]||{}).saida - (liqPorConsultor[a.id]||{}).saida);
+    const maxSaida = Math.max(...ordenadoSaida.map(c => (liqPorConsultor[c.id]||{}).saida || 0), 1);
+    const rsEl = document.getElementById('ranking-saida');
+    rsEl.innerHTML = '';
+    ordenadoSaida.forEach((c, i) => {
+      const saida = (liqPorConsultor[c.id]||{}).saida || 0;
+      const pos   = i + 1;
+      const barW  = Math.max(2, saida / maxSaida * 100);
+      const badgeClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      const pctPL = (capAgg[c.id]||{}).pl > 0 ? Math.round(saida / capAgg[c.id].pl * 100) : 0;
+      rsEl.innerHTML += `
+        <div class="rank-row">
+          <div class="rank-badge ${badgeClass}">${pos}º</div>
+          <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}</div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:var(--danger)"></div></div>
+          <div class="rank-value neg">${saida===0?'—':fmtM(saida)}</div>
+          <div class="rank-meta">${pctPL}% do PL</div>
+        </div>`;
+    });
+
+    // CARDS — ordem por ranking (mesma classificação do badge, por Captação)
     const cgEl = document.getElementById('cards-grid');
     cgEl.innerHTML = '';
-    const consAlfabeticos = [...consultores].sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
-    consAlfabeticos.forEach(c => {
+    const consPorRanking = [...consultores].sort((a,b) => rankMap[a.id] - rankMap[b.id]);
+    consPorRanking.forEach(c => {
       const cap      = capAgg[c.id]   || {};
       const lead     = leadsAgg[c.id] || {};
       const rank     = rankMap[c.id];
