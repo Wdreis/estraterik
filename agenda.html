@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OIKOS FAMILY OFFICE — Agenda</title>
+  <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:        #00283C;
+      --teal:        #28505A;
+      --gold:        #C8A046;
+      --gold2:       #D4AF6A;
+      --beige:       #E6E4E1;
+      --sidebar-bg:     #00283C;
+      --sidebar-hover:  rgba(200,160,70,0.12);
+      --sidebar-active: rgba(200,160,70,0.18);
+      --bg:      #001a27;
+      --bg2:     #001f30;
+      --card:    #00233a;
+      --card2:   #002d48;
+      --border:  rgba(200,160,70,0.14);
+      --border2: rgba(200,160,70,0.32);
+      --text:   #FFFFFF;
+      --muted:  rgba(230,228,225,0.55);
+      --muted2: rgba(230,228,225,0.22);
+      --ok:     #22c55e;
+      --warn:   #f59e0b;
+      --danger: #ef4444;
+    }
+
+    html, body { height: 100%; }
+    body { font-family: 'Jost', sans-serif; background: var(--bg); color: var(--text); }
+    .app { display: flex; min-height: 100vh; }
+
+    /* ─── SIDEBAR ─── */
+    .sidebar {
+      width: 240px; min-width: 240px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid rgba(200,160,70,0.14);
+      display: flex; flex-direction: column;
+      position: fixed; top: 0; left: 0;
+      height: 100vh; z-index: 100;
+      overflow-y: auto; overflow-x: hidden;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: rgba(200,160,70,0.2); border-radius: 2px; }
+    .sidebar-brand {
+      padding: 26px 20px 22px;
+      border-bottom: 1px solid rgba(200,160,70,0.14);
+      display: flex; align-items: center; gap: 13px; flex-shrink: 0;
+    }
+    .brand-icon {
+      width: 42px; height: 42px; background: transparent;
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .brand-text { display: flex; flex-direction: column; gap: 2px; }
+    .brand-name { font-size: 18px; font-weight: 800; color: var(--text); letter-spacing: 2.5px; line-height: 1; }
+    .brand-tagline { font-size: 9px; font-weight: 500; color: var(--gold); letter-spacing: 2px; text-transform: uppercase; }
+    .sidebar-section { padding: 18px 12px 6px; }
+    .sidebar-section-label { font-size: 9px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); opacity: 0.65; padding: 0 10px; margin-bottom: 5px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 12px; border-radius: 8px;
+      text-decoration: none; color: var(--beige);
+      font-size: 13px; font-weight: 500; letter-spacing: 0.2px;
+      transition: all 0.15s; cursor: pointer;
+      border: none; background: none; width: 100%;
+    }
+    .nav-item:hover { background: var(--sidebar-hover); color: var(--text); }
+    .nav-item.active { background: var(--sidebar-active); color: var(--gold); font-weight: 600; border-left: 3px solid var(--gold); padding-left: 9px; }
+    .nav-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+    .nav-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .sidebar-divider { margin: 6px 18px; border: none; border-top: 1px solid rgba(200,160,70,0.1); }
+    .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid rgba(200,160,70,0.1); flex-shrink: 0; }
+    .badge-live { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 500; color: var(--ok); }
+    .dot-live { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+
+    /* ─── MAIN WRAPPER ─── */
+    .main-wrapper { margin-left: 240px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+    /* ─── TOPBAR ─── */
+    .topbar {
+      background: rgba(0,26,39,0.96);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: auto;
+      min-height: 60px;
+      display: flex; flex-direction: column; justify-content: center;
+      gap: 10px;
+      padding-top: 14px; padding-bottom: 14px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-row1 { display: flex; align-items: center; justify-content: space-between; }
+    .topbar-title { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: 0.3px; }
+    .topbar-subtitle { font-size: 11px; color: var(--muted); }
+
+    .topbar-row2 { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .custom-range {
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      font-size: 11px; color: var(--muted);
+    }
+    .custom-range select, .custom-range input[type="month"] {
+      background: var(--card); border: 1px solid var(--border);
+      color: var(--text); border-radius: 6px; padding: 5px 10px;
+      font-size: 12px; font-family: inherit; outline: none; cursor: pointer;
+    }
+    .custom-range select:focus, .custom-range input[type="month"]:focus { border-color: var(--gold); }
+    .custom-range select option { background: var(--card2); }
+    .divider-v { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+    .btn-aplicar {
+      background: var(--gold); color: var(--navy); border: none;
+      border-radius: 8px; padding: 9px 18px; font-size: 12px;
+      font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: opacity 0.15s;
+    }
+    .btn-aplicar:hover { opacity: 0.88; }
+
+    /* ─── MAIN ─── */
+    main { padding: 26px 32px; max-width: 1500px; }
+
+    .section-title {
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 2.5px; text-transform: uppercase;
+      color: var(--gold); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ─── KPI GRID ─── */
+    .kpi-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px; margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px;
+      position: relative; overflow: hidden;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .kpi-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+    .kpi-card::before {
+      content: ''; position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: var(--kpi-color, var(--gold));
+    }
+    .kpi-label { font-size: 9px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-bottom: 9px; }
+    .kpi-value { font-size: 26px; font-weight: 800; color: var(--text); line-height: 1; margin-bottom: 6px; letter-spacing: -0.5px; }
+    .kpi-sub { font-size: 12px; font-weight: 400; color: var(--muted); }
+
+    /* ─── CHARTS ─── */
+    .chart-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 22px;
+    }
+    .chart-title {
+      font-size: 12px; font-weight: 700; color: var(--text);
+      margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;
+      letter-spacing: 0.4px;
+    }
+    .chart-wrap { position: relative; height: 240px; }
+
+    /* ─── BAR LIST (Por tipo / Por consultor) ─── */
+    .barlist-row { margin-bottom: 14px; }
+    .barlist-row:last-child { margin-bottom: 0; }
+    .barlist-label-row { display: flex; justify-content: space-between; align-items: baseline; font-size: 13px; margin-bottom: 6px; }
+    .barlist-count { font-weight: 700; }
+    .barlist-count .pct { font-weight: 400; color: var(--muted); margin-left: 4px; font-size: 11px; }
+    .barlist-bar-bg { height: 6px; background: rgba(200,160,70,0.1); border-radius: 3px; overflow: hidden; }
+    .barlist-bar-fill { height: 100%; border-radius: 3px; transition: width 0.7s ease; }
+
+    /* ─── TABLE SHARED ─── */
+    .table-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      padding: 10px 16px; text-align: right;
+      font-size: 9px; font-weight: 700;
+      letter-spacing: 1.2px; text-transform: uppercase;
+      color: var(--gold); border-bottom: 1px solid var(--border);
+      background: rgba(0,0,0,0.2);
+    }
+    thead th:first-child { text-align: left; }
+    thead th.th-center { text-align: center; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: var(--card2); }
+    tbody td { padding: 10px 16px; text-align: right; font-weight: 500; color: var(--text); }
+    tbody td:first-child { text-align: left; }
+    tbody td.td-center { text-align: center; }
+
+    /* ─── LOADING ─── */
+    .loading-overlay {
+      position: fixed; inset: 0; background: var(--navy);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 999; gap: 16px; transition: opacity 0.4s;
+    }
+    .loading-overlay.hidden { opacity: 0; pointer-events: none; }
+    .loading-logo { font-size: 36px; font-weight: 900; letter-spacing: 8px; color: var(--gold); }
+    .loading-sub { font-size: 10px; letter-spacing: 4px; color: var(--beige); opacity: 0.45; text-transform: uppercase; }
+    .spinner {
+      width: 30px; height: 30px;
+      border: 2px solid rgba(200,160,70,0.15);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite; margin-top: 4px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ─── FOOTER ─── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 14px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 11px; color: var(--muted); letter-spacing: 0.3px;
+    }
+
+    /* ─── MODAL ─── */
+    .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200; backdrop-filter: blur(3px); }
+    .overlay.open { display: block; }
+    .modal {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%) scale(0.96);
+      width: min(640px, 95vw); max-height: 90vh;
+      background: var(--bg2); border: 1px solid var(--border); border-radius: 14px;
+      z-index: 201; display: flex; flex-direction: column;
+      transition: transform 0.25s, opacity 0.25s; opacity: 0; pointer-events: none;
+    }
+    .modal.open { transform: translate(-50%,-50%) scale(1); opacity: 1; pointer-events: all; }
+    .modal-header {
+      padding: 18px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+    }
+    .modal-title { font-size: 16px; font-weight: 800; }
+    .modal-close {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      border-radius: 8px; width: 32px; height: 32px; cursor: pointer;
+      font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all 0.15s;
+    }
+    .modal-close:hover { border-color: var(--danger); color: var(--danger); }
+    .modal-body { flex: 1; overflow-y: auto; padding: 22px 24px; }
+    .modal-body::-webkit-scrollbar { width: 5px; }
+    .modal-body::-webkit-scrollbar-thumb { background: rgba(200,160,70,0.2); border-radius: 3px; }
+    .modal-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; flex-shrink: 0; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .form-grid.three { grid-template-columns: repeat(3, 1fr); }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    label { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); }
+    input, select, textarea {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      border-radius: 8px; padding: 9px 12px; font-size: 13px; font-family: inherit;
+      outline: none; transition: border-color 0.15s; width: 100%;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--gold); }
+    select option { background: var(--card2); }
+
+    .btn-salvar { background: var(--gold); color: var(--navy); border: none; padding: 10px 24px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
+    .btn-salvar:hover { opacity: 0.88; }
+    .btn-cancelar { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 8px; padding: 10px 20px; font-size: 13px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .btn-cancelar:hover { border-color: var(--border2); color: var(--text); }
+    .btn-editar { background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 5px 12px; font-size: 11px; cursor: pointer; font-family: inherit; transition: all 0.15s; }
+    .btn-editar:hover { border-color: var(--gold); color: var(--gold); }
+
+    .form-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--gold); margin: 16px 0 10px; display: flex; align-items: center; gap: 8px;
+    }
+    .form-section-label::after { content:''; flex:1; height:1px; background: rgba(200,160,70,0.2); }
+
+    .checkbox-row { display: flex; align-items: center; gap: 8px; text-transform: none; font-size: 13px; color: var(--text); font-weight: 500; }
+    .checkbox-row input[type="checkbox"] { width: auto; accent-color: var(--gold); }
+
+    /* ─── RESPONSIVE ─── */
+    @media (max-width: 1200px) {
+      .kpi-grid-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 900px) {
+      .sidebar { width: 62px; }
+      .brand-text, .nav-item > span:last-child,
+      .sidebar-section-label, .sidebar-footer .badge-live > span { display: none; }
+      .brand-icon { margin: auto; }
+      .sidebar-brand { justify-content: center; padding: 18px 10px; }
+      .nav-item { justify-content: center; padding: 10px; }
+      .main-wrapper { margin-left: 62px; }
+    }
+    @media (max-width: 700px) {
+      main { padding: 16px; }
+      .topbar { padding: 12px 16px; }
+      .kpi-grid-4 { grid-template-columns: 1fr; }
+      div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns: 1fr !important; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loading">
+  <img src="logo.svg" alt="Oikos" width="72" height="72" style="object-fit:contain;margin-bottom:10px">
+  <div class="loading-logo">OIKOS</div>
+  <div class="loading-sub">Agenda</div>
+  <div class="spinner"></div>
+</div>
+
+<div class="app">
+
+  <!-- ══════════ SIDEBAR ══════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">
+        <img src="logo.svg" alt="Oikos" width="38" height="38" style="object-fit:contain">
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">OIKOS</span>
+        <span class="brand-tagline">Family Office</span>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Menu</div>
+      <a href="painel-geral.html" class="nav-item">
+        <span class="nav-icon">◈</span>
+        <span>Painel Geral</span>
+      </a>
+      <a href="clientes.html" class="nav-item">
+        <span class="nav-icon">⊞</span>
+        <span>Clientes</span>
+      </a>
+      <a href="ata.html" class="nav-item">
+        <span class="nav-icon">✦</span>
+        <span>Ata Reuniões</span>
+      </a>
+      <a href="agenda.html" class="nav-item active">
+        <span class="nav-icon">📅</span>
+        <span>Agenda</span>
+      </a>
+      <a href="gestao.html" class="nav-item">
+        <span class="nav-icon">⚙</span>
+        <span>Gestão</span>
+      </a>
+      <a href="internacional.html" class="nav-item">
+        <span class="nav-icon">🌐</span>
+        <span>Internacional</span>
+      </a>
+    </div>
+
+    <hr class="sidebar-divider">
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Regiões</div>
+      <a href="painel-geral.html?regiao=brasilia" class="nav-item">
+        <span class="nav-icon">◈</span>
+        <span>Oikos Brasília</span>
+      </a>
+      <a href="painel-geral.html?regiao=bh" class="nav-item">
+        <span class="nav-icon">◈</span>
+        <span>Oikos BH</span>
+      </a>
+    </div>
+
+    <hr class="sidebar-divider">
+
+    <div class="sidebar-section">
+      <div class="sidebar-section-label">Consultores</div>
+      <div id="sidebar-consultores"></div>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="badge-live">
+        <div class="dot-live"></div>
+        <span>Supabase Live</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <div class="main-wrapper">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-row1">
+        <div>
+          <div class="topbar-title">Agenda</div>
+          <div class="topbar-subtitle">Reuniões do time Oikos</div>
+        </div>
+        <button class="btn-aplicar" onclick="abrirModal()">+ Nova Reunião</button>
+      </div>
+
+      <div class="topbar-row2">
+        <div class="custom-range">
+          <span>Mês</span>
+          <input type="month" id="mes-sel" onchange="mudarMes()">
+        </div>
+        <div class="divider-v"></div>
+        <div class="custom-range">
+          <span>Consultor</span>
+          <select id="consultor-filtro" onchange="mudarConsultorFiltro()">
+            <option value="">Todos os consultores</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <main>
+
+      <div class="section-title">Indicadores de Reuniões</div>
+      <div class="kpi-grid-4">
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">Realizadas no Mês</div>
+          <div class="kpi-value" id="kpi-realizadas">—</div>
+          <div class="kpi-sub" id="kpi-realizadas-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:var(--teal)">
+          <div class="kpi-label">Total Oikos no Mês</div>
+          <div class="kpi-value" id="kpi-total-oikos">—</div>
+          <div class="kpi-sub">Todos os consultores, realizadas</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#0ea5e9">
+          <div class="kpi-label">Agendadas (futuras)</div>
+          <div class="kpi-value" id="kpi-agendadas">—</div>
+          <div class="kpi-sub">A partir de hoje</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#22c55e">
+          <div class="kpi-label">Consultores Ativos</div>
+          <div class="kpi-value" id="kpi-consultores-ativos">—</div>
+          <div class="kpi-sub">Com reunião registrada no mês</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:28px">
+        <div class="chart-card">
+          <div class="chart-title">Por tipo de reunião</div>
+          <div id="lista-por-tipo"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Por consultor (Oikos)</div>
+          <div id="lista-por-consultor"></div>
+        </div>
+      </div>
+
+      <div class="section-title">Desfecho por Categoria</div>
+      <div class="table-card" style="margin-bottom:8px">
+        <table>
+          <thead>
+            <tr>
+              <th>Categoria</th>
+              <th>Reuniões</th>
+              <th>Respondidas</th>
+              <th>Com fechamento</th>
+              <th>Relacionamento</th>
+              <th>Indicações</th>
+            </tr>
+          </thead>
+          <tbody id="desfecho-body"></tbody>
+        </table>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin:0 0 28px" id="desfecho-nota"></div>
+
+      <div class="section-title">Evolução Mês a Mês (12 meses)</div>
+      <div class="chart-card" style="margin-bottom:28px">
+        <div class="chart-wrap"><canvas id="chartEvolucao"></canvas></div>
+      </div>
+
+      <div class="section-title">Reuniões do Mês</div>
+      <div class="table-card" style="margin-bottom:28px">
+        <table>
+          <thead>
+            <tr>
+              <th style="text-align:left">Data</th>
+              <th style="text-align:left">Consultor</th>
+              <th style="text-align:left">Tipo</th>
+              <th style="text-align:left">Categoria</th>
+              <th class="th-center">Status</th>
+              <th class="th-center">Ação</th>
+            </tr>
+          </thead>
+          <tbody id="reunioes-body"></tbody>
+        </table>
+      </div>
+
+    </main>
+
+    <footer>
+      <div>OIKOS FAMILY OFFICE © 2026</div>
+      <div id="footer-update">Carregando dados...</div>
+    </footer>
+
+  </div>
+</div>
+
+<!-- MODAL NOVA/EDITAR REUNIÃO -->
+<div class="overlay" id="overlay" onclick="fecharModalClick(event)">
+  <div class="modal" id="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Nova Reunião</div>
+      <button class="modal-close" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group"><label>Consultor</label><select id="f-consultor"></select></div>
+        <div class="form-group"><label>Data</label><input type="date" id="f-data"></div>
+      </div>
+      <div class="form-grid" style="margin-top:12px">
+        <div class="form-group">
+          <label>Tipo</label>
+          <select id="f-tipo">
+            <option value="">(sem tipo)</option>
+            <option>Revisão de Carteira</option>
+            <option>Apresentação de Estratégia</option>
+            <option>Revisão de Acompanhamento</option>
+            <option>Apresentação</option>
+            <option>Alinhamento Interno</option>
+            <option>1ª Reunião</option>
+            <option>Reunião de Entrevista</option>
+            <option>Outros</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="f-categoria">
+            <option value="prospect">Prospect</option>
+            <option value="cliente">Cliente</option>
+            <option value="parceiro">Parceiro</option>
+            <option value="interna">Interna</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-grid" style="margin-top:12px">
+        <div class="form-group">
+          <label>Status</label>
+          <select id="f-status">
+            <option value="realizada">Realizada</option>
+            <option value="agendada">Agendada</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Título (opcional)</label><input type="text" id="f-titulo" placeholder="Nome do cliente/prospect ou assunto"></div>
+      </div>
+
+      <div class="form-section-label">Desfecho</div>
+      <div class="form-grid three">
+        <label class="checkbox-row"><input type="checkbox" id="f-respondida"> Respondida</label>
+        <label class="checkbox-row"><input type="checkbox" id="f-fechamento"> Com fechamento</label>
+        <label class="checkbox-row"><input type="checkbox" id="f-relacionamento"> Relacionamento</label>
+      </div>
+      <div class="form-grid" style="margin-top:12px">
+        <div class="form-group"><label>Indicações geradas</label><input type="number" id="f-indicacoes" min="0" value="0"></div>
+      </div>
+
+      <div class="form-section-label">Observações</div>
+      <textarea id="f-obs" rows="3"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancelar" id="btn-excluir" style="margin-right:auto;color:var(--danger);border-color:rgba(239,68,68,0.3)" onclick="excluirReuniao()">Excluir</button>
+      <button class="btn-cancelar" onclick="fecharModal()">Cancelar</button>
+      <button class="btn-salvar" onclick="salvarReuniao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPA_URL = 'https://uilotsvjzzoydajmfjur.supabase.co';
+  const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpbG90c3ZqenpveWRham1manVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MzAzMzUsImV4cCI6MjA5MzUwNjMzNX0.IrZvlVcT1Kt8EMAmERvaA_QEzrjlG650ZwclRcGlRkA';
+  const { createClient } = supabase;
+  const db = createClient(SUPA_URL, SUPA_KEY);
+
+  const MESES_S = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const CATEGORIAS = [
+    { v: 'prospect', l: 'Prospect' },
+    { v: 'cliente',  l: 'Cliente'  },
+    { v: 'parceiro', l: 'Parceiro' },
+    { v: 'interna',  l: 'Interna'  },
+  ];
+
+  const hojeObj = new Date();
+  let anoAtual = hojeObj.getFullYear();
+  let mesAtual = hojeObj.getMonth() + 1;
+  let consultorFiltro = '';
+  let consultores = [];
+  let reunioesDoMes = [];
+  let reunioesEvolucao = [];
+  let agendadasFuturas = 0;
+  let editandoId = null;
+  let chartEvolucao = null;
+
+  const pad2 = v => String(v).padStart(2, '0');
+  const ultimoDiaMes = (ano, mes) => new Date(ano, mes, 0).getDate();
+
+  function popularSelects() {
+    const selFiltro = document.getElementById('consultor-filtro');
+    selFiltro.innerHTML = '<option value="">Todos os consultores</option>' +
+      consultores.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+    selFiltro.value = consultorFiltro;
+
+    const selForm = document.getElementById('f-consultor');
+    selForm.innerHTML = consultores.map(c => `<option value="${c.id}">${c.nome}</option>`).join('');
+  }
+
+  function renderSidebar() {
+    const el = document.getElementById('sidebar-consultores');
+    el.innerHTML = '';
+    const sorted = [...consultores].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+    sorted.forEach(c => {
+      const btn = document.createElement('button');
+      btn.className = 'nav-item';
+      btn.innerHTML = `<span class="nav-dot" style="background:${c.cor}"></span><span>${c.nome}</span>`;
+      btn.onclick = () => window.location.href = 'consultor.html?id=' + c.id;
+      el.appendChild(btn);
+    });
+  }
+
+  function mudarMes() {
+    const [a, m] = document.getElementById('mes-sel').value.split('-');
+    anoAtual = parseInt(a); mesAtual = parseInt(m);
+    carregar();
+  }
+
+  function mudarConsultorFiltro() {
+    consultorFiltro = document.getElementById('consultor-filtro').value;
+    renderUI();
+  }
+
+  async function carregar() {
+    document.getElementById('loading').classList.remove('hidden');
+    try {
+      const { data: cons } = await db.from('consultores').select('*').eq('ativo', true).order('nome');
+      consultores = cons || [];
+      popularSelects();
+      renderSidebar();
+
+      const primeiroDia = `${anoAtual}-${pad2(mesAtual)}-01`;
+      const ultimoDia   = `${anoAtual}-${pad2(mesAtual)}-${pad2(ultimoDiaMes(anoAtual, mesAtual))}`;
+
+      const { data: rm } = await db.from('reunioes').select('*')
+        .gte('data', primeiroDia).lte('data', ultimoDia).order('data', { ascending: false });
+      reunioesDoMes = rm || [];
+
+      const hojeStr = new Date().toISOString().slice(0, 10);
+      const { data: agData } = await db.from('reunioes').select('id')
+        .eq('status', 'agendada').gte('data', hojeStr);
+      agendadasFuturas = (agData || []).length;
+
+      let anoIni = anoAtual, mesIni = mesAtual - 11;
+      while (mesIni <= 0) { mesIni += 12; anoIni--; }
+      const dataIni = `${anoIni}-${pad2(mesIni)}-01`;
+      const { data: evolData } = await db.from('reunioes').select('data,consultor_id')
+        .gte('data', dataIni).lte('data', ultimoDia);
+      reunioesEvolucao = evolData || [];
+
+      renderUI();
+    } catch (e) { console.error(e); }
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('footer-update').textContent = 'Atualizado: ' + new Date().toLocaleString('pt-BR');
+  }
+
+  function renderBarList(elId, entries, total, cor) {
+    const el = document.getElementById(elId);
+    el.innerHTML = '';
+    if (entries.length === 0) {
+      el.innerHTML = '<div style="color:var(--muted);font-size:13px">Nenhuma reunião no período.</div>';
+      return;
+    }
+    const max = Math.max(...entries.map(e => e.count), 1);
+    entries.forEach(e => {
+      const pct  = total > 0 ? Math.round(e.count / total * 100) : 0;
+      const barW = Math.max(2, e.count / max * 100);
+      el.innerHTML += `
+        <div class="barlist-row">
+          <div class="barlist-label-row">
+            <span>${e.label}</span>
+            <span class="barlist-count">${e.count} <span class="pct">(${pct}%)</span></span>
+          </div>
+          <div class="barlist-bar-bg"><div class="barlist-bar-fill" style="width:${barW}%;background:${cor}"></div></div>
+        </div>`;
+    });
+  }
+
+  function renderUI() {
+    const filtro = consultorFiltro ? Number(consultorFiltro) : null;
+    const reunioesFiltradas = filtro ? reunioesDoMes.filter(r => r.consultor_id === filtro) : reunioesDoMes;
+
+    const realizadas          = reunioesFiltradas.filter(r => r.status === 'realizada').length;
+    const realizadasTotalOikos = reunioesDoMes.filter(r => r.status === 'realizada').length;
+    const consultoresAtivosMes = new Set(reunioesDoMes.map(r => r.consultor_id)).size;
+
+    document.getElementById('kpi-realizadas').textContent = realizadas;
+    document.getElementById('kpi-realizadas-sub').textContent =
+      filtro ? ((consultores.find(c => c.id === filtro) || {}).nome || '—') : 'Todos os consultores';
+    document.getElementById('kpi-total-oikos').textContent = realizadasTotalOikos;
+    document.getElementById('kpi-agendadas').textContent = agendadasFuturas;
+    document.getElementById('kpi-consultores-ativos').textContent = consultoresAtivosMes;
+
+    // Por tipo de reunião
+    const porTipo = {};
+    reunioesFiltradas.forEach(r => { const t = r.tipo || '(sem tipo)'; porTipo[t] = (porTipo[t] || 0) + 1; });
+    const tipoEntries = Object.entries(porTipo).map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count);
+    renderBarList('lista-por-tipo', tipoEntries, reunioesFiltradas.length, 'var(--teal)');
+
+    // Por consultor — sempre todos, não aplica o filtro (é a própria quebra por consultor)
+    const porConsultor = {};
+    reunioesDoMes.forEach(r => { porConsultor[r.consultor_id] = (porConsultor[r.consultor_id] || 0) + 1; });
+    const consultorEntries = Object.entries(porConsultor)
+      .map(([id, count]) => ({ label: (consultores.find(c => c.id === Number(id)) || {}).nome || 'Consultor removido', count }))
+      .sort((a, b) => b.count - a.count);
+    renderBarList('lista-por-consultor', consultorEntries, reunioesDoMes.length, 'var(--gold)');
+
+    // Desfecho por categoria
+    const tbody = document.getElementById('desfecho-body');
+    tbody.innerHTML = '';
+    let totalIndicacoes = 0, totalSemDesfecho = 0;
+    CATEGORIAS.forEach(cat => {
+      const rows = reunioesFiltradas.filter(r => r.categoria === cat.v);
+      const respondidas    = rows.filter(r => r.respondida).length;
+      const comFechamento  = rows.filter(r => r.com_fechamento).length;
+      const relacionamento = rows.filter(r => r.relacionamento).length;
+      const indicacoes     = rows.reduce((s, r) => s + (r.indicacoes || 0), 0);
+      totalIndicacoes  += indicacoes;
+      totalSemDesfecho += rows.filter(r => !r.respondida).length;
+      tbody.innerHTML += `<tr>
+        <td style="font-weight:600">${cat.l}</td>
+        <td>${rows.length}</td>
+        <td>${rows.length ? respondidas : '—'}</td>
+        <td>${rows.length ? comFechamento : '—'}</td>
+        <td>${rows.length ? relacionamento : '—'}</td>
+        <td>${rows.length ? indicacoes : '—'}</td>
+      </tr>`;
+    });
+    document.getElementById('desfecho-nota').textContent =
+      `${totalIndicacoes} indicações no mês. ${totalSemDesfecho} reuniões ainda sem desfecho — o que não foi marcado como respondida não entra nas colunas de desfecho.`;
+
+    // Reuniões do mês (lista editável)
+    const rbEl = document.getElementById('reunioes-body');
+    rbEl.innerHTML = '';
+    if (reunioesFiltradas.length === 0) {
+      rbEl.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Nenhuma reunião cadastrada neste mês.</td></tr>';
+    } else {
+      [...reunioesFiltradas].sort((a, b) => (b.data || '').localeCompare(a.data || '')).forEach(r => {
+        const cons = consultores.find(c => c.id === r.consultor_id) || {};
+        const dataFmt = r.data ? r.data.split('-').reverse().join('/') : '—';
+        const statusBadge = r.status === 'realizada'
+          ? `<span style="color:var(--ok);font-weight:600">Realizada</span>`
+          : `<span style="color:var(--warn);font-weight:600">Agendada</span>`;
+        rbEl.innerHTML += `<tr>
+          <td style="text-align:left">${dataFmt}</td>
+          <td style="text-align:left">${cons.nome || '—'}</td>
+          <td style="text-align:left">${r.tipo || '(sem tipo)'}</td>
+          <td style="text-align:left;text-transform:capitalize">${r.categoria}</td>
+          <td class="td-center">${statusBadge}</td>
+          <td class="td-center"><button class="btn-editar" onclick="abrirModal(${r.id})">Editar</button></td>
+        </tr>`;
+      });
+    }
+
+    renderChartEvolucao();
+  }
+
+  function renderChartEvolucao() {
+    const filtro = consultorFiltro ? Number(consultorFiltro) : null;
+    const base = filtro ? reunioesEvolucao.filter(r => r.consultor_id === filtro) : reunioesEvolucao;
+
+    const meses = [];
+    let a = anoAtual, m = mesAtual - 11;
+    while (m <= 0) { m += 12; a--; }
+    for (let i = 0; i < 12; i++) {
+      meses.push({ ano: a, mes: m, label: MESES_S[m] });
+      m++; if (m > 12) { m = 1; a++; }
+    }
+    const counts = meses.map(mo => {
+      const ini = `${mo.ano}-${pad2(mo.mes)}-01`;
+      const fim = `${mo.ano}-${pad2(mo.mes)}-${pad2(ultimoDiaMes(mo.ano, mo.mes))}`;
+      return base.filter(r => r.data >= ini && r.data <= fim).length;
+    });
+
+    if (chartEvolucao) chartEvolucao.destroy();
+    chartEvolucao = new Chart(document.getElementById('chartEvolucao'), {
+      type: 'bar',
+      data: {
+        labels: meses.map(mo => mo.label),
+        datasets: [{ label: 'Reuniões', data: counts, backgroundColor: 'rgba(200,160,70,0.7)', borderColor: 'var(--gold)', borderWidth: 2, borderRadius: 6 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => ' ' + ctx.raw + ' reuniões' } }
+        },
+        scales: {
+          x: { grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 11 } } },
+          y: { beginAtZero: true, grid: { color: 'rgba(200,160,70,0.07)' }, ticks: { color: 'rgba(230,228,225,0.5)', font: { family: 'Jost', size: 10 }, precision: 0 } }
+        }
+      }
+    });
+  }
+
+  // ─── MODAL ───────────────────────────────────────────────────
+  function abrirModal(id) {
+    editandoId = id || null;
+    document.getElementById('modal-title').textContent = id ? 'Editar Reunião' : 'Nova Reunião';
+    document.getElementById('btn-excluir').style.display = id ? '' : 'none';
+
+    if (id) {
+      const r = reunioesDoMes.find(x => x.id === id);
+      if (!r) return;
+      document.getElementById('f-consultor').value = r.consultor_id;
+      document.getElementById('f-data').value = r.data;
+      document.getElementById('f-tipo').value = r.tipo || '';
+      document.getElementById('f-categoria').value = r.categoria;
+      document.getElementById('f-status').value = r.status;
+      document.getElementById('f-titulo').value = r.titulo || '';
+      document.getElementById('f-respondida').checked = !!r.respondida;
+      document.getElementById('f-fechamento').checked = !!r.com_fechamento;
+      document.getElementById('f-relacionamento').checked = !!r.relacionamento;
+      document.getElementById('f-indicacoes').value = r.indicacoes || 0;
+      document.getElementById('f-obs').value = r.observacoes || '';
+    } else {
+      document.getElementById('f-consultor').value = consultorFiltro || (consultores[0] ? consultores[0].id : '');
+      document.getElementById('f-data').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('f-tipo').value = '';
+      document.getElementById('f-categoria').value = 'cliente';
+      document.getElementById('f-status').value = 'realizada';
+      document.getElementById('f-titulo').value = '';
+      document.getElementById('f-respondida').checked = false;
+      document.getElementById('f-fechamento').checked = false;
+      document.getElementById('f-relacionamento').checked = false;
+      document.getElementById('f-indicacoes').value = 0;
+      document.getElementById('f-obs').value = '';
+    }
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('modal').classList.add('open');
+  }
+
+  function fecharModal() {
+    document.getElementById('overlay').classList.remove('open');
+    document.getElementById('modal').classList.remove('open');
+  }
+  function fecharModalClick(ev) { if (ev.target.id === 'overlay') fecharModal(); }
+
+  async function salvarReuniao() {
+    const payload = {
+      consultor_id:   parseInt(document.getElementById('f-consultor').value),
+      data:           document.getElementById('f-data').value,
+      tipo:           document.getElementById('f-tipo').value || null,
+      categoria:      document.getElementById('f-categoria').value,
+      status:         document.getElementById('f-status').value,
+      titulo:         document.getElementById('f-titulo').value || null,
+      respondida:     document.getElementById('f-respondida').checked,
+      com_fechamento: document.getElementById('f-fechamento').checked,
+      relacionamento: document.getElementById('f-relacionamento').checked,
+      indicacoes:     parseInt(document.getElementById('f-indicacoes').value) || 0,
+      observacoes:    document.getElementById('f-obs').value || null,
+    };
+    if (!payload.consultor_id || !payload.data) { alert('Preencha consultor e data.'); return; }
+    try {
+      if (editandoId) {
+        await db.from('reunioes').update(payload).eq('id', editandoId);
+      } else {
+        await db.from('reunioes').insert(payload);
+      }
+      fecharModal();
+      carregar();
+    } catch (e) { console.error(e); alert('Erro ao salvar a reunião. Veja o console.'); }
+  }
+
+  async function excluirReuniao() {
+    if (!editandoId) return;
+    if (!confirm('Excluir esta reunião? Essa ação não pode ser desfeita.')) return;
+    try {
+      await db.from('reunioes').delete().eq('id', editandoId);
+      fecharModal();
+      carregar();
+    } catch (e) { console.error(e); alert('Erro ao excluir a reunião.'); }
+  }
+
+  // ─── INIT ────────────────────────────────────────────────────
+  document.getElementById('mes-sel').value = `${anoAtual}-${pad2(mesAtual)}`;
+  carregar();
+</script>
+</body>
+</html>
