@@ -531,12 +531,12 @@
           <div class="kpi-sub" id="kpi-captado-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--gold)">
-          <div class="kpi-label">NNM Total do Período</div>
+          <div class="kpi-label">Resultado Líquido Total do Período</div>
           <div class="kpi-value" id="kpi-nnm">—</div>
           <div class="kpi-sub" id="kpi-nnm-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#22c55e">
-          <div class="kpi-label">% da Meta NNM</div>
+          <div class="kpi-label">% Meta Resultado Líquido</div>
           <div class="kpi-value" id="kpi-meta-pct">—</div>
           <div class="kpi-sub" id="kpi-meta-sub">—</div>
         </div>
@@ -558,11 +558,11 @@
       </div>
 
       <!-- 4: EVOLUÇÃO ANUAL — CAPTADO MENSAL -->
-      <div class="section-title">Evolução Anual — Captado Mensal</div>
+      <div class="section-title">Evolução Anual — Resultado Bruto Mensal</div>
       <div class="chart-card">
         <div class="chart-title">
-          Captado Brasil — Jan a Dez <span id="ano-chart-label">2026</span>
-          <span id="ytd-label">Captado no período: —</span>
+          Resultado Bruto Brasil — Jan a Dez <span id="ano-chart-label">2026</span>
+          <span id="ytd-label">Resultado Bruto no período: —</span>
         </div>
         <div class="chart-wrap"><canvas id="chartNNM"></canvas></div>
       </div>
@@ -571,7 +571,7 @@
       <div class="rank-header">
         <div class="section-title">Ranking — Consultores</div>
         <div class="rank-toggle-group">
-          <button id="toggle-nnm" class="rank-toggle active" onclick="setRankOrdem('nnm')">NNM</button>
+          <button id="toggle-nnm" class="rank-toggle active" onclick="setRankOrdem('nnm')">Resultado Líquido</button>
           <button id="toggle-cap" class="rank-toggle" onclick="setRankOrdem('captado')">Captação</button>
         </div>
       </div>
@@ -588,6 +588,10 @@
           <div class="chart-title">PL por Consultor <span>último mês do período</span></div>
           <div class="chart-wrap"><canvas id="chartDoughnut"></canvas></div>
         </div>
+      </div>
+      <div class="chart-card" style="max-width:520px;">
+        <div class="chart-title">Produtos — Brasília × BH <span>receita do período</span></div>
+        <div class="chart-wrap"><canvas id="chartRegiaoProdutos"></canvas></div>
       </div>
 
       <!-- RANKING PRODUTOS (portado de index.html na Fase 6, com toggle Total/% Meta) -->
@@ -607,13 +611,13 @@
           <thead>
             <tr>
               <th>Mês</th>
-              <th>Captado</th>
+              <th>Resultado Bruto</th>
               <th>Saída</th>
-              <th>NNM</th>
+              <th>Resultado Líquido</th>
               <th>PL</th>
               <th>Rec. Produtos</th>
               <th>Reuniões</th>
-              <th>% Meta NNM</th>
+              <th>% Meta Resultado Líquido</th>
             </tr>
           </thead>
           <tbody id="mensal-body"></tbody>
@@ -652,7 +656,8 @@
   let anoAtual = new Date().getFullYear();
   let meInicio = 1, meFim = new Date().getMonth() + 1;
   let consultores = [];
-  let chartNNM = null, chartPL = null, chartBar = null, chartDoughnut = null;
+  let consultoresAll = []; // todos os ativos, sem filtro de região — usado no gráfico Produtos Brasília x BH
+  let chartNNM = null, chartPL = null, chartBar = null, chartDoughnut = null, chartRegiaoProdutos = null;
   const regiaoParam = new URLSearchParams(location.search).get('regiao'); // 'brasilia' | 'bh' | null (consolidado)
 
   // Estado do ranking (portado de index.html na Fase 6)
@@ -812,7 +817,8 @@
 
     try {
       const { data: cons } = await db.from('consultores').select('*').eq('ativo', true).order('id');
-      consultores = regiaoParam ? (cons || []).filter(c => c.regiao === regiaoParam) : (cons || []);
+      consultoresAll = cons || [];
+      consultores = regiaoParam ? consultoresAll.filter(c => c.regiao === regiaoParam) : consultoresAll;
       renderSidebar();
 
       const [capRes, prodRes, leadsRes, capAnualRes] = await Promise.all([
@@ -831,6 +837,15 @@
       // gráfico de categorias e a tabela de Detalhamento Mensal somam os arrays brutos direto).
       const idsRegiao = new Set(consultores.map(c => c.id));
       const filtrarRegiao = arr => regiaoParam ? arr.filter(r => idsRegiao.has(r.consultor_id)) : arr;
+
+      // Produtos Brasília x BH — sempre as duas regiões, independente do filtro do topbar/sidebar
+      const idsBrasiliaAll = new Set(consultoresAll.filter(c => c.regiao === 'brasilia').map(c => c.id));
+      const idsBHAll       = new Set(consultoresAll.filter(c => c.regiao === 'bh').map(c => c.id));
+      const prodRowsAll    = prodRes.data || [];
+      const prodTotalRegiao = ids => prodRowsAll
+        .filter(r => ids.has(r.consultor_id))
+        .reduce((s,r) => s + PROD_KEYS.reduce((ps,k) => ps + n(r[k]), 0), 0);
+      renderChartRegiaoProdutos(prodTotalRegiao(idsBrasiliaAll), prodTotalRegiao(idsBHAll));
 
       renderUI(
         filtrarRegiao(capRes.data   || []),
@@ -969,7 +984,7 @@
     }
 
     const totalBrasil = dataBrasil.filter((v,i) => v !== null && (i+1) >= meInicio && (i+1) <= meFim).reduce((s,v) => s+v, 0);
-    document.getElementById('ytd-label').textContent = "Captado no período: " + fmtM(totalBrasil);
+    document.getElementById('ytd-label').textContent = "Resultado Bruto no período: " + fmtM(totalBrasil);
 
     if (chartNNM) chartNNM.destroy();
     chartNNM = new Chart(document.getElementById('chartNNM'), {
@@ -1133,6 +1148,25 @@
         plugins: {
           legend: { position: 'right', labels: { color: 'rgba(230,228,225,0.65)', font: { family: 'Jost', size: 11 }, padding: 12, boxWidth: 12, boxHeight: 12 } },
           tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + fmtM(ctx.raw) } }
+        }
+      }
+    });
+  }
+
+  // ─── CHART PIZZA — Produtos Brasília x BH ──
+  function renderChartRegiaoProdutos(totalBrasilia, totalBH) {
+    if (chartRegiaoProdutos) chartRegiaoProdutos.destroy();
+    chartRegiaoProdutos = new Chart(document.getElementById('chartRegiaoProdutos'), {
+      type: 'pie',
+      data: {
+        labels: ['Oikos Brasília', 'Oikos BH'],
+        datasets: [{ data: [totalBrasilia, totalBH], backgroundColor: ['#C8A046cc', '#0ea5e9cc'], borderColor: '#001a27', borderWidth: 3 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { color: 'rgba(230,228,225,0.65)', font: { family: 'Jost', size: 11 }, padding: 12, boxWidth: 12, boxHeight: 12 } },
+          tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + fmtR(ctx.raw) } }
         }
       }
     });

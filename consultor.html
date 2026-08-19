@@ -394,17 +394,17 @@
       <div class="section-title">Visão do Mês</div>
       <div class="kpi-grid" id="kpi-grid">
         <div class="kpi-card" style="--kpi-color:var(--gold)">
-          <div class="kpi-label">NNM Brasil</div>
+          <div class="kpi-label">Resultado Líquido Brasil</div>
           <div class="kpi-value" id="k-nnm">—</div>
           <div class="kpi-sub" id="k-nnm-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#0ea5e9">
-          <div class="kpi-label">NNM Internacional</div>
+          <div class="kpi-label">Resultado Líquido Internacional</div>
           <div class="kpi-value" id="k-nnm-int">—</div>
           <div class="kpi-sub" id="k-nnm-int-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#22c55e">
-          <div class="kpi-label">% da Meta NNM</div>
+          <div class="kpi-label">% Meta Resultado Líquido</div>
           <div class="kpi-value" id="k-meta-pct">—</div>
           <div class="kpi-sub" id="k-meta-sub">—</div>
         </div>
@@ -439,16 +439,16 @@
       <!-- RESUMO DO MÊS -->
       <div class="section-title">Resumo Executivo</div>
       <div class="resumo-box" id="resumo-box">
-        <div class="resumo-item"><div class="resumo-label">Captado</div><div class="resumo-value" id="r-cap">—</div><div class="resumo-meta" id="r-cap-meta">—</div></div>
+        <div class="resumo-item"><div class="resumo-label">Resultado Bruto</div><div class="resumo-value" id="r-cap">—</div><div class="resumo-meta" id="r-cap-meta">—</div></div>
         <div class="resumo-item"><div class="resumo-label">Saída Total</div><div class="resumo-value" id="r-sai">—</div><div class="resumo-meta" id="r-sai-pct">—</div></div>
         <div class="resumo-item"><div class="resumo-label">Receita Produtos</div><div class="resumo-value" id="r-prod">—</div><div class="resumo-meta" id="r-prod-meta">—</div></div>
         <div class="resumo-item"><div class="resumo-label">Churn do Mês</div><div class="resumo-value" id="r-churn">—</div><div class="resumo-meta">Limite saudável: 1,5%</div></div>
       </div>
 
       <!-- EVOLUÇÃO ANUAL -->
-      <div class="section-title">Evolução Anual — NNM</div>
+      <div class="section-title">Evolução Anual — Resultado Líquido</div>
       <div class="chart-card">
-        <div class="chart-title">Net New Money — Jan a Dez 2026 <span id="chart-ytd">YTD: —</span></div>
+        <div class="chart-title">Resultado Líquido — Jan a Dez 2026 <span id="chart-ytd">YTD: —</span></div>
         <div class="chart-wrap"><canvas id="chartAnual"></canvas></div>
       </div>
 
@@ -459,11 +459,11 @@
           <thead>
             <tr>
               <th style="text-align:left">Mês</th>
-              <th style="text-align:right">Captado Brasil</th>
-              <th style="text-align:right">Captado Int'l</th>
+              <th style="text-align:right">Resultado Bruto Brasil</th>
+              <th style="text-align:right">Resultado Bruto Int'l</th>
               <th style="text-align:right">Saída Brasil</th>
-              <th style="text-align:right">NNM Brasil</th>
-              <th style="text-align:right">NNM Int'l</th>
+              <th style="text-align:right">Resultado Líquido Brasil</th>
+              <th style="text-align:right">Resultado Líquido Int'l</th>
               <th style="text-align:right">PL</th>
             </tr>
           </thead>
@@ -505,7 +505,7 @@
               <th>Nome</th>
               <th>Status</th>
               <th>Produtos</th>
-              <th style="text-align:right">Captado</th>
+              <th style="text-align:right">Resultado Bruto</th>
               <th style="text-align:center">Ação</th>
             </tr>
           </thead>
@@ -605,37 +605,37 @@
         <div style="font-size:11px;color:var(--gold);background:rgba(200,160,70,0.08);border:1px solid rgba(200,160,70,0.2);border-radius:6px;padding:8px 12px;margin:-4px 0 14px;line-height:1.5">
           <strong>Regra 19/19:</strong> Registre o PL com a posição D+0 do dia <strong>19</strong> de cada mês (alguns fundos só fecham cotas depois do dia 1).
         </div>
-        <div class="form-group"><label>Meta NNM Mensal (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-meta-nnm" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label>Meta Resultado Líquido Mensal (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-meta-nnm" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
       </div>
 
       <div class="form-section-label">BTG</div>
       <div class="form-grid three">
-        <div class="form-group"><label>Captado BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-btg" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label>Resultado Bruto BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-btg" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div class="form-group"><label>Saída BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-btg" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div class="form-group"><label style="color:var(--muted)" title="Da Saída BTG acima, quanto foi transferência p/ conta internacional (não é perda real, é transição de custódia)">↔ Transferências Internacionais (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-transf-btg-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarTransfPreview()"></div>
       </div>
 
       <div class="form-section-label">XP</div>
       <div class="form-grid three">
-        <div class="form-group"><label>Captado XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-xp" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label>Resultado Bruto XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-xp" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div class="form-group"><label>Saída XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-xp" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div class="form-group"><label style="color:var(--muted)" title="Da Saída XP acima, quanto foi transferência p/ conta internacional (não é perda real, é transição de custódia)">↔ Transferências Internacionais (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-transf-xp-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarTransfPreview()"></div>
       </div>
 
       <div class="form-section-label">Outros Bancos</div>
       <div class="form-grid three">
-        <div class="form-group"><label>Captado Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-outros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label>Resultado Bruto Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-outros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div class="form-group"><label>Saída Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-outros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div class="form-group"><label style="color:var(--muted)" title="Da Saída Outros Bancos acima, quanto foi transferência p/ conta internacional (não é perda real, é transição de custódia)">↔ Transferências Internacionais (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-transf-outros-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarTransfPreview()"></div>
       </div>
 
       <div class="form-section-label">Internacional</div>
       <div class="form-grid">
-        <div class="form-group"><label>Captado Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label>Resultado Bruto Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div class="form-group"><label>Saída Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
       </div>
       <div style="font-size:10px;color:var(--muted);margin:10px 0 4px;line-height:1.5">
-        ↔ Transferências Internacionais: parte da saída de cada corretora nacional que na verdade foi para a conta internacional do cliente, não uma retirada de capital — não entra no cálculo de saída/NNM do consultor. Total do mês: <strong id="transf-total-preview">R$ 0,00</strong>
+        ↔ Transferências Internacionais: parte da saída de cada corretora nacional que na verdade foi para a conta internacional do cliente, não uma retirada de capital — não entra no cálculo de saída/Resultado Líquido do consultor. Total do mês: <strong id="transf-total-preview">R$ 0,00</strong>
       </div>
     </div>
 
@@ -935,13 +935,13 @@
     const nnmEl = document.getElementById('k-nnm');
     nnmEl.textContent = fmtM(liqBr.nnm);
     nnmEl.className = 'kpi-value ' + (liqBr.nnm >= 0 ? 'pos' : 'neg');
-    document.getElementById('k-nnm-sub').innerHTML = `Captado: <strong>${fmtM(liqBr.captado)}</strong> | Saída: <strong>${fmtM(liqBr.saida)}</strong>`
+    document.getElementById('k-nnm-sub').innerHTML = `Resultado Bruto: <strong>${fmtM(liqBr.captado)}</strong> | Saída: <strong>${fmtM(liqBr.saida)}</strong>`
       + (liqBr.transf > 0 ? `<br><span style="color:var(--gold)">↔ ${fmtM(liqBr.transf)} transferido p/ Internacional</span>` : '');
 
     const nnmIntEl = document.getElementById('k-nnm-int');
     nnmIntEl.textContent = fmtM(liqInt.nnm);
     nnmIntEl.className = 'kpi-value ' + (liqInt.nnm >= 0 ? 'pos' : 'neg');
-    document.getElementById('k-nnm-int-sub').innerHTML = `Captado: <strong>${fmtM(liqInt.captado)}</strong> | Saída: <strong>${fmtM(liqInt.saida)}</strong>`;
+    document.getElementById('k-nnm-int-sub').innerHTML = `Resultado Bruto: <strong>${fmtM(liqInt.captado)}</strong> | Saída: <strong>${fmtM(liqInt.saida)}</strong>`;
 
     const pctEl = document.getElementById('k-meta-pct');
     pctEl.textContent = fmtP(pctMeta);
@@ -980,7 +980,7 @@
       return `<div class="corretora-card">
         <div class="corretora-nome">${c.nome}</div>
         <div class="corretora-row"><span class="corretora-row-label" style="color:var(--text)">PATRIMÔNIO</span><span class="corretora-row-value" style="color:var(--text)">${fmtM(c.pl)}</span></div>
-        <div class="corretora-row"><span class="corretora-row-label">Captado</span><span class="corretora-row-value cap">${fmtM(c.cap)}</span></div>
+        <div class="corretora-row"><span class="corretora-row-label">Resultado Bruto</span><span class="corretora-row-value cap">${fmtM(c.cap)}</span></div>
         <div class="corretora-row"><span class="corretora-row-label">Saída</span><span class="corretora-row-value sai">${fmtM(c.sai)}${c.transf > 0 ? `<span style="font-size:9px;color:var(--gold);margin-left:4px" title="Não é perda real — foi para conta internacional">↔ ${fmtM(c.transf)}</span>` : ''}</span></div>
         <div class="corretora-saldo">
           <span class="corretora-saldo-label">Líquido</span>
@@ -1021,14 +1021,14 @@
         labels: allMeses,
         datasets: [
           {
-            label: 'NNM Brasil',
+            label: 'Resultado Líquido Brasil',
             data: nnmBrasilPorMes,
             backgroundColor: nnmBrasilPorMes.map(v => v === null ? 'rgba(200,160,70,0.1)' : v >= 0 ? consultor.cor + '99' : '#ef444499'),
             borderColor:     nnmBrasilPorMes.map(v => v === null ? 'transparent' : v >= 0 ? consultor.cor : '#ef4444'),
             borderWidth: 2, borderRadius: 6,
           },
           {
-            label: "NNM Internacional",
+            label: "Resultado Líquido Internacional",
             data: nnmIntPorMes,
             backgroundColor: 'rgba(200,160,70,0.6)',
             borderColor: 'var(--gold)',

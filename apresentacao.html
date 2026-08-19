@@ -320,17 +320,17 @@
           <div class="kpi-sub" id="kpi-saida-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--gold)">
-          <div class="kpi-label">NNM Brasil</div>
+          <div class="kpi-label">Resultado Líquido Brasil</div>
           <div class="kpi-value" id="kpi-nnm">—</div>
           <div class="kpi-sub" id="kpi-nnm-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#0ea5e9">
-          <div class="kpi-label">NNM Internacional</div>
+          <div class="kpi-label">Resultado Líquido Internacional</div>
           <div class="kpi-value" id="kpi-nnm-int">—</div>
           <div class="kpi-sub" id="kpi-nnm-int-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:#22c55e">
-          <div class="kpi-label">% da Meta NNM</div>
+          <div class="kpi-label">% Meta Resultado Líquido</div>
           <div class="kpi-value" id="kpi-meta-pct">—</div>
           <div class="kpi-sub" id="kpi-meta-sub">—</div>
         </div>
@@ -338,6 +338,52 @@
           <div class="kpi-label">Reuniões Realizadas</div>
           <div class="kpi-value" id="kpi-reunioes">—</div>
           <div class="kpi-sub" id="kpi-reunioes-sub">—</div>
+        </div>
+      </div>
+
+      <!-- COMPARATIVO REGIONAL -->
+      <div class="section-title">Comparativo Regional — Oikos Brasília × Oikos BH</div>
+      <div class="kpi-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 14px;">
+        <div class="kpi-card" style="--kpi-color:var(--gold)">
+          <div class="kpi-label">Resultado Líquido — Oikos Brasília</div>
+          <div class="kpi-value" id="reg-nnm-brasilia">—</div>
+          <div class="kpi-sub" id="reg-nnm-brasilia-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#0ea5e9">
+          <div class="kpi-label">Resultado Líquido — Oikos BH</div>
+          <div class="kpi-value" id="reg-nnm-bh">—</div>
+          <div class="kpi-sub" id="reg-nnm-bh-sub">—</div>
+        </div>
+      </div>
+      <div class="charts-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 28px;">
+        <div class="chart-card">
+          <div class="chart-title">
+            Produtos — Brasília × BH
+            <span>receita do período</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chartRegiaoProdutos"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            Reuniões — Brasília × BH
+            <span>total do período</span>
+          </div>
+          <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:240px; gap:18px;">
+            <div style="text-align:center;">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Total</div>
+              <div style="font-size:34px;font-weight:800;letter-spacing:-0.5px;" id="reg-reunioes-total">—</div>
+            </div>
+            <div style="display:flex; gap:36px;">
+              <div style="text-align:center;">
+                <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Oikos Brasília</div>
+                <div style="font-size:20px;font-weight:700;color:var(--gold);" id="reg-reunioes-brasilia">—</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Oikos BH</div>
+                <div style="font-size:20px;font-weight:700;color:#0ea5e9;" id="reg-reunioes-bh">—</div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -377,7 +423,7 @@
       </div>
 
       <!-- RANKING NNM -->
-      <div class="section-title">Ranking — Net New Money</div>
+      <div class="section-title">Ranking — Resultado Líquido</div>
       <div class="ranking-grid ranking-section" id="ranking-grid"></div>
 
       <!-- RANKING SAÍDA -->
@@ -436,7 +482,9 @@
   let meInicio = 1, meFim = new Date().getMonth() + 1;
   let regiaoAtual = null; // null = consolidado | 'brasilia' | 'bh'
   let consultores = [];
-  let chartBar = null, chartDoughnut = null;
+  let consultoresAll = []; // todos os ativos, sem filtro do topbar — usado no Comparativo Regional
+  let chartBar = null, chartDoughnut = null, chartRegiaoProdutos = null;
+  const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity'];
 
   const fmtM = v => {
     const abs = Math.abs(v), sig = v < 0 ? '-' : '';
@@ -525,7 +573,8 @@ function setPeriodo(ini, fim, srcBtn) {
 
     try {
       const { data: cons } = await db.from('consultores').select('*').eq('ativo', true).order('id');
-      consultores = regiaoAtual ? (cons || []).filter(c => c.regiao === regiaoAtual) : (cons || []);
+      consultoresAll = cons || [];
+      consultores = regiaoAtual ? consultoresAll.filter(c => c.regiao === regiaoAtual) : consultoresAll;
 
       const [capRes, prodRes, leadsRes] = await Promise.all([
         db.from('captacao_mensal').select('*').eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
@@ -537,12 +586,15 @@ function setPeriodo(ini, fim, srcBtn) {
       const prodRows  = prodRes.data  || [];
       const leadsRows = leadsRes.data || [];
 
-      const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity'];
       const capAgg   = {};
       const prodAgg  = {};
       const leadsAgg = {};
 
-      consultores.forEach(c => {
+      // Agregados sempre cobrem TODOS os consultores ativos (não só os do filtro de região do
+      // topbar) — o Comparativo Regional precisa comparar Brasília x BH mesmo quando o topbar
+      // está filtrando só uma das duas. As seções existentes continuam respeitando o filtro
+      // porque elas iteram sobre `consultores` (já filtrado), não sobre as chaves de capAgg.
+      consultoresAll.forEach(c => {
         capAgg[c.id]   = { captado: 0, nnm: 0, saida: 0, pl: 0, _lastMes: 0,
                            captado_int: 0, saida_int: 0, transf_nac_para_int: 0,
                            pl_btg: 0, pl_xp: 0, pl_outros: 0, pl_int: 0 };
@@ -598,19 +650,21 @@ function setPeriodo(ini, fim, srcBtn) {
     const ordenadoNNM     = [...consultores].sort((a,b) => (liqPorConsultor[b.id]||{}).nnm - (liqPorConsultor[a.id]||{}).nnm);
     const ordenadoCaptado = [...consultores].sort((a,b) => (liqPorConsultor[b.id]||{}).captado - (liqPorConsultor[a.id]||{}).captado);
     const rankMap         = {}; ordenadoCaptado.forEach((c,i) => rankMap[c.id] = i + 1);
-    const totalNNMBrasil = Object.values(liqPorConsultor).reduce((s,r) => s + r.nnm, 0);
-    const totalNNMInt    = Object.values(capAgg).reduce((s,r) => s + liquidoInternacional(r).nnm, 0);
-    const totalCaptBrasil = Object.values(liqPorConsultor).reduce((s,r) => s + r.captado, 0);
-    const totalSaiBrasil  = Object.values(liqPorConsultor).reduce((s,r) => s + r.saida, 0);
-    const totalTransf     = Object.values(liqPorConsultor).reduce((s,r) => s + r.transf, 0);
-    const totalReun    = Object.values(leadsAgg).reduce((s,r) => s + r.reunioes, 0);
+    // Totais somam só os consultores do filtro de região ativo no topbar (`consultores`),
+    // não todas as chaves de capAgg (que agora cobre todo mundo, para o Comparativo Regional).
+    const totalNNMBrasil = consultores.reduce((s,c) => s + ((liqPorConsultor[c.id]||{}).nnm||0), 0);
+    const totalNNMInt    = consultores.reduce((s,c) => s + liquidoInternacional(capAgg[c.id]||{}).nnm, 0);
+    const totalCaptBrasil = consultores.reduce((s,c) => s + ((liqPorConsultor[c.id]||{}).captado||0), 0);
+    const totalSaiBrasil  = consultores.reduce((s,c) => s + ((liqPorConsultor[c.id]||{}).saida||0), 0);
+    const totalTransf     = consultores.reduce((s,c) => s + ((liqPorConsultor[c.id]||{}).transf||0), 0);
+    const totalReun    = consultores.reduce((s,c) => s + ((leadsAgg[c.id]||{}).reunioes||0), 0);
     const pctMeta      = metaNNM > 0 ? totalNNMBrasil / metaNNM : 0;
 
-    const totalPL       = Object.values(capAgg).reduce((s,r) => s + r.pl, 0);
-    const totalPLbtg    = Object.values(capAgg).reduce((s,r) => s + r.pl_btg, 0);
-    const totalPLxp     = Object.values(capAgg).reduce((s,r) => s + r.pl_xp, 0);
-    const totalPLoutros = Object.values(capAgg).reduce((s,r) => s + r.pl_outros, 0);
-    const totalPLint    = Object.values(capAgg).reduce((s,r) => s + r.pl_int, 0);
+    const totalPL       = consultores.reduce((s,c) => s + ((capAgg[c.id]||{}).pl||0), 0);
+    const totalPLbtg    = consultores.reduce((s,c) => s + ((capAgg[c.id]||{}).pl_btg||0), 0);
+    const totalPLxp     = consultores.reduce((s,c) => s + ((capAgg[c.id]||{}).pl_xp||0), 0);
+    const totalPLoutros = consultores.reduce((s,c) => s + ((capAgg[c.id]||{}).pl_outros||0), 0);
+    const totalPLint    = consultores.reduce((s,c) => s + ((capAgg[c.id]||{}).pl_int||0), 0);
     const totalPLnacional = totalPLbtg + totalPLxp + totalPLoutros;
     document.getElementById('kpi-pl-total').textContent    = fmtM(totalPL);
     document.getElementById('kpi-pl-nacional').textContent = fmtM(totalPLnacional);
@@ -622,13 +676,13 @@ function setPeriodo(ini, fim, srcBtn) {
     document.getElementById('kpi-nnm').textContent     = fmtM(totalNNMBrasil);
     document.getElementById('kpi-nnm').style.color     = totalNNMBrasil >= 0 ? '' : 'var(--danger)';
     document.getElementById('kpi-nnm-sub').innerHTML   =
-      `Captado: <strong>${fmtM(totalCaptBrasil)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totalSaiBrasil)}</strong>`
+      `Resultado Bruto: <strong>${fmtM(totalCaptBrasil)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totalSaiBrasil)}</strong>`
       + (totalTransf > 0 ? `<br><span style="color:var(--gold)">↔ ${fmtM(totalTransf)} transferido p/ Internacional</span>` : '');
 
     document.getElementById('kpi-nnm-int').textContent = fmtM(totalNNMInt);
     document.getElementById('kpi-nnm-int').style.color = totalNNMInt >= 0 ? '' : 'var(--danger)';
     document.getElementById('kpi-nnm-int-sub').innerHTML =
-      `Captado: <strong>${fmtM(Object.values(capAgg).reduce((s,r)=>s+n(r.captado_int),0))}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(Object.values(capAgg).reduce((s,r)=>s+n(r.saida_int),0))}</strong>`;
+      `Resultado Bruto: <strong>${fmtM(consultores.reduce((s,c)=>s+n((capAgg[c.id]||{}).captado_int),0))}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(consultores.reduce((s,c)=>s+n((capAgg[c.id]||{}).saida_int),0))}</strong>`;
 
     const pctEl = document.getElementById('kpi-meta-pct');
     pctEl.textContent = fmtP(pctMeta);
@@ -719,11 +773,12 @@ function setPeriodo(ini, fim, srcBtn) {
             <div class="c-name"><div class="dot" style="background:${c.cor}"></div>${c.nome}</div>
             <div class="c-rank-badge ${badgeClass}">${rank}º lugar</div>
           </div>
-          <div class="c-nnm-label">Net New Money — Brasil</div>
-          <div class="c-nnm-value ${nnmBrasil>=0?'pos':'neg'}">${fmtM(nnmBrasil)}</div>
+          <div class="c-nnm-label">Resultado Bruto — Total</div>
+          <div class="c-nnm-value ${cap.captado>=0?'pos':'neg'}">${fmtM(cap.captado||0)}</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">Resultado Líquido Brasil: <strong style="color:${nnmBrasil>=0?'var(--ok)':'var(--danger)'}">${fmtM(nnmBrasil)}</strong></div>
           <div class="c-progress-wrap">
             <div class="c-progress-label">
-              <span>Meta: ${fmtM(metaC)}</span>
+              <span>Meta Resultado Líquido: ${fmtM(metaC)}</span>
               <span>${pctNR}%</span>
             </div>
             <div class="c-progress-bg">
@@ -732,11 +787,11 @@ function setPeriodo(ini, fim, srcBtn) {
           </div>
           <div class="c-stats">
             <div class="c-stat">
-              <div class="c-stat-label">NNM Brasil</div>
+              <div class="c-stat-label">Resultado Líquido Brasil</div>
               <div class="c-stat-value ${nnmBrasil>=0?'ok':'bad'}">${fmtM(nnmBrasil)}</div>
             </div>
             <div class="c-stat">
-              <div class="c-stat-label">NNM Internacional</div>
+              <div class="c-stat-label">Resultado Líquido Internacional</div>
               <div class="c-stat-value ${nnmInt>=0?'ok':'bad'}">${fmtM(nnmInt)}</div>
             </div>
             <div class="c-stat">
@@ -748,7 +803,7 @@ function setPeriodo(ini, fim, srcBtn) {
               <div class="c-stat-value ${reunClass}">${reun} / ${metaR}</div>
             </div>
             <div class="c-stat">
-              <div class="c-stat-label">NNM Total</div>
+              <div class="c-stat-label">Resultado Líquido Total</div>
               <div class="c-stat-value ${nnm>=0?'ok':'bad'}">${fmtM(nnm)}</div>
             </div>
             <div class="c-stat">
@@ -834,6 +889,51 @@ function setPeriodo(ini, fim, srcBtn) {
           <div class="rank-meta">${metaPct}% meta</div>
         </div>`;
     });
+
+    // COMPARATIVO REGIONAL — sempre Brasília x BH, independente do filtro do topbar
+    // (usa consultoresAll/capAgg/prodAgg/leadsAgg, que cobrem todos os ativos)
+    const consBrasiliaReg = consultoresAll.filter(c => c.regiao === 'brasilia');
+    const consBHReg       = consultoresAll.filter(c => c.regiao === 'bh');
+    const somaGrupo       = (grupo, calc) => grupo.reduce((s,c) => s + calc(c), 0);
+
+    const nnmBrasiliaReg  = somaGrupo(consBrasiliaReg, c => liquidoBrasil(capAgg[c.id]||{}).nnm);
+    const nnmBHReg        = somaGrupo(consBHReg,       c => liquidoBrasil(capAgg[c.id]||{}).nnm);
+    const captBrasiliaReg = somaGrupo(consBrasiliaReg, c => liquidoBrasil(capAgg[c.id]||{}).captado);
+    const captBHReg       = somaGrupo(consBHReg,       c => liquidoBrasil(capAgg[c.id]||{}).captado);
+
+    document.getElementById('reg-nnm-brasilia').textContent = fmtM(nnmBrasiliaReg);
+    document.getElementById('reg-nnm-brasilia').style.color = nnmBrasiliaReg >= 0 ? '' : 'var(--danger)';
+    document.getElementById('reg-nnm-brasilia-sub').innerHTML = `Resultado Bruto: <strong>${fmtM(captBrasiliaReg)}</strong>`;
+
+    document.getElementById('reg-nnm-bh').textContent = fmtM(nnmBHReg);
+    document.getElementById('reg-nnm-bh').style.color = nnmBHReg >= 0 ? '' : 'var(--danger)';
+    document.getElementById('reg-nnm-bh-sub').innerHTML = `Resultado Bruto: <strong>${fmtM(captBHReg)}</strong>`;
+
+    const prodTotalRegiao = grupo => somaGrupo(grupo, c => PROD_KEYS.reduce((s,k) => s + ((prodAgg[c.id]||{})[k]||0), 0));
+    const prodBrasiliaReg = prodTotalRegiao(consBrasiliaReg);
+    const prodBHReg       = prodTotalRegiao(consBHReg);
+
+    if (chartRegiaoProdutos) chartRegiaoProdutos.destroy();
+    chartRegiaoProdutos = new Chart(document.getElementById('chartRegiaoProdutos'), {
+      type: 'pie',
+      data: {
+        labels: ['Oikos Brasília', 'Oikos BH'],
+        datasets: [{ data: [prodBrasiliaReg, prodBHReg], backgroundColor: ['#C8A046cc', '#0ea5e9cc'], borderColor: '#001a27', borderWidth: 3 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { color: 'rgba(230,228,225,0.65)', font: { family: 'Jost', size: 11 }, padding: 12, boxWidth: 12, boxHeight: 12 } },
+          tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + fmtR(ctx.raw) } }
+        }
+      }
+    });
+
+    const reunBrasiliaReg = somaGrupo(consBrasiliaReg, c => (leadsAgg[c.id]||{}).reunioes||0);
+    const reunBHReg       = somaGrupo(consBHReg,       c => (leadsAgg[c.id]||{}).reunioes||0);
+    document.getElementById('reg-reunioes-total').textContent    = reunBrasiliaReg + reunBHReg;
+    document.getElementById('reg-reunioes-brasilia').textContent = reunBrasiliaReg;
+    document.getElementById('reg-reunioes-bh').textContent       = reunBHReg;
   }
 
   // ─── INIT ───────────────────────────────────────────────────

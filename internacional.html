@@ -439,7 +439,7 @@
           <div class="kpi-sub" id="kpi-saida-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--gold)">
-          <div class="kpi-label">NNM Internacional</div>
+          <div class="kpi-label">Resultado Líquido Internacional</div>
           <div class="kpi-value" id="kpi-nnm">—</div>
           <div class="kpi-sub" id="kpi-nnm-sub">—</div>
         </div>
@@ -451,11 +451,11 @@
       </div>
 
       <!-- 4: EVOLUÇÃO ANUAL — CAPTADO MENSAL -->
-      <div class="section-title">Evolução Anual — Captado Internacional Mensal</div>
+      <div class="section-title">Evolução Anual — Resultado Bruto Internacional Mensal</div>
       <div class="chart-card">
         <div class="chart-title">
-          Captado Internacional — Jan a Dez <span id="ano-chart-label">2026</span>
-          <span id="ytd-label">Captado no período: —</span>
+          Resultado Bruto Internacional — Jan a Dez <span id="ano-chart-label">2026</span>
+          <span id="ytd-label">Resultado Bruto no período: —</span>
         </div>
         <div class="chart-wrap"><canvas id="chartNNM"></canvas></div>
       </div>
@@ -468,9 +468,9 @@
             <tr>
               <th class="th-center" style="width:50px">Rank</th>
               <th>Consultor</th>
-              <th>Captado</th>
+              <th>Resultado Bruto</th>
               <th>Saído</th>
-              <th>NNM</th>
+              <th>Resultado Líquido</th>
               <th>% Meta LatAm</th>
             </tr>
           </thead>
@@ -485,9 +485,9 @@
           <thead>
             <tr>
               <th>Mês</th>
-              <th>Captado</th>
+              <th>Resultado Bruto</th>
               <th>Saído</th>
-              <th>NNM</th>
+              <th>Resultado Líquido</th>
               <th>PL</th>
               <th>Transf. Recebida</th>
             </tr>
@@ -676,7 +676,7 @@
 
     document.getElementById('kpi-nnm').textContent   = fmtM(totNNM);
     document.getElementById('kpi-nnm').style.color   = totNNM >= 0 ? '' : 'var(--danger)';
-    document.getElementById('kpi-nnm-sub').innerHTML = `Captado: <strong>${fmtM(totCap)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totSai)}</strong>`;
+    document.getElementById('kpi-nnm-sub').innerHTML = `Resultado Bruto: <strong>${fmtM(totCap)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totSai)}</strong>`;
 
     const pctEl = document.getElementById('kpi-meta-pct');
     if (metaLatamTotal > 0) {
@@ -753,7 +753,7 @@
     }
 
     const totalInt = dataInt.filter((v,i) => v !== null && (i+1) >= meInicio && (i+1) <= meFim).reduce((s,v) => s+v, 0);
-    document.getElementById('ytd-label').textContent = "Captado no período: " + fmtM(totalInt);
+    document.getElementById('ytd-label').textContent = "Resultado Bruto no período: " + fmtM(totalInt);
 
     if (chartNNM) chartNNM.destroy();
     chartNNM = new Chart(document.getElementById('chartNNM'), {
