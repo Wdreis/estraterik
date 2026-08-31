@@ -135,7 +135,7 @@
     .ranking-grid { display: grid; gap: 6px; }
     .rank-row {
       display: grid;
-      grid-template-columns: 36px 150px 1fr 165px 80px;
+      grid-template-columns: 36px 172px 1fr 165px 80px;
       align-items: center; gap: 12px;
       background: var(--card); border: 1px solid var(--border);
       border-radius: 8px; padding: 11px 16px;
@@ -154,6 +154,38 @@
     .rank-value.pos { color: var(--ok); }
     .rank-value.neg { color: var(--danger); }
     .rank-meta { font-size: 11px; color: var(--muted); text-align: right; }
+
+    /* ─── RANKING: cabeçalho com filtro por praça + resumo ─── */
+    .rank-header {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .rank-header .section-title { margin-bottom: 0; flex: 1; min-width: 200px; }
+    .rank-toggle-group { display: flex; gap: 6px; }
+    .rank-toggle {
+      background: var(--card); border: 1px solid var(--border); color: var(--muted);
+      font-family: 'Jost', sans-serif; font-size: 10px; font-weight: 600;
+      letter-spacing: 1px; text-transform: uppercase; padding: 5px 12px;
+      border-radius: 6px; cursor: pointer; transition: all 0.15s;
+    }
+    .rank-toggle:hover { border-color: rgba(200,160,70,0.4); color: var(--text); }
+    .rank-toggle.active { background: rgba(200,160,70,0.18); border-color: var(--gold); color: var(--gold); }
+    .rank-praca-resumo {
+      display: flex; gap: 20px; flex-wrap: wrap; align-items: center;
+      font-size: 11px; color: var(--muted); margin-bottom: 10px;
+      padding: 9px 15px; background: var(--card);
+      border: 1px solid var(--border); border-radius: 8px;
+    }
+    .rank-praca-resumo .rp-item { display: flex; align-items: center; gap: 6px; }
+    .rank-praca-resumo .rp-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .rank-praca-resumo strong { color: var(--text); font-weight: 700; }
+    .praca-tag {
+      font-size: 8.5px; font-weight: 700; letter-spacing: 0.5px;
+      padding: 2px 6px; border-radius: 20px; text-transform: uppercase; flex-shrink: 0;
+    }
+    .praca-tag.bsb { background: rgba(200,160,70,0.15); color: var(--gold); }
+    .praca-tag.bh  { background: rgba(14,165,233,0.15); color: #0ea5e9; }
+    .rank-empty { font-size: 12px; color: var(--muted); padding: 14px 16px; text-align: center; }
 
     /* ─── CONSULTANT CARDS ─── */
     .cards-section { margin-bottom: 28px; }
@@ -243,7 +275,7 @@
       main { padding: 16px; }
       .topbar { padding: 12px 16px; }
       .cards-grid { grid-template-columns: 1fr; }
-      .rank-row { grid-template-columns: 30px 110px 1fr 110px; }
+      .rank-row { grid-template-columns: 30px 128px 1fr 104px; }
       .rank-meta { display: none; }
     }
   </style>
@@ -361,7 +393,24 @@
             Produtos — Brasília × BH
             <span>receita do período</span>
           </div>
-          <div class="chart-wrap"><canvas id="chartRegiaoProdutos"></canvas></div>
+          <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:240px; gap:18px;">
+            <div style="text-align:center;">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Total</div>
+              <div style="font-size:30px;font-weight:800;letter-spacing:-0.5px;" id="reg-prod-total">—</div>
+            </div>
+            <div style="display:flex; gap:36px;">
+              <div style="text-align:center;">
+                <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Oikos Brasília</div>
+                <div style="font-size:19px;font-weight:700;color:var(--gold);" id="reg-prod-brasilia">—</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:3px;" id="reg-prod-brasilia-pct">—</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Oikos BH</div>
+                <div style="font-size:19px;font-weight:700;color:#0ea5e9;" id="reg-prod-bh">—</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:3px;" id="reg-prod-bh-pct">—</div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="chart-card">
           <div class="chart-title">
@@ -423,11 +472,27 @@
       </div>
 
       <!-- RANKING NNM -->
-      <div class="section-title">Ranking — Resultado Líquido</div>
+      <div class="rank-header">
+        <div class="section-title">Ranking — Resultado Líquido</div>
+        <div class="rank-toggle-group">
+          <button class="rank-toggle active" onclick="setFiltroRank('nnm','',this)">Todos</button>
+          <button class="rank-toggle" onclick="setFiltroRank('nnm','bh',this)">Oikos BH</button>
+          <button class="rank-toggle" onclick="setFiltroRank('nnm','brasilia',this)">Oikos Brasília</button>
+        </div>
+      </div>
+      <div class="rank-praca-resumo" id="resumo-rank-nnm"></div>
       <div class="ranking-grid ranking-section" id="ranking-grid"></div>
 
       <!-- RANKING SAÍDA -->
-      <div class="section-title">Ranking — Saída</div>
+      <div class="rank-header">
+        <div class="section-title">Ranking — Saída</div>
+        <div class="rank-toggle-group">
+          <button class="rank-toggle active" onclick="setFiltroRank('saida','',this)">Todos</button>
+          <button class="rank-toggle" onclick="setFiltroRank('saida','bh',this)">Oikos BH</button>
+          <button class="rank-toggle" onclick="setFiltroRank('saida','brasilia',this)">Oikos Brasília</button>
+        </div>
+      </div>
+      <div class="rank-praca-resumo" id="resumo-rank-saida"></div>
       <div class="ranking-grid ranking-section" id="ranking-saida"></div>
 
       <!-- CARDS -->
@@ -456,7 +521,15 @@
       </div>
 
       <!-- PRODUTOS -->
-      <div class="section-title">Produtos — Receita do Período</div>
+      <div class="rank-header">
+        <div class="section-title">Produtos — Receita do Período</div>
+        <div class="rank-toggle-group">
+          <button class="rank-toggle active" onclick="setFiltroRank('prod','',this)">Todos</button>
+          <button class="rank-toggle" onclick="setFiltroRank('prod','bh',this)">Oikos BH</button>
+          <button class="rank-toggle" onclick="setFiltroRank('prod','brasilia',this)">Oikos Brasília</button>
+        </div>
+      </div>
+      <div class="rank-praca-resumo" id="resumo-rank-prod"></div>
       <div class="ranking-grid ranking-section" id="ranking-produtos"></div>
 
     </main>
@@ -483,8 +556,135 @@
   let regiaoAtual = null; // null = consolidado | 'brasilia' | 'bh'
   let consultores = [];
   let consultoresAll = []; // todos os ativos, sem filtro do topbar — usado no Comparativo Regional
-  let chartBar = null, chartDoughnut = null, chartRegiaoProdutos = null;
+  let chartBar = null, chartDoughnut = null;
   const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity'];
+
+  // Estado dos rankings, guardado para os filtros por praça (Todos | BH | Brasília)
+  // re-renderizarem sem recarregar o banco. Preenchido no fim de renderUI.
+  let _rankState = null;
+  let filtroRankNNM = '', filtroRankSaida = '', filtroRankProd = '';
+  const COR_BRASILIA = '#C8A046', COR_BH = '#0ea5e9';
+
+  function pracaTag(c) {
+    if (c.regiao === 'bh')       return '<span class="praca-tag bh">BH</span>';
+    if (c.regiao === 'brasilia') return '<span class="praca-tag bsb">BSB</span>';
+    return '';
+  }
+  // Resumo "visão geral" — sempre sobre TODOS os ativos (consultoresAll), as duas praças,
+  // independente do filtro global do topbar e do filtro do próprio ranking.
+  function somaPorRegiao(regiao, calc) {
+    return consultoresAll.filter(c => c.regiao === regiao).reduce((s,c) => s + calc(c), 0);
+  }
+  function setResumoPraca(id, vBrasilia, vBH, fmt) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const total = vBrasilia + vBH;
+    const podePct = total > 0 && vBrasilia >= 0 && vBH >= 0;
+    const pB = podePct ? ' · ' + Math.round(vBrasilia / total * 100) + '%' : '';
+    const pH = podePct ? ' · ' + Math.round(vBH / total * 100) + '%' : '';
+    el.innerHTML =
+      `<div class="rp-item"><span class="rp-dot" style="background:${COR_BRASILIA}"></span>Oikos Brasília <strong>${fmt(vBrasilia)}</strong>${pB}</div>`
+    + `<div class="rp-item"><span class="rp-dot" style="background:${COR_BH}"></span>Oikos BH <strong>${fmt(vBH)}</strong>${pH}</div>`;
+  }
+
+  function setFiltroRank(qual, regiao, btn) {
+    btn.parentElement.querySelectorAll('.rank-toggle').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if (qual === 'nnm')   { filtroRankNNM   = regiao; renderRankNNM(); }
+    if (qual === 'saida') { filtroRankSaida = regiao; renderRankSaida(); }
+    if (qual === 'prod')  { filtroRankProd  = regiao; renderRankProdutos(); }
+  }
+
+  function renderRankNNM() {
+    if (!_rankState) return;
+    const { numMeses, liqPorConsultor } = _rankState;
+    const base = filtroRankNNM ? consultores.filter(c => c.regiao === filtroRankNNM) : consultores;
+    const ordenado = [...base].sort((a,b) => ((liqPorConsultor[b.id]||{}).nnm||0) - ((liqPorConsultor[a.id]||{}).nnm||0));
+    const maxAbs = Math.max(...ordenado.map(c => Math.abs((liqPorConsultor[c.id]||{}).nnm||0)), 1);
+    setResumoPraca('resumo-rank-nnm',
+      somaPorRegiao('brasilia', c => (liqPorConsultor[c.id]||{}).nnm||0),
+      somaPorRegiao('bh',       c => (liqPorConsultor[c.id]||{}).nnm||0), fmtM);
+    const el = document.getElementById('ranking-grid');
+    el.innerHTML = '';
+    if (!ordenado.length) { el.innerHTML = '<div class="rank-empty">Nenhum consultor nesta praça.</div>'; return; }
+    ordenado.forEach((c, i) => {
+      const nnm  = (liqPorConsultor[c.id]||{}).nnm || 0;
+      const pos  = i + 1;
+      const barW = Math.max(2, Math.abs(nnm) / maxAbs * 100);
+      const barColor   = nnm >= 0 ? c.cor : 'var(--danger)';
+      const badgeClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      const metaCons   = c.meta_nnm_mensal * numMeses;
+      const metaP      = metaCons > 0 ? Math.min(Math.round(nnm / metaCons * 100), 999) : 0;
+      el.innerHTML += `
+        <div class="rank-row">
+          <div class="rank-badge ${badgeClass}">${pos}º</div>
+          <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}${pracaTag(c)}</div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:${barColor}"></div></div>
+          <div class="rank-value ${nnm>=0?'pos':'neg'}">${fmtM(nnm)}</div>
+          <div class="rank-meta">${metaP}% meta</div>
+        </div>`;
+    });
+  }
+
+  function renderRankSaida() {
+    if (!_rankState) return;
+    const { capAgg, liqPorConsultor } = _rankState;
+    const base = filtroRankSaida ? consultores.filter(c => c.regiao === filtroRankSaida) : consultores;
+    const ordenado = [...base].sort((a,b) => ((liqPorConsultor[b.id]||{}).saida||0) - ((liqPorConsultor[a.id]||{}).saida||0));
+    const maxSaida = Math.max(...ordenado.map(c => (liqPorConsultor[c.id]||{}).saida || 0), 1);
+    setResumoPraca('resumo-rank-saida',
+      somaPorRegiao('brasilia', c => (liqPorConsultor[c.id]||{}).saida||0),
+      somaPorRegiao('bh',       c => (liqPorConsultor[c.id]||{}).saida||0), fmtM);
+    const el = document.getElementById('ranking-saida');
+    el.innerHTML = '';
+    if (!ordenado.length) { el.innerHTML = '<div class="rank-empty">Nenhum consultor nesta praça.</div>'; return; }
+    ordenado.forEach((c, i) => {
+      const saida = (liqPorConsultor[c.id]||{}).saida || 0;
+      const pos   = i + 1;
+      const barW  = Math.max(2, saida / maxSaida * 100);
+      const badgeClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      const pctPL = (capAgg[c.id]||{}).pl > 0 ? Math.round(saida / capAgg[c.id].pl * 100) : 0;
+      el.innerHTML += `
+        <div class="rank-row">
+          <div class="rank-badge ${badgeClass}">${pos}º</div>
+          <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}${pracaTag(c)}</div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:var(--danger)"></div></div>
+          <div class="rank-value neg">${saida===0?'—':fmtM(saida)}</div>
+          <div class="rank-meta">${pctPL}% do PL</div>
+        </div>`;
+    });
+  }
+
+  function renderRankProdutos() {
+    if (!_rankState) return;
+    const { prodAgg, numMeses } = _rankState;
+    const totalProd = c => PROD_KEYS.reduce((s,k) => s + ((prodAgg[c.id]||{})[k]||0), 0);
+    const base = filtroRankProd ? consultores.filter(c => c.regiao === filtroRankProd) : consultores;
+    const ordenado = [...base].map(c => ({ c, total: totalProd(c) })).sort((a,b) => b.total - a.total);
+    const maxProd = Math.max(...ordenado.map(x => x.total), 1);
+    setResumoPraca('resumo-rank-prod',
+      somaPorRegiao('brasilia', totalProd), somaPorRegiao('bh', totalProd), fmtR);
+    const el = document.getElementById('ranking-produtos');
+    el.innerHTML = '';
+    if (!ordenado.length) { el.innerHTML = '<div class="rank-empty">Nenhum consultor nesta praça.</div>'; return; }
+    ordenado.forEach((x, i) => {
+      const { c, total } = x;
+      const pos      = i + 1;
+      const metaP    = (c.meta_produtos_mensal || 15000) * numMeses;
+      const metaPct  = metaP > 0 ? Math.round(total / metaP * 100) : 0;
+      const barW     = Math.max(2, total / maxProd * 100);
+      const barColor = total >= metaP ? 'var(--ok)' : total > 0 ? c.cor : 'rgba(200,160,70,0.15)';
+      const badgeClass = pos===1?'gold':pos===2?'silver':pos===3?'bronze':'';
+      el.innerHTML += `
+        <div class="rank-row">
+          <div class="rank-badge ${badgeClass}">${pos}º</div>
+          <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}${pracaTag(c)}</div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:${barColor}"></div></div>
+          <div class="rank-value ${total>=metaP?'pos':total>0?'':'neg'}">${total===0?'—':fmtR(total)}</div>
+          <div class="rank-meta">${metaPct}% meta</div>
+        </div>`;
+    });
+  }
 
   const fmtM = v => {
     const abs = Math.abs(v), sig = v < 0 ? '-' : '';
@@ -647,7 +847,9 @@ function setPeriodo(ini, fim, srcBtn) {
     const liqPorConsultor = {};
     Object.keys(capAgg).forEach(id => { liqPorConsultor[id] = liquidoBrasil(capAgg[id]); });
 
-    const ordenadoNNM     = [...consultores].sort((a,b) => (liqPorConsultor[b.id]||{}).nnm - (liqPorConsultor[a.id]||{}).nnm);
+    // Estado compartilhado com os renderizadores de ranking (filtros por praça)
+    _rankState = { capAgg, prodAgg, numMeses, liqPorConsultor };
+
     const ordenadoCaptado = [...consultores].sort((a,b) => (liqPorConsultor[b.id]||{}).captado - (liqPorConsultor[a.id]||{}).captado);
     const rankMap         = {}; ordenadoCaptado.forEach((c,i) => rankMap[c.id] = i + 1);
     // Totais somam só os consultores do filtro de região ativo no topbar (`consultores`),
@@ -699,48 +901,10 @@ function setPeriodo(ini, fim, srcBtn) {
     document.getElementById('kpi-reunioes-sub').innerHTML =
       `Meta: <strong>${metaReun}</strong> — <span class="${totalReun >= metaReun ? 'ok' : ''}">${Math.round(totalReun / metaReun * 100)}% atingido</span>`;
 
-    // RANKING NNM (Brasil)
-    const maxAbsNNM = Math.max(...ordenadoNNM.map(c => Math.abs((liqPorConsultor[c.id]||{}).nnm||0)), 1);
-    const rgEl = document.getElementById('ranking-grid');
-    rgEl.innerHTML = '';
-    ordenadoNNM.forEach((c, i) => {
-      const nnm  = (liqPorConsultor[c.id]||{}).nnm || 0;
-      const pos  = i + 1;
-      const barW = Math.max(2, Math.abs(nnm) / maxAbsNNM * 100);
-      const barColor   = nnm >= 0 ? c.cor : 'var(--danger)';
-      const badgeClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
-      const metaCons   = c.meta_nnm_mensal * numMeses;
-      const metaP      = metaCons > 0 ? Math.min(Math.round(nnm / metaCons * 100), 999) : 0;
-      rgEl.innerHTML += `
-        <div class="rank-row">
-          <div class="rank-badge ${badgeClass}">${pos}º</div>
-          <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}</div>
-          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:${barColor}"></div></div>
-          <div class="rank-value ${nnm>=0?'pos':'neg'}">${fmtM(nnm)}</div>
-          <div class="rank-meta">${metaP}% meta</div>
-        </div>`;
-    });
-
-    // RANKING SAÍDA (Brasil) — quem teve mais saída no período
-    const ordenadoSaida = [...consultores].sort((a,b) => (liqPorConsultor[b.id]||{}).saida - (liqPorConsultor[a.id]||{}).saida);
-    const maxSaida = Math.max(...ordenadoSaida.map(c => (liqPorConsultor[c.id]||{}).saida || 0), 1);
-    const rsEl = document.getElementById('ranking-saida');
-    rsEl.innerHTML = '';
-    ordenadoSaida.forEach((c, i) => {
-      const saida = (liqPorConsultor[c.id]||{}).saida || 0;
-      const pos   = i + 1;
-      const barW  = Math.max(2, saida / maxSaida * 100);
-      const badgeClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
-      const pctPL = (capAgg[c.id]||{}).pl > 0 ? Math.round(saida / capAgg[c.id].pl * 100) : 0;
-      rsEl.innerHTML += `
-        <div class="rank-row">
-          <div class="rank-badge ${badgeClass}">${pos}º</div>
-          <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}</div>
-          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:var(--danger)"></div></div>
-          <div class="rank-value neg">${saida===0?'—':fmtM(saida)}</div>
-          <div class="rank-meta">${pctPL}% do PL</div>
-        </div>`;
-    });
+    // RANKING NNM + RANKING SAÍDA — renderizados por funções próprias, que respeitam
+    // o filtro por praça (Todos | BH | Brasília) de cada ranking.
+    renderRankNNM();
+    renderRankSaida();
 
     // CARDS — ordem por ranking (mesma classificação do badge, por Captação)
     const cgEl = document.getElementById('cards-grid');
@@ -861,34 +1025,8 @@ function setPeriodo(ini, fim, srcBtn) {
       }
     });
 
-    // RANKING PRODUTOS
-    const prodCols = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity'];
-    const prodSorted = [...consultores].map(c => ({
-      c,
-      total: prodCols.reduce((s,k) => s + ((prodAgg[c.id]||{})[k]||0), 0)
-    })).sort((a,b) => b.total - a.total);
-
-    const maxProd = Math.max(...prodSorted.map(x => x.total), 1);
-    const rpEl = document.getElementById('ranking-produtos');
-    rpEl.innerHTML = '';
-
-    prodSorted.forEach((x, i) => {
-      const { c, total } = x;
-      const pos      = i + 1;
-      const metaP    = (c.meta_produtos_mensal || 15000) * numMeses;
-      const metaPct  = metaP > 0 ? Math.round(total / metaP * 100) : 0;
-      const barW     = Math.max(2, total / maxProd * 100);
-      const barColor = total >= metaP ? 'var(--ok)' : total > 0 ? c.cor : 'rgba(200,160,70,0.15)';
-      const badgeClass = pos===1?'gold':pos===2?'silver':pos===3?'bronze':'';
-      rpEl.innerHTML += `
-        <div class="rank-row">
-          <div class="rank-badge ${badgeClass}">${pos}º</div>
-          <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}</div>
-          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:${barColor}"></div></div>
-          <div class="rank-value ${total>=metaP?'pos':total>0?'':'neg'}">${total===0?'—':fmtR(total)}</div>
-          <div class="rank-meta">${metaPct}% meta</div>
-        </div>`;
-    });
+    // RANKING PRODUTOS — função própria, respeita o filtro por praça do ranking
+    renderRankProdutos();
 
     // COMPARATIVO REGIONAL — sempre Brasília x BH, independente do filtro do topbar
     // (usa consultoresAll/capAgg/prodAgg/leadsAgg, que cobrem todos os ativos)
@@ -909,25 +1047,20 @@ function setPeriodo(ini, fim, srcBtn) {
     document.getElementById('reg-nnm-bh').style.color = nnmBHReg >= 0 ? '' : 'var(--danger)';
     document.getElementById('reg-nnm-bh-sub').innerHTML = `Resultado Bruto: <strong>${fmtM(captBHReg)}</strong>`;
 
+    // PRODUTOS — Brasília x BH: exibido como indicadores numéricos (R$ + % do total),
+    // não mais como gráfico de pizza.
     const prodTotalRegiao = grupo => somaGrupo(grupo, c => PROD_KEYS.reduce((s,k) => s + ((prodAgg[c.id]||{})[k]||0), 0));
     const prodBrasiliaReg = prodTotalRegiao(consBrasiliaReg);
     const prodBHReg       = prodTotalRegiao(consBHReg);
+    const prodRegTotal    = prodBrasiliaReg + prodBHReg;
 
-    if (chartRegiaoProdutos) chartRegiaoProdutos.destroy();
-    chartRegiaoProdutos = new Chart(document.getElementById('chartRegiaoProdutos'), {
-      type: 'pie',
-      data: {
-        labels: ['Oikos Brasília', 'Oikos BH'],
-        datasets: [{ data: [prodBrasiliaReg, prodBHReg], backgroundColor: ['#C8A046cc', '#0ea5e9cc'], borderColor: '#001a27', borderWidth: 3 }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { position: 'right', labels: { color: 'rgba(230,228,225,0.65)', font: { family: 'Jost', size: 11 }, padding: 12, boxWidth: 12, boxHeight: 12 } },
-          tooltip: { callbacks: { label: ctx => ' ' + ctx.label + ': ' + fmtR(ctx.raw) } }
-        }
-      }
-    });
+    document.getElementById('reg-prod-total').textContent    = fmtR(prodRegTotal);
+    document.getElementById('reg-prod-brasilia').textContent = fmtR(prodBrasiliaReg);
+    document.getElementById('reg-prod-bh').textContent       = fmtR(prodBHReg);
+    document.getElementById('reg-prod-brasilia-pct').textContent =
+      prodRegTotal > 0 ? Math.round(prodBrasiliaReg / prodRegTotal * 100) + '% do total' : '—';
+    document.getElementById('reg-prod-bh-pct').textContent =
+      prodRegTotal > 0 ? Math.round(prodBHReg / prodRegTotal * 100) + '% do total' : '—';
 
     const reunBrasiliaReg = somaGrupo(consBrasiliaReg, c => (leadsAgg[c.id]||{}).reunioes||0);
     const reunBHReg       = somaGrupo(consBHReg,       c => (leadsAgg[c.id]||{}).reunioes||0);
