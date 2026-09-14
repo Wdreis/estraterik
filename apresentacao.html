@@ -495,6 +495,18 @@
       <div class="rank-praca-resumo" id="resumo-rank-saida"></div>
       <div class="ranking-grid ranking-section" id="ranking-saida"></div>
 
+      <!-- RANKING REUNIÕES -->
+      <div class="rank-header">
+        <div class="section-title">Ranking — Reuniões</div>
+        <div class="rank-toggle-group">
+          <button class="rank-toggle active" onclick="setFiltroRank('reun','',this)">Todos</button>
+          <button class="rank-toggle" onclick="setFiltroRank('reun','bh',this)">Oikos BH</button>
+          <button class="rank-toggle" onclick="setFiltroRank('reun','brasilia',this)">Oikos Brasília</button>
+        </div>
+      </div>
+      <div class="rank-praca-resumo" id="resumo-rank-reun"></div>
+      <div class="ranking-grid ranking-section" id="ranking-reunioes"></div>
+
       <!-- CARDS -->
       <br>
       <div class="section-title">Ranking — Captação Consultores</div>
@@ -562,7 +574,7 @@
   // Estado dos rankings, guardado para os filtros por praça (Todos | BH | Brasília)
   // re-renderizarem sem recarregar o banco. Preenchido no fim de renderUI.
   let _rankState = null;
-  let filtroRankNNM = '', filtroRankSaida = '', filtroRankProd = '';
+  let filtroRankNNM = '', filtroRankSaida = '', filtroRankProd = '', filtroRankReun = '';
   const COR_BRASILIA = '#C8A046', COR_BH = '#0ea5e9';
 
   function pracaTag(c) {
@@ -593,6 +605,7 @@
     if (qual === 'nnm')   { filtroRankNNM   = regiao; renderRankNNM(); }
     if (qual === 'saida') { filtroRankSaida = regiao; renderRankSaida(); }
     if (qual === 'prod')  { filtroRankProd  = regiao; renderRankProdutos(); }
+    if (qual === 'reun')  { filtroRankReun  = regiao; renderRankReunioes(); }
   }
 
   function renderRankNNM() {
@@ -681,6 +694,37 @@
           <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}${pracaTag(c)}</div>
           <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:${barColor}"></div></div>
           <div class="rank-value ${total>=metaP?'pos':total>0?'':'neg'}">${total===0?'—':fmtR(total)}</div>
+          <div class="rank-meta">${metaPct}% meta</div>
+        </div>`;
+    });
+  }
+
+  function renderRankReunioes() {
+    if (!_rankState) return;
+    const { leadsAgg, numMeses } = _rankState;
+    const base = filtroRankReun ? consultores.filter(c => c.regiao === filtroRankReun) : consultores;
+    const ordenado = [...base].sort((a,b) => ((leadsAgg[b.id]||{}).reunioes||0) - ((leadsAgg[a.id]||{}).reunioes||0));
+    const maxReun = Math.max(...ordenado.map(c => (leadsAgg[c.id]||{}).reunioes || 0), 1);
+    setResumoPraca('resumo-rank-reun',
+      somaPorRegiao('brasilia', c => (leadsAgg[c.id]||{}).reunioes||0),
+      somaPorRegiao('bh',       c => (leadsAgg[c.id]||{}).reunioes||0), v => String(v));
+    const el = document.getElementById('ranking-reunioes');
+    el.innerHTML = '';
+    if (!ordenado.length) { el.innerHTML = '<div class="rank-empty">Nenhum consultor nesta praça.</div>'; return; }
+    ordenado.forEach((c, i) => {
+      const reun = (leadsAgg[c.id]||{}).reunioes || 0;
+      const pos  = i + 1;
+      const barW = Math.max(2, reun / maxReun * 100);
+      const badgeClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+      const metaReun = (c.meta_reunioes_mensal || 10) * numMeses;
+      const metaPct  = metaReun > 0 ? Math.round(reun / metaReun * 100) : 0;
+      const barColor = reun >= metaReun ? 'var(--ok)' : reun > 0 ? c.cor : 'rgba(200,160,70,0.15)';
+      el.innerHTML += `
+        <div class="rank-row">
+          <div class="rank-badge ${badgeClass}">${pos}º</div>
+          <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}${pracaTag(c)}</div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:${barColor}"></div></div>
+          <div class="rank-value ${reun>=metaReun?'pos':''}">${reun===0?'—':reun}</div>
           <div class="rank-meta">${metaPct}% meta</div>
         </div>`;
     });
@@ -848,7 +892,7 @@ function setPeriodo(ini, fim, srcBtn) {
     Object.keys(capAgg).forEach(id => { liqPorConsultor[id] = liquidoBrasil(capAgg[id]); });
 
     // Estado compartilhado com os renderizadores de ranking (filtros por praça)
-    _rankState = { capAgg, prodAgg, numMeses, liqPorConsultor };
+    _rankState = { capAgg, prodAgg, leadsAgg, numMeses, liqPorConsultor };
 
     const ordenadoCaptado = [...consultores].sort((a,b) => (liqPorConsultor[b.id]||{}).captado - (liqPorConsultor[a.id]||{}).captado);
     const rankMap         = {}; ordenadoCaptado.forEach((c,i) => rankMap[c.id] = i + 1);
@@ -905,6 +949,7 @@ function setPeriodo(ini, fim, srcBtn) {
     // o filtro por praça (Todos | BH | Brasília) de cada ranking.
     renderRankNNM();
     renderRankSaida();
+    renderRankReunioes();
 
     // CARDS — ordem por ranking (mesma classificação do badge, por Captação)
     const cgEl = document.getElementById('cards-grid');
