@@ -162,6 +162,7 @@
 
     /* ─── KPI GRID ─── */
     .kpi-grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 28px; }
+    .kpi-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 28px; }
     .kpi-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
     .kpi-card {
       background: var(--card); border: 1px solid var(--border);
@@ -262,6 +263,7 @@
     /* ─── RESPONSIVE ─── */
     @media (max-width: 1200px) {
       .kpi-grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .kpi-grid-3 { grid-template-columns: repeat(2, 1fr); }
       .kpi-grid-2 { grid-template-columns: 1fr; }
     }
     @media (max-width: 900px) {
@@ -277,6 +279,7 @@
       main { padding: 16px; }
       .topbar { padding: 12px 16px; }
       .kpi-grid-4 { grid-template-columns: 1fr; }
+      .kpi-grid-3 { grid-template-columns: 1fr; }
       .custom-range { flex-wrap: wrap; }
     }
   </style>
@@ -406,16 +409,21 @@
 
       <!-- 1: PATRIMÔNIO INTERNACIONAL -->
       <div class="section-title">Patrimônio Internacional</div>
-      <div class="kpi-grid-2">
+      <div class="kpi-grid-3">
         <div class="kpi-card" style="--kpi-color:#A855F7">
           <div class="kpi-label">PL Internacional</div>
           <div class="kpi-value" id="kpi-pl-total">—</div>
           <div class="kpi-sub" id="kpi-pl-total-sub">—</div>
         </div>
         <div class="kpi-card" style="--kpi-color:var(--gold)">
-          <div class="kpi-label">Transferências Internacionais</div>
+          <div class="kpi-label">PL Nacional → Internacional</div>
           <div class="kpi-value" id="kpi-transf">—</div>
           <div class="kpi-sub" id="kpi-transf-sub">—</div>
+        </div>
+        <div class="kpi-card" style="--kpi-color:#22c55e">
+          <div class="kpi-label">PL Internacional Novo</div>
+          <div class="kpi-value" id="kpi-transf-novo">—</div>
+          <div class="kpi-sub" id="kpi-transf-novo-sub">—</div>
         </div>
       </div>
 
@@ -615,10 +623,10 @@
 
       const [capRes, capAnualRes] = await Promise.all([
         db.from('captacao_mensal')
-          .select('mes,consultor_id,captado_int,saida_int,pl_int,transf_nac_para_int')
+          .select('mes,consultor_id,captado_int,saida_int,pl_int,transf_nac_para_int,transf_ext_para_int')
           .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
         db.from('captacao_mensal')
-          .select('mes,captado_int,saida_int,pl_int,transf_nac_para_int')
+          .select('mes,captado_int,saida_int,pl_int,transf_nac_para_int,transf_ext_para_int')
           .eq('ano', anoAtual).order('mes'),
       ]);
 
@@ -645,20 +653,22 @@
     // Por consultor
     const consAgg = {};
     consultores.forEach(c => {
-      consAgg[c.id] = { captado: 0, saida: 0, transf: 0, pl: 0 };
+      consAgg[c.id] = { captado: 0, saida: 0, transf: 0, transfNovo: 0, pl: 0 };
     });
     cap.forEach(r => {
       if (!consAgg[r.consultor_id]) return;
-      consAgg[r.consultor_id].captado += n(r.captado_int);
-      consAgg[r.consultor_id].saida   += n(r.saida_int);
-      consAgg[r.consultor_id].transf  += n(r.transf_nac_para_int);
-      consAgg[r.consultor_id].pl       = n(r.pl_int);
+      consAgg[r.consultor_id].captado    += n(r.captado_int);
+      consAgg[r.consultor_id].saida      += n(r.saida_int);
+      consAgg[r.consultor_id].transf     += n(r.transf_nac_para_int);
+      consAgg[r.consultor_id].transfNovo += n(r.transf_ext_para_int);
+      consAgg[r.consultor_id].pl          = n(r.pl_int);
     });
 
-    const totCap    = Object.values(consAgg).reduce((s,r) => s + r.captado, 0);
-    const totSai    = Object.values(consAgg).reduce((s,r) => s + r.saida, 0);
-    const totNNM    = totCap - totSai;
-    const totTransf = Object.values(consAgg).reduce((s,r) => s + r.transf, 0);
+    const totCap      = Object.values(consAgg).reduce((s,r) => s + r.captado, 0);
+    const totSai      = Object.values(consAgg).reduce((s,r) => s + r.saida, 0);
+    const totNNM      = totCap - totSai;
+    const totTransf   = Object.values(consAgg).reduce((s,r) => s + r.transf, 0);
+    const totTransfNovo = Object.values(consAgg).reduce((s,r) => s + r.transfNovo, 0);
 
     // Meta LatAm — soma apenas consultores com meta_latam preenchida (infra pronta, aguardando valores)
     const metaLatamTotal = consultores.reduce((s,c) => s + (n(c.meta_latam) * numMeses), 0);
@@ -669,7 +679,10 @@
     document.getElementById('kpi-pl-total-sub').textContent = ultimoMes ? `Posição em ${MESES[ultimoMes]} ${anoAtual}` : '—';
 
     document.getElementById('kpi-transf').textContent     = fmtM(totTransf);
-    document.getElementById('kpi-transf-sub').textContent = 'Não é captação nova — dinheiro que já era da Oikos no Brasil';
+    document.getElementById('kpi-transf-sub').textContent = 'Não é captação nova: dinheiro que já era da Oikos no Brasil';
+
+    document.getElementById('kpi-transf-novo').textContent     = fmtM(totTransfNovo);
+    document.getElementById('kpi-transf-novo-sub').textContent = 'Cliente já tinha em outra corretora internacional, não conta como Captação Internacional';
 
     document.getElementById('kpi-captado').textContent     = fmtM(totCap);
     document.getElementById('kpi-captado').style.color     = totCap >= 0 ? '' : 'var(--danger)';

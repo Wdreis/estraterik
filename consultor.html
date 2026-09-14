@@ -631,12 +631,16 @@
       </div>
 
       <div class="form-section-label">Internacional</div>
-      <div class="form-grid">
+      <div class="form-grid three">
         <div class="form-group"><label>Resultado Bruto Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
         <div class="form-group"><label>Saída Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label style="color:var(--muted)" title="Cliente que já tinha dinheiro em outra corretora internacional (fora da Oikos) e transferiu pra nossa base — não é captação nova pro cliente, e não entra no Resultado Bruto/Líquido Internacional. Só informativo.">↔ PL Internacional Novo (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-transf-ext-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
       </div>
       <div style="font-size:10px;color:var(--muted);margin:10px 0 4px;line-height:1.5">
         ↔ Transferências Internacionais: parte da saída de cada corretora nacional que na verdade foi para a conta internacional do cliente, não uma retirada de capital — não entra no cálculo de saída/Resultado Líquido do consultor. Total do mês: <strong id="transf-total-preview">R$ 0,00</strong>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin:4px 0 4px;line-height:1.5">
+        ↔ PL Internacional Novo: dinheiro que o cliente já tinha em outra corretora internacional fora da Oikos e trouxe pra nossa base — é positivo pra Oikos, mas não é dinheiro novo do cliente. Só aparece no card informativo do Internacional, não soma em Captação/Resultado Líquido.
       </div>
     </div>
 
@@ -1338,6 +1342,7 @@
     set('e-transf-btg-int',    cap.transf_btg_int);
     set('e-transf-xp-int',     cap.transf_xp_int);
     set('e-transf-outros-int', cap.transf_outros_int);
+    set('e-transf-ext-int',    cap.transf_ext_para_int);
     atualizarTransfPreview();
     set('e-estudos',     prod.estudos);
     set('e-previdencia', prod.previdencia);
@@ -1454,6 +1459,7 @@
     const transfBtgInt    = g('e-transf-btg-int');
     const transfXpInt     = g('e-transf-xp-int');
     const transfOutrosInt = g('e-transf-outros-int');
+    const transfExtInt    = g('e-transf-ext-int');
     const transfNacInt = transfBtgInt + transfXpInt + transfOutrosInt;
     const captado  = capBtg + capXp + capOut + capInt;
     const saida    = saiBtg + saiXp + saiOut + saiInt;
@@ -1476,6 +1482,7 @@
       captado_int: capInt, saida_int: saiInt,
       transf_nac_para_int: transfNacInt,
       transf_btg_int: transfBtgInt, transf_xp_int: transfXpInt, transf_outros_int: transfOutrosInt,
+      transf_ext_para_int: transfExtInt,
     };
 
     const prodPayload = {
