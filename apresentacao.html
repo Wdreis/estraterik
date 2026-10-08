@@ -278,6 +278,29 @@
       .rank-row { grid-template-columns: 30px 128px 1fr 104px; }
       .rank-meta { display: none; }
     }
+
+  /* Popup de saídas por cliente (hover no valor de Saída) */
+  [data-saida-tip]{cursor:help;border-bottom:1px dotted rgba(200,160,70,.7)}
+  .saida-tip{position:fixed;z-index:99999;display:none;pointer-events:none;max-width:340px;min-width:220px;
+    background:#0f1d22;color:#e6e4e1;border:1px solid rgba(200,160,70,.55);border-radius:10px;padding:10px 12px;
+    font-size:12px;line-height:1.45;box-shadow:0 10px 28px rgba(0,0,0,.55);font-family:inherit}
+  .saida-tip .st-title{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#C8A046;font-weight:700;margin-bottom:6px}
+  .saida-tip .st-row{display:flex;justify-content:space-between;gap:14px;padding:2px 0}
+  .saida-tip .st-row span:first-child{font-weight:600}
+  .saida-tip .st-row small{color:rgba(230,228,225,.55);font-weight:400;margin-left:4px}
+  .saida-tip .st-row span:last-child{font-weight:700;color:#f0b44c;white-space:nowrap}
+  .saida-tip .st-tot{border-top:1px solid rgba(200,160,70,.25);margin-top:6px;padding-top:6px;display:flex;justify-content:space-between;font-weight:700}
+  .saida-tip .st-vazio{color:rgba(230,228,225,.6)}
+
+  .saidas-clientes-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 8px; }
+  .saidas-clientes-card table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .saidas-clientes-card th { text-align: left; font-size: 9px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--gold); padding: 10px 16px; background: rgba(0,0,0,0.15); }
+  .saidas-clientes-card td { padding: 9px 16px; border-top: 1px solid var(--border); }
+  .saidas-clientes-card td.val, .saidas-clientes-card th.val { text-align: right; }
+  .saidas-clientes-card td.val { font-weight: 700; color: var(--danger); white-space: nowrap; }
+  .saidas-clientes-card td.mut { color: var(--muted); }
+  .saidas-clientes-card tfoot td { font-weight: 800; background: rgba(0,0,0,0.15); }
+  .saidas-vazio { padding: 18px 20px; text-align: center; color: var(--muted); font-size: 13px; }
   </style>
 </head>
 <body>
@@ -495,6 +518,12 @@
       <div class="rank-praca-resumo" id="resumo-rank-saida"></div>
       <div class="ranking-grid ranking-section" id="ranking-saida"></div>
 
+      <!-- SAÍDAS POR CLIENTE -->
+      <div class="rank-header">
+        <div class="section-title">Saídas do Período — Clientes</div>
+      </div>
+      <div id="saidas-clientes"></div>
+
       <!-- RANKING REUNIÕES -->
       <div class="rank-header">
         <div class="section-title">Ranking — Reuniões</div>
@@ -567,6 +596,7 @@
   let meInicio = 1, meFim = new Date().getMonth() + 1;
   let regiaoAtual = null; // null = consolidado | 'brasilia' | 'bh'
   let consultores = [];
+  let saidasRows = []; // saídas por cliente do período (tabela saidas_cliente)
   let consultoresAll = []; // todos os ativos, sem filtro do topbar — usado no Comparativo Regional
   let chartBar = null, chartDoughnut = null;
   const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity'];
@@ -639,6 +669,43 @@
     });
   }
 
+  // Monta as listas do popup (SAIDAS_TIP) e a tabela "Saídas do Período — Clientes".
+  // Respeita o filtro de praça do topbar (só consultores de `consultores`).
+  function montarSaidasClientes() {
+    Object.keys(SAIDAS_TIP).forEach(k => delete SAIDAS_TIP[k]);
+    const porId = {}; consultores.forEach(c => porId[c.id] = c);
+    const visiveis = saidasRows.filter(r => porId[r.consultor_id]);
+    const multi = meFim > meInicio;
+    const push = (k, item) => { (SAIDAS_TIP[k] = SAIDAS_TIP[k] || []).push(item); };
+    visiveis.forEach(r => {
+      const item = { nome_cliente: r.nome_cliente, valor: n(r.valor),
+                     consultor: multi ? MESES_S[r.mes] : '', corretora: r.corretora };
+      const escopo = r.corretora === 'Internacional' ? 'int' : 'br';
+      [`c${r.consultor_id}|${escopo}`, `c${r.consultor_id}|all`].forEach(k => push(k, item));
+      // nos totais, mostrar também de qual consultor foi
+      const itemTot = { ...item, consultor: porId[r.consultor_id].nome + (multi ? ' · ' + MESES_S[r.mes] : '') };
+      [`tot|${escopo}`, 'tot|all'].forEach(k => push(k, itemTot));
+    });
+
+    const el = document.getElementById('saidas-clientes');
+    if (!visiveis.length) {
+      el.innerHTML = '<div class="saidas-clientes-card"><div class="saidas-vazio">Nenhuma saída por cliente registrada neste período.</div></div>';
+      return;
+    }
+    const ordenado = [...visiveis].sort((a,b) => n(b.valor) - n(a.valor));
+    const total = ordenado.reduce((s,r) => s + n(r.valor), 0);
+    el.innerHTML = `<div class="saidas-clientes-card"><table>
+      <thead><tr><th>Cliente</th><th>Consultor</th><th>Corretora</th><th>Mês</th><th class="val">Valor</th></tr></thead>
+      <tbody>${ordenado.map(r => { const c = porId[r.consultor_id]; return `<tr>
+        <td style="font-weight:600">${escH(r.nome_cliente)}</td>
+        <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${c.cor};margin-right:6px"></span>${escH(c.nome)}${pracaTag(c)}</td>
+        <td class="mut">${escH(r.corretora || '—')}</td>
+        <td class="mut">${MESES_S[r.mes]}</td>
+        <td class="val">${fmtR(r.valor)}</td></tr>`; }).join('')}</tbody>
+      <tfoot><tr><td colspan="4">Total identificado</td><td class="val">${fmtR(total)}</td></tr></tfoot>
+    </table></div>`;
+  }
+
   function renderRankSaida() {
     if (!_rankState) return;
     const { capAgg, liqPorConsultor } = _rankState;
@@ -662,7 +729,7 @@
           <div class="rank-badge ${badgeClass}">${pos}º</div>
           <div class="rank-name"><div class="rank-dot" style="background:${c.cor}"></div>${c.nome}${pracaTag(c)}</div>
           <div class="rank-bar-wrap"><div class="rank-bar" style="width:${barW}%;background:var(--danger)"></div></div>
-          <div class="rank-value neg">${saida===0?'—':fmtM(saida)}</div>
+          <div class="rank-value neg">${saida===0?'—':`<span data-saida-tip="c${c.id}|br" data-saida-titulo="Saída de ${escH(c.nome)}">${fmtM(saida)}</span>`}</div>
           <div class="rank-meta">${pctPL}% do PL</div>
         </div>`;
     });
@@ -742,6 +809,42 @@
   const clamp = (v,mn,mx) => Math.min(Math.max(v,mn),mx);
   const n = v => parseFloat(v) || 0;
 
+
+  // ── POPUP DE SAÍDAS POR CLIENTE ───────────────────────────
+  // SAIDAS_TIP[chave] = [{nome_cliente, valor, corretora, consultor?}]. Elementos com
+  // data-saida-tip="chave" mostram o detalhe ao passar o mouse. Chave sem lista = saída
+  // sem cliente identificado (mostra aviso pedindo o preenchimento em Editar Mês > Saídas).
+  const SAIDAS_TIP = {};
+  const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  (function(){
+    const tip = document.createElement('div');
+    tip.className = 'saida-tip';
+    document.body.appendChild(tip);
+    let chaveAtual = null;
+    document.addEventListener('mousemove', e => {
+      const el = e.target.closest ? e.target.closest('[data-saida-tip]') : null;
+      if (!el) { tip.style.display = 'none'; chaveAtual = null; return; }
+      const chave = el.dataset.saidaTip;
+      if (chave !== chaveAtual) {
+        chaveAtual = chave;
+        const lista = (SAIDAS_TIP[chave] || []).slice().sort((a,b) => b.valor - a.valor);
+        const titulo = el.dataset.saidaTitulo || 'Saídas por cliente';
+        tip.innerHTML = lista.length
+          ? `<div class="st-title">${escH(titulo)}</div>`
+            + lista.map(r => `<div class="st-row"><span>${escH(r.nome_cliente)}<small>${escH([r.consultor, r.corretora].filter(Boolean).join(' · '))}</small></span><span>R$ ${Number(r.valor).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`).join('')
+            + `<div class="st-tot"><span>Total identificado</span><span>R$ ${lista.reduce((s,r)=>s+r.valor,0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`
+          : `<div class="st-title">${escH(titulo)}</div><div class="st-vazio">Nenhum cliente informado para esta saída. Preencher em Editar Mês › Saídas.</div>`;
+      }
+      tip.style.display = 'block';
+      const w = tip.offsetWidth, h = tip.offsetHeight;
+      let x = e.clientX + 16, y = e.clientY + 16;
+      if (x + w > window.innerWidth - 8)  x = e.clientX - w - 16;
+      if (y + h > window.innerHeight - 8) y = e.clientY - h - 16;
+      tip.style.left = Math.max(8, x) + 'px';
+      tip.style.top  = Math.max(8, y) + 'px';
+    });
+  })();
+
   // Mesma fonte única de verdade usada em painel-geral.html/consultor.html: separar
   // nacional e internacional em vez de somar (campos brutos captado/saida/nnm vêm com
   // os dois juntos). Transferência nac→int não conta como perda no Brasil nem como
@@ -820,13 +923,23 @@ function setPeriodo(ini, fim, srcBtn) {
       consultoresAll = cons || [];
       consultores = regiaoAtual ? consultoresAll.filter(c => c.regiao === regiaoAtual) : consultoresAll;
 
-      const [capRes, prodRes, leadsRes] = await Promise.all([
+      const [capRes, prodRes, leadsRes, stvmRes, saidasRes] = await Promise.all([
         db.from('captacao_mensal').select('*').eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
         db.from('produtos_mensal').select('*').eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
         db.from('leads_mensal').select('*').eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
+        db.from('stvm').select('consultor_id,mes,valor').eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
+        db.from('saidas_cliente').select('*').eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim).order('mes'),
       ]);
 
       const capRows   = capRes.data   || [];
+      // STVM conta como captação (Brasil) do consultor no mês — soma na leitura, sem gravar em captacao_mensal
+      (stvmRes.data || []).forEach(sv => {
+        let row = capRows.find(r => r.consultor_id === sv.consultor_id && r.mes === sv.mes);
+        if (!row) { row = { consultor_id: sv.consultor_id, mes: sv.mes, captado: 0, nnm: 0 }; capRows.push(row); }
+        row.captado = n(row.captado) + n(sv.valor);
+        row.nnm     = n(row.nnm) + n(sv.valor);
+      });
+      saidasRows = saidasRes.data || [];
       const prodRows  = prodRes.data  || [];
       const leadsRows = leadsRes.data || [];
 
@@ -891,6 +1004,8 @@ function setPeriodo(ini, fim, srcBtn) {
     const liqPorConsultor = {};
     Object.keys(capAgg).forEach(id => { liqPorConsultor[id] = liquidoBrasil(capAgg[id]); });
 
+    montarSaidasClientes();
+
     // Estado compartilhado com os renderizadores de ranking (filtros por praça)
     _rankState = { capAgg, prodAgg, leadsAgg, numMeses, liqPorConsultor };
 
@@ -922,13 +1037,13 @@ function setPeriodo(ini, fim, srcBtn) {
     document.getElementById('kpi-nnm').textContent     = fmtM(totalNNMBrasil);
     document.getElementById('kpi-nnm').style.color     = totalNNMBrasil >= 0 ? '' : 'var(--danger)';
     document.getElementById('kpi-nnm-sub').innerHTML   =
-      `Resultado Bruto: <strong>${fmtM(totalCaptBrasil)}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(totalSaiBrasil)}</strong>`
+      `Resultado Bruto: <strong>${fmtM(totalCaptBrasil)}</strong> &nbsp;|&nbsp; Saída: <strong data-saida-tip="tot|br" data-saida-titulo="Saídas Brasil — clientes">${fmtM(totalSaiBrasil)}</strong>`
       + (totalTransf > 0 ? `<br><span style="color:var(--gold)">↔ ${fmtM(totalTransf)} transferido p/ Internacional</span>` : '');
 
     document.getElementById('kpi-nnm-int').textContent = fmtM(totalNNMInt);
     document.getElementById('kpi-nnm-int').style.color = totalNNMInt >= 0 ? '' : 'var(--danger)';
     document.getElementById('kpi-nnm-int-sub').innerHTML =
-      `Resultado Bruto: <strong>${fmtM(consultores.reduce((s,c)=>s+n((capAgg[c.id]||{}).captado_int),0))}</strong> &nbsp;|&nbsp; Saída: <strong>${fmtM(consultores.reduce((s,c)=>s+n((capAgg[c.id]||{}).saida_int),0))}</strong>`;
+      `Resultado Bruto: <strong>${fmtM(consultores.reduce((s,c)=>s+n((capAgg[c.id]||{}).captado_int),0))}</strong> &nbsp;|&nbsp; Saída: <strong data-saida-tip="tot|int" data-saida-titulo="Saídas Internacional — clientes">${fmtM(consultores.reduce((s,c)=>s+n((capAgg[c.id]||{}).saida_int),0))}</strong>`;
 
     const pctEl = document.getElementById('kpi-meta-pct');
     pctEl.textContent = fmtP(pctMeta);
@@ -938,7 +1053,7 @@ function setPeriodo(ini, fim, srcBtn) {
 
     document.getElementById('kpi-captado').textContent = fmtM(totalCaptBrasil);
     document.getElementById('kpi-saida-sub').innerHTML =
-      `Saída Brasil: <strong class="${totalSaiBrasil > totalCaptBrasil ? 'bad' : 'ok'}">${fmtM(totalSaiBrasil)}</strong>`;
+      `Saída Brasil: <strong class="${totalSaiBrasil > totalCaptBrasil ? 'bad' : 'ok'}" data-saida-tip="tot|br" data-saida-titulo="Saídas Brasil — clientes">${fmtM(totalSaiBrasil)}</strong>`;
 
     document.getElementById('kpi-reunioes').textContent = totalReun;
     const metaReun = consultores.length * 10 * numMeses;
@@ -1017,7 +1132,7 @@ function setPeriodo(ini, fim, srcBtn) {
             </div>
             <div class="c-stat">
               <div class="c-stat-label">Saída</div>
-              <div class="c-stat-value ${saida>0?'warn':''}">${fmtM(saida)}</div>
+              <div class="c-stat-value ${saida>0?'warn':''}">${saida>0 ? `<span data-saida-tip="c${c.id}|all" data-saida-titulo="Saída de ${escH(c.nome)}">${fmtM(saida)}</span>` : fmtM(saida)}</div>
             </div>
           </div>
         </div>`;

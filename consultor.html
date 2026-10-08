@@ -323,6 +323,19 @@
       .main-wrapper { margin-left: 62px; }
     }
     @media (max-width: 700px) { main { padding: 16px; } .leads-grid { grid-template-columns: repeat(2, 1fr); } .resumo-box { grid-template-columns: repeat(2, 1fr); } }
+
+  /* Popup de saídas por cliente (hover no valor de Saída) */
+  [data-saida-tip]{cursor:help;border-bottom:1px dotted rgba(200,160,70,.7)}
+  .saida-tip{position:fixed;z-index:99999;display:none;pointer-events:none;max-width:340px;min-width:220px;
+    background:#0f1d22;color:#e6e4e1;border:1px solid rgba(200,160,70,.55);border-radius:10px;padding:10px 12px;
+    font-size:12px;line-height:1.45;box-shadow:0 10px 28px rgba(0,0,0,.55);font-family:inherit}
+  .saida-tip .st-title{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#C8A046;font-weight:700;margin-bottom:6px}
+  .saida-tip .st-row{display:flex;justify-content:space-between;gap:14px;padding:2px 0}
+  .saida-tip .st-row span:first-child{font-weight:600}
+  .saida-tip .st-row small{color:rgba(230,228,225,.55);font-weight:400;margin-left:4px}
+  .saida-tip .st-row span:last-child{font-weight:700;color:#f0b44c;white-space:nowrap}
+  .saida-tip .st-tot{border-top:1px solid rgba(200,160,70,.25);margin-top:6px;padding-top:6px;display:flex;justify-content:space-between;font-weight:700}
+  .saida-tip .st-vazio{color:rgba(230,228,225,.6)}
   </style>
 </head>
 <body>
@@ -494,7 +507,7 @@
       <div class="leads-grid" id="leads-grid"></div>
 
       <!-- STVM DO MÊS -->
-      <div class="section-title" style="margin-top:26px">STVM — Transferências de Custódia</div>
+      <div class="section-title" style="margin-top:26px">STVM — Transferências de Custódia <span style="font-size:10px;font-weight:500;color:var(--muted);letter-spacing:0;text-transform:none">· contam como captação do mês</span></div>
       <div id="stvm-section"></div>
 
       <!-- CLIENTES DO CONSULTOR -->
@@ -578,6 +591,7 @@
   <div class="modal-body">
     <div class="form-tabs">
       <button class="form-tab active" onclick="mudarTab('captacao', this)">Captação</button>
+      <button class="form-tab" onclick="mudarTab('saidas', this)">Saídas</button>
       <button class="form-tab" onclick="mudarTab('produtos', this)">Produtos</button>
       <button class="form-tab" onclick="mudarTab('leads', this)">Leads</button>
       <button class="form-tab" onclick="mudarTab('stvm', this)">STVM</button>
@@ -612,28 +626,28 @@
       <div class="form-section-label">BTG</div>
       <div class="form-grid three">
         <div class="form-group"><label>Resultado Bruto BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-btg" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
-        <div class="form-group"><label>Saída BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-btg" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label>Saída BTG (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-btg" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarSaidasResumo()"></div>
         <div class="form-group"><label style="color:var(--muted)" title="Da Saída BTG acima, quanto foi transferência p/ conta internacional (não é perda real, é transição de custódia)">↔ Transferências Internacionais (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-transf-btg-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarTransfPreview()"></div>
       </div>
 
       <div class="form-section-label">XP</div>
       <div class="form-grid three">
         <div class="form-group"><label>Resultado Bruto XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-xp" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
-        <div class="form-group"><label>Saída XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-xp" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label>Saída XP (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-xp" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarSaidasResumo()"></div>
         <div class="form-group"><label style="color:var(--muted)" title="Da Saída XP acima, quanto foi transferência p/ conta internacional (não é perda real, é transição de custódia)">↔ Transferências Internacionais (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-transf-xp-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarTransfPreview()"></div>
       </div>
 
       <div class="form-section-label">Outros Bancos</div>
       <div class="form-grid three">
         <div class="form-group"><label>Resultado Bruto Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-outros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
-        <div class="form-group"><label>Saída Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-outros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label>Saída Outros Bancos (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-outros" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarSaidasResumo()"></div>
         <div class="form-group"><label style="color:var(--muted)" title="Da Saída Outros Bancos acima, quanto foi transferência p/ conta internacional (não é perda real, é transição de custódia)">↔ Transferências Internacionais (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-transf-outros-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarTransfPreview()"></div>
       </div>
 
       <div class="form-section-label">Internacional</div>
       <div class="form-grid three">
         <div class="form-group"><label>Resultado Bruto Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-cap-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
-        <div class="form-group"><label>Saída Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
+        <div class="form-group"><label>Saída Internacional (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-sai-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarSaidasResumo()"></div>
         <div class="form-group"><label style="color:var(--muted)" title="Cliente que já tinha dinheiro em outra corretora internacional (fora da Oikos) e transferiu pra nossa base — não é captação nova pro cliente, e não entra no Resultado Bruto/Líquido Internacional. Só informativo.">↔ PL Internacional Novo (R$)</label><input type="text" inputmode="numeric" class="inp-brl" id="e-transf-ext-int" placeholder="0,00" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this)"></div>
       </div>
       <div style="font-size:10px;color:var(--muted);margin:10px 0 4px;line-height:1.5">
@@ -642,6 +656,21 @@
       <div style="font-size:10px;color:var(--muted);margin:4px 0 4px;line-height:1.5">
         ↔ PL Internacional Novo: dinheiro que o cliente já tinha em outra corretora internacional fora da Oikos e trouxe pra nossa base — é positivo pra Oikos, mas não é dinheiro novo do cliente. Só aparece no card informativo do Internacional, não soma em Captação/Resultado Líquido.
       </div>
+    </div>
+
+    <!-- TAB SAÍDAS (por cliente) -->
+    <div class="tab-pane" id="tab-saidas">
+      <div class="form-section-label">Saídas do mês — de qual cliente saiu</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.5">Para cada saída, informe o <strong>cliente</strong>, o <strong>valor</strong> e a <strong>corretora</strong> de onde saiu. O detalhe aparece ao passar o mouse sobre o valor de Saída (página do consultor e Relatório Head). O valor total da saída continua sendo lançado na aba Captação.</div>
+      <div style="display:grid;grid-template-columns:1fr 130px 140px 36px;gap:6px;margin-bottom:6px;padding:0 4px">
+        <span style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)">Cliente</span>
+        <span style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)">Valor (R$)</span>
+        <span style="font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--muted)">Corretora</span>
+        <span></span>
+      </div>
+      <div id="saidas-lista"></div>
+      <button type="button" onclick="addSaidaRow()" style="margin-top:10px;background:none;border:1px dashed rgba(200,160,70,0.4);color:var(--gold);border-radius:8px;padding:9px 16px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;width:100%;transition:all .15s" onmouseover="this.style.background='rgba(200,160,70,0.08)'" onmouseout="this.style.background='none'">＋ Adicionar saída de cliente</button>
+      <div id="saidas-resumo" style="margin-top:14px;font-size:12px;line-height:1.7"></div>
     </div>
 
     <!-- TAB PRODUTOS -->
@@ -723,6 +752,9 @@
   let plIntBaseline = null;
   let capAnual = [], chartAnual = null;
   let stvmData = [];
+  let stvmAno = [];        // STVM do ano inteiro (somada à captação)
+  let saidasData = [];     // saídas por cliente do mês (tabela saidas_cliente)
+  let saidasAno = [];
 
   const fmtM = v => { const a=Math.abs(v),s=v<0?'-':''; return a>=1e9?s+'R$ '+(a/1e9).toFixed(2)+'B':a>=1e6?s+'R$ '+(a/1e6).toFixed(2)+'M':a>=1e3?s+'R$ '+(a/1e3).toFixed(1)+'K':s+'R$ '+a.toFixed(0); };
   const fmtR = v => 'R$ ' + Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
@@ -745,6 +777,42 @@
     const captado = n(row.captado_int), saida = n(row.saida_int);
     return { captado, saida, nnm: captado - saida };
   }
+
+
+  // ── POPUP DE SAÍDAS POR CLIENTE ───────────────────────────
+  // SAIDAS_TIP[chave] = [{nome_cliente, valor, corretora, consultor?}]. Elementos com
+  // data-saida-tip="chave" mostram o detalhe ao passar o mouse. Chave sem lista = saída
+  // sem cliente identificado (mostra aviso pedindo o preenchimento em Editar Mês > Saídas).
+  const SAIDAS_TIP = {};
+  const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  (function(){
+    const tip = document.createElement('div');
+    tip.className = 'saida-tip';
+    document.body.appendChild(tip);
+    let chaveAtual = null;
+    document.addEventListener('mousemove', e => {
+      const el = e.target.closest ? e.target.closest('[data-saida-tip]') : null;
+      if (!el) { tip.style.display = 'none'; chaveAtual = null; return; }
+      const chave = el.dataset.saidaTip;
+      if (chave !== chaveAtual) {
+        chaveAtual = chave;
+        const lista = (SAIDAS_TIP[chave] || []).slice().sort((a,b) => b.valor - a.valor);
+        const titulo = el.dataset.saidaTitulo || 'Saídas por cliente';
+        tip.innerHTML = lista.length
+          ? `<div class="st-title">${escH(titulo)}</div>`
+            + lista.map(r => `<div class="st-row"><span>${escH(r.nome_cliente)}<small>${escH([r.consultor, r.corretora].filter(Boolean).join(' · '))}</small></span><span>R$ ${Number(r.valor).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`).join('')
+            + `<div class="st-tot"><span>Total identificado</span><span>R$ ${lista.reduce((s,r)=>s+r.valor,0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`
+          : `<div class="st-title">${escH(titulo)}</div><div class="st-vazio">Nenhum cliente informado para esta saída. Preencher em Editar Mês › Saídas.</div>`;
+      }
+      tip.style.display = 'block';
+      const w = tip.offsetWidth, h = tip.offsetHeight;
+      let x = e.clientX + 16, y = e.clientY + 16;
+      if (x + w > window.innerWidth - 8)  x = e.clientX - w - 16;
+      if (y + h > window.innerHeight - 8) y = e.clientY - h - 16;
+      tip.style.left = Math.max(8, x) + 'px';
+      tip.style.top  = Math.max(8, y) + 'px';
+    });
+  })();
 
   // ── FORMATAÇÃO BR (estilo caixa eletrônico) ───────────────
   const parseBR = v => parseFloat((v||'').toString().replace(/\./g,'').replace(',','.')) || 0;
@@ -873,7 +941,7 @@
         <td style="font-weight:600">${MESES_S[m]} ${anoAtual}</td>
         <td style="text-align:right;font-weight:700;color:var(--ok)">${fmtM(liqBr.captado)}</td>
         <td style="text-align:right;color:var(--gold)">${liqInt.captado > 0 ? fmtM(liqInt.captado) : '<span style="color:var(--muted2)">—</span>'}</td>
-        <td style="text-align:right;color:${liqBr.saida>0?'var(--warn)':'var(--muted)'}">${fmtM(liqBr.saida)}${liqBr.transf > 0 ? `<span style="font-size:9px;color:var(--gold);margin-left:4px" title="Não conta como saída: ${fmtM(liqBr.transf)} foi transferido para custódia internacional, não perdido">↔</span>` : ''}</td>
+        <td style="text-align:right;color:${liqBr.saida>0?'var(--warn)':'var(--muted)'}">${liqBr.saida>0 ? `<span data-saida-tip="${m}|br" data-saida-titulo="Saída Brasil — ${MESES_S[m]} ${anoAtual}">${fmtM(liqBr.saida)}</span>` : fmtM(liqBr.saida)}${liqBr.transf > 0 ? `<span style="font-size:9px;color:var(--gold);margin-left:4px" title="Não conta como saída: ${fmtM(liqBr.transf)} foi transferido para custódia internacional, não perdido">↔</span>` : ''}</td>
         <td style="text-align:right;${nnmBrCls};font-weight:700">${fmtM(liqBr.nnm)}</td>
         <td style="text-align:right;${nnmIntCls}">${(liqInt.captado || liqInt.saida) ? fmtM(liqInt.nnm) : '<span style="color:var(--muted2)">—</span>'}</td>
         <td style="text-align:right;color:var(--muted)">${pl > 0 ? fmtM(pl) : '<span style="color:var(--muted2)">—</span>'}</td>
@@ -896,15 +964,16 @@
   async function carregar() {
     document.getElementById('periodo-label').textContent = MESES[mesAtual] + ' ' + anoAtual;
 
-    const [capRes, prodRes, leadsRes, capAnualRes, stvmRes, plIntBaseRes] = await Promise.all([
+    const [capRes, prodRes, leadsRes, capAnualRes, stvmRes, plIntBaseRes, saidasRes] = await Promise.all([
       db.from('captacao_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('produtos_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('leads_mensal').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).maybeSingle(),
       db.from('captacao_mensal').select('mes,nnm,captado,saida,pl,captado_int,saida_int,transf_nac_para_int').eq('consultor_id', consultorId).eq('ano', anoAtual).order('mes'),
-      db.from('stvm').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual).order('created_at'),
+      db.from('stvm').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).order('created_at'),
       // Saldo mais recente de PL Internacional (qualquer ano/mês) para herdar como padrão em meses ainda não editados
       db.from('captacao_mensal').select('ano,mes,pl_int').eq('consultor_id', consultorId)
         .order('ano', { ascending: false }).order('mes', { ascending: false }).limit(24),
+      db.from('saidas_cliente').select('*').eq('consultor_id', consultorId).eq('ano', anoAtual).order('created_at'),
     ]);
 
     capData      = capRes.data   || {};
@@ -912,7 +981,35 @@
     prodData     = prodRes.data  || {};
     leadsData    = leadsRes.data || {};
     capAnual     = capAnualRes.data || [];
-    stvmData     = stvmRes.data  || [];
+    stvmAno      = stvmRes.data  || [];
+    stvmData     = stvmAno.filter(r => r.mes === mesAtual);
+    saidasAno    = saidasRes.data || [];
+    saidasData   = saidasAno.filter(r => r.mes === mesAtual);
+
+    // STVM conta como captação do consultor: soma no Resultado Bruto e no Líquido do mês
+    // (só na leitura — nada é gravado em captacao_mensal, então não há risco de contar 2x).
+    const stvmMes = {};
+    stvmAno.forEach(r => { stvmMes[r.mes] = (stvmMes[r.mes] || 0) + n(r.valor); });
+    Object.keys(stvmMes).forEach(k => {
+      const m = +k;
+      let row = capAnual.find(r => r.mes === m);
+      if (!row) { row = { mes: m, captado: 0, nnm: 0 }; capAnual.push(row); }
+      row.captado = n(row.captado) + stvmMes[m];
+      row.nnm     = n(row.nnm) + stvmMes[m];
+    });
+    capData.stvm = stvmMes[mesAtual] || 0;
+    if (capData.stvm) {
+      capData.captado = n(capData.captado) + capData.stvm;
+      capData.nnm     = n(capData.nnm) + capData.stvm;
+    }
+
+    // Chaves do popup de saídas: "mes|br" (Brasil), "mes|int", "mes|all"
+    Object.keys(SAIDAS_TIP).forEach(k => delete SAIDAS_TIP[k]);
+    saidasAno.forEach(r => {
+      const item = { nome_cliente: r.nome_cliente, valor: n(r.valor), corretora: r.corretora };
+      const escopo = r.corretora === 'Internacional' ? 'int' : 'br';
+      [escopo, 'all'].forEach(e => { (SAIDAS_TIP[`${r.mes}|${e}`] = SAIDAS_TIP[`${r.mes}|${e}`] || []).push(item); });
+    });
 
     const baseRows = (plIntBaseRes.data || [])
       .filter(r => r.ano < anoAtual || (r.ano === anoAtual && r.mes < mesAtual));
@@ -940,13 +1037,14 @@
     const nnmEl = document.getElementById('k-nnm');
     nnmEl.textContent = fmtM(liqBr.nnm);
     nnmEl.className = 'kpi-value ' + (liqBr.nnm >= 0 ? 'pos' : 'neg');
-    document.getElementById('k-nnm-sub').innerHTML = `Resultado Bruto: <strong>${fmtM(liqBr.captado)}</strong> | Saída: <strong>${fmtM(liqBr.saida)}</strong>`
+    document.getElementById('k-nnm-sub').innerHTML = `Resultado Bruto: <strong>${fmtM(liqBr.captado)}</strong> | Saída: <strong data-saida-tip="${mesAtual}|br" data-saida-titulo="Saída Brasil — ${MESES[mesAtual]}">${fmtM(liqBr.saida)}</strong>`
+      + (capData.stvm > 0 ? `<br><span style="color:var(--gold)">inclui STVM de ${fmtM(capData.stvm)}</span>` : '')
       + (liqBr.transf > 0 ? `<br><span style="color:var(--gold)">↔ ${fmtM(liqBr.transf)} transferido p/ Internacional</span>` : '');
 
     const nnmIntEl = document.getElementById('k-nnm-int');
     nnmIntEl.textContent = fmtM(liqInt.nnm);
     nnmIntEl.className = 'kpi-value ' + (liqInt.nnm >= 0 ? 'pos' : 'neg');
-    document.getElementById('k-nnm-int-sub').innerHTML = `Resultado Bruto: <strong>${fmtM(liqInt.captado)}</strong> | Saída: <strong>${fmtM(liqInt.saida)}</strong>`;
+    document.getElementById('k-nnm-int-sub').innerHTML = `Resultado Bruto: <strong>${fmtM(liqInt.captado)}</strong> | Saída: <strong data-saida-tip="${mesAtual}|int" data-saida-titulo="Saída Internacional — ${MESES[mesAtual]}">${fmtM(liqInt.saida)}</strong>`;
 
     const pctEl = document.getElementById('k-meta-pct');
     pctEl.textContent = fmtP(pctMeta);
@@ -1000,6 +1098,8 @@
     document.getElementById('r-cap').textContent      = fmtM(captado);
     document.getElementById('r-cap-meta').innerHTML   = `Meta: ${fmtM(metaNNM)} &nbsp; <span style="color:${pctMeta>=1?'var(--ok)':'var(--warn)'}">${fmtP(pctMeta)} atingido</span>`;
     document.getElementById('r-sai').textContent      = fmtM(saida);
+    document.getElementById('r-sai').dataset.saidaTip = `${mesAtual}|all`;
+    document.getElementById('r-sai').dataset.saidaTitulo = `Saída Total — ${MESES[mesAtual]}`;
     document.getElementById('r-sai-pct').textContent  = pl > 0 ? fmtP(saida/pl) + ' do PL' : '—';
     document.getElementById('r-prod').textContent     = fmtR(receitaProd);
     document.getElementById('r-prod-meta').innerHTML  = `Meta: ${fmtR(metaProd)} &nbsp; <span style="color:${pctProd>=1?'var(--ok)':'var(--warn)'}">${fmtP(pctProd)}</span>`;
@@ -1372,7 +1472,12 @@
     document.getElementById('stvm-lista').innerHTML = '';
     stvmData.forEach(e => addSTVMRow(e));
 
+    // Preenche saídas por cliente
+    document.getElementById('saidas-lista').innerHTML = '';
+    saidasData.forEach(e => addSaidaRow(e));
+
     initAddableInputs();
+    atualizarSaidasResumo();
     document.getElementById('overlay').classList.add('open');
     document.getElementById('modal').classList.add('open');
     mudarTab('captacao', document.querySelector('.form-tab'));
@@ -1521,6 +1626,26 @@
       };
     }).filter(r => r.nome_cliente);
 
+    // Coleta saídas por cliente do modal
+    const saidasPayload = Array.from(document.querySelectorAll('.saida-row')).map(row => ({
+      consultor_id: consultorId, ano: anoAtual, mes: mesAtual,
+      nome_cliente: row.querySelector('.sr-nome').value.trim(),
+      valor: parseBR(row.querySelector('.sr-valor').value),
+      corretora: row.querySelector('.sr-corretora').value,
+    })).filter(r => r.nome_cliente || r.valor);
+    if (saidasPayload.some(r => !r.nome_cliente || !r.valor)) {
+      alert('Na aba Saídas, toda linha precisa ter o nome do cliente e o valor.');
+      return;
+    }
+    const totalIdentificado = saidasPayload.reduce((s,r) => s + r.valor, 0);
+    if (Math.abs(totalIdentificado - saida) > 0.5) {
+      const falta = saida - totalIdentificado;
+      const msg = falta > 0
+        ? `Saída total do mês: ${fmtR(saida)}.\nClientes identificados na aba Saídas: ${fmtR(totalIdentificado)}.\nFaltam ${fmtR(falta)} sem cliente. Salvar assim mesmo?`
+        : `Os clientes na aba Saídas somam ${fmtR(totalIdentificado)}, mais que a saída total lançada (${fmtR(saida)}). Salvar assim mesmo?`;
+      if (!confirm(msg)) { mudarTab('saidas', document.querySelectorAll('.form-tab')[1]); return; }
+    }
+
     try {
       await Promise.all([
         upsert('captacao_mensal', capPayload),
@@ -1530,6 +1655,13 @@
       // Substitui entradas STVM do mês
       await db.from('stvm').delete().eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual);
       if (stvmPayload.length > 0) await db.from('stvm').insert(stvmPayload);
+      // Substitui saídas por cliente do mês
+      const delS = await db.from('saidas_cliente').delete().eq('consultor_id', consultorId).eq('ano', anoAtual).eq('mes', mesAtual);
+      if (delS.error) throw delS.error;
+      if (saidasPayload.length > 0) {
+        const insS = await db.from('saidas_cliente').insert(saidasPayload);
+        if (insS.error) throw insS.error;
+      }
 
       fecharModal();
       await carregar();
@@ -1567,6 +1699,39 @@
     const xp  = parseBR(document.getElementById('e-transf-xp-int').value);
     const out = parseBR(document.getElementById('e-transf-outros-int').value);
     document.getElementById('transf-total-preview').textContent = fmtR(btg + xp + out);
+  }
+
+  // ── SAÍDAS POR CLIENTE ────────────────────────────────────
+  function addSaidaRow(entry = {}) {
+    const div = document.createElement('div');
+    div.className = 'saida-row';
+    div.style.cssText = 'display:grid;grid-template-columns:1fr 130px 140px 36px;gap:6px;margin-bottom:8px;align-items:center';
+    const estilo = 'background:var(--card);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:8px 10px;font-size:12px;font-family:inherit;width:100%;outline:none';
+    const num = parseFloat(entry.valor) || 0;
+    const valorDigits = num ? Math.round(num * 100).toString().replace(/^0+/, '') : '';
+    const opts = ['BTG','XP','Outros','Internacional']
+      .map(o => `<option value="${o}" ${entry.corretora === o ? 'selected' : ''}>${o}</option>`).join('');
+    div.innerHTML =
+      `<input type="text" class="sr-nome" placeholder="Nome do cliente" value="${escH(entry.nome_cliente)}" style="${estilo}">` +
+      `<input type="text" class="sr-valor inp-brl" inputmode="numeric" placeholder="Valor (R$)" value="${digitosParaDisplay(valorDigits)}" data-digits="${valorDigits}" onkeydown="mascaraMoeda(this,event)" oninput="mascaraMoeda(this); atualizarSaidasResumo()" style="${estilo}">` +
+      `<select class="sr-corretora" style="${estilo}">${opts}</select>` +
+      `<button type="button" onclick="this.closest('.saida-row').remove(); atualizarSaidasResumo()" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:7px;width:32px;height:32px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center">✕</button>`;
+    document.getElementById('saidas-lista').appendChild(div);
+    atualizarSaidasResumo();
+  }
+
+  function atualizarSaidasResumo() {
+    const el = document.getElementById('saidas-resumo');
+    if (!el) return;
+    const g = id => parseBR(document.getElementById(id).value);
+    const totalSaida = g('e-sai-btg') + g('e-sai-xp') + g('e-sai-outros') + g('e-sai-int');
+    const ident = Array.from(document.querySelectorAll('.saida-row .sr-valor')).reduce((s,i) => s + parseBR(i.value), 0);
+    const falta = totalSaida - ident;
+    const ok = Math.abs(falta) < 0.5;
+    el.innerHTML = `Saída total lançada (aba Captação): <strong>${fmtR(totalSaida)}</strong><br>`
+      + `Clientes identificados: <strong>${fmtR(ident)}</strong><br>`
+      + `<span style="color:${ok ? 'var(--ok)' : 'var(--warn)'}">${ok ? '✔ Todas as saídas têm cliente identificado'
+          : falta > 0 ? `Falta identificar ${fmtR(falta)}` : `Clientes somam ${fmtR(-falta)} a mais que a saída lançada`}</span>`;
   }
 
   // ── STVM ──────────────────────────────────────────────────

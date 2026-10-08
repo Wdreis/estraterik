@@ -343,6 +343,19 @@
       .kpi-grid-6 { grid-template-columns: 1fr; }
       .custom-range { flex-wrap: wrap; }
     }
+
+  /* Popup de saídas por cliente (hover no valor de Saída) */
+  [data-saida-tip]{cursor:help;border-bottom:1px dotted rgba(200,160,70,.7)}
+  .saida-tip{position:fixed;z-index:99999;display:none;pointer-events:none;max-width:340px;min-width:220px;
+    background:#0f1d22;color:#e6e4e1;border:1px solid rgba(200,160,70,.55);border-radius:10px;padding:10px 12px;
+    font-size:12px;line-height:1.45;box-shadow:0 10px 28px rgba(0,0,0,.55);font-family:inherit}
+  .saida-tip .st-title{font-size:9px;letter-spacing:1.2px;text-transform:uppercase;color:#C8A046;font-weight:700;margin-bottom:6px}
+  .saida-tip .st-row{display:flex;justify-content:space-between;gap:14px;padding:2px 0}
+  .saida-tip .st-row span:first-child{font-weight:600}
+  .saida-tip .st-row small{color:rgba(230,228,225,.55);font-weight:400;margin-left:4px}
+  .saida-tip .st-row span:last-child{font-weight:700;color:#f0b44c;white-space:nowrap}
+  .saida-tip .st-tot{border-top:1px solid rgba(200,160,70,.25);margin-top:6px;padding-top:6px;display:flex;justify-content:space-between;font-weight:700}
+  .saida-tip .st-vazio{color:rgba(230,228,225,.6)}
   </style>
 </head>
 <body>
@@ -679,6 +692,41 @@
   const fmtP = v => (v * 100).toFixed(1) + '%';
   const n = v => parseFloat(v) || 0;
 
+  // ── POPUP DE SAÍDAS POR CLIENTE ───────────────────────────
+  // SAIDAS_TIP[chave] = [{nome_cliente, valor, corretora, consultor?}]. Elementos com
+  // data-saida-tip="chave" mostram o detalhe ao passar o mouse. Chave sem lista = saída
+  // sem cliente identificado (mostra aviso pedindo o preenchimento em Editar Mês > Saídas).
+  const SAIDAS_TIP = {};
+  const escH = s => String(s == null ? '' : s).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  (function(){
+    const tip = document.createElement('div');
+    tip.className = 'saida-tip';
+    document.body.appendChild(tip);
+    let chaveAtual = null;
+    document.addEventListener('mousemove', e => {
+      const el = e.target.closest ? e.target.closest('[data-saida-tip]') : null;
+      if (!el) { tip.style.display = 'none'; chaveAtual = null; return; }
+      const chave = el.dataset.saidaTip;
+      if (chave !== chaveAtual) {
+        chaveAtual = chave;
+        const lista = (SAIDAS_TIP[chave] || []).slice().sort((a,b) => b.valor - a.valor);
+        const titulo = el.dataset.saidaTitulo || 'Saídas por cliente';
+        tip.innerHTML = lista.length
+          ? `<div class="st-title">${escH(titulo)}</div>`
+            + lista.map(r => `<div class="st-row"><span>${escH(r.nome_cliente)}<small>${escH([r.consultor, r.corretora].filter(Boolean).join(' · '))}</small></span><span>R$ ${Number(r.valor).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`).join('')
+            + `<div class="st-tot"><span>Total identificado</span><span>R$ ${lista.reduce((s,r)=>s+r.valor,0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}</span></div>`
+          : `<div class="st-title">${escH(titulo)}</div><div class="st-vazio">Nenhum cliente informado para esta saída. Preencher em Editar Mês › Saídas.</div>`;
+      }
+      tip.style.display = 'block';
+      const w = tip.offsetWidth, h = tip.offsetHeight;
+      let x = e.clientX + 16, y = e.clientY + 16;
+      if (x + w > window.innerWidth - 8)  x = e.clientX - w - 16;
+      if (y + h > window.innerHeight - 8) y = e.clientY - h - 16;
+      tip.style.left = Math.max(8, x) + 'px';
+      tip.style.top  = Math.max(8, y) + 'px';
+    });
+  })();
+
   // Fonte única de verdade para categorias de produto — mesma lista usada em consultor.html
   // (inclui precatorios, que faltava aqui e em index.html — causava subestimar receita total)
   const PROD_KEYS = ['estudos','previdencia','seguros','precatorios','consorcio','private_equity','juridico','offshore','cambio','outros'];
@@ -825,7 +873,7 @@
       consultores = regiaoParam ? consultoresAll.filter(c => c.regiao === regiaoParam) : consultoresAll;
       renderSidebar();
 
-      const [capRes, prodRes, leadsRes, capAnualRes] = await Promise.all([
+      const [capRes, prodRes, leadsRes, capAnualRes, stvmRes, saidasRes] = await Promise.all([
         db.from('captacao_mensal').select('*')
           .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
         db.from('produtos_mensal').select('*')
@@ -834,7 +882,22 @@
           .eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim),
         db.from('captacao_mensal').select('mes,consultor_id,nnm,captado,saida,pl,pl_btg,pl_xp,pl_outros,pl_int,captado_int,saida_int,transf_nac_para_int')
           .eq('ano', anoAtual).order('mes'),
+        db.from('stvm').select('consultor_id,mes,valor').eq('ano', anoAtual),
+        db.from('saidas_cliente').select('*').eq('ano', anoAtual).gte('mes', meInicio).lte('mes', meFim).order('mes'),
       ]);
+
+      // STVM conta como captação (Brasil) do consultor no mês — soma na leitura, sem gravar em captacao_mensal
+      const somarSTVM = (rows, ini, fim) => {
+        (stvmRes.data || []).filter(sv => sv.mes >= ini && sv.mes <= fim).forEach(sv => {
+          let row = rows.find(r => r.consultor_id === sv.consultor_id && r.mes === sv.mes);
+          if (!row) { row = { consultor_id: sv.consultor_id, mes: sv.mes, captado: 0, nnm: 0 }; rows.push(row); }
+          row.captado = n(row.captado) + n(sv.valor);
+          row.nnm     = n(row.nnm) + n(sv.valor);
+        });
+        return rows;
+      };
+      somarSTVM(capRes.data || [], meInicio, meFim);
+      somarSTVM(capAnualRes.data || [], 1, 12);
 
       // Filtra por região aqui, na origem — nem todo consumidor de cap/prod/leads passa pelo
       // guard por consultor do consAgg (ex: cards de Patrimônio, Receita Produtos, Reuniões,
@@ -850,6 +913,15 @@
         .filter(r => ids.has(r.consultor_id))
         .reduce((s,r) => s + PROD_KEYS.reduce((ps,k) => ps + n(r[k]), 0), 0);
       renderChartRegiaoProdutos(prodTotalRegiao(idsBrasiliaAll), prodTotalRegiao(idsBHAll));
+
+      // Chaves do popup de saídas por cliente: "tot|br" (período) e "m{mes}|br" (cada mês)
+      Object.keys(SAIDAS_TIP).forEach(k => delete SAIDAS_TIP[k]);
+      const nomePorId = {}; consultores.forEach(c => nomePorId[c.id] = c.nome);
+      filtrarRegiao(saidasRes.data || []).filter(r => r.corretora !== 'Internacional').forEach(r => {
+        const item = { nome_cliente: r.nome_cliente, valor: n(r.valor),
+                       consultor: (nomePorId[r.consultor_id] || '') + (meFim > meInicio ? ' · ' + MESES_S[r.mes] : ''), corretora: r.corretora };
+        ['tot|br', `m${r.mes}|br`].forEach(k => { (SAIDAS_TIP[k] = SAIDAS_TIP[k] || []).push(item); });
+      });
 
       renderUI(
         filtrarRegiao(capRes.data   || []),
@@ -932,6 +1004,8 @@
     document.getElementById('kpi-captado').style.color = totCap >= 0 ? '' : 'var(--danger)';
     document.getElementById('kpi-captado-sub').innerHTML = `Total captado no Brasil (excl. int'l)`;
     document.getElementById('kpi-saida').textContent   = fmtM(totSai);
+    document.getElementById('kpi-saida').dataset.saidaTip    = 'tot|br';
+    document.getElementById('kpi-saida').dataset.saidaTitulo = 'Saídas Brasil — clientes';
     document.getElementById('kpi-saida-sub').innerHTML = totTransf > 0
       ? `Bruta: ${fmtM(totSaiBruta)} · Transferido p/ Int'l: <strong>${fmtM(totTransf)}</strong>`
       : `Saldo líquido: <strong class="${totNNM>=0?'ok':'bad'}">${fmtM(totNNM)}</strong>`;
@@ -1263,7 +1337,7 @@
       tbody.innerHTML += `<tr>
         <td style="font-weight:600">${MESES_S[m]} ${anoAtual}</td>
         <td style="font-weight:700;color:var(--ok)">${fmtM(d.captado)}</td>
-        <td class="${d.saida>0?'td-warn':''}">${fmtM(d.saida)}${d.transf > 0 ? `<span style="font-size:9px;color:var(--gold);margin-left:4px" title="Inclui transf. nac→int de ${fmtM(d.transf)}">↔</span>` : ''}</td>
+        <td class="${d.saida>0?'td-warn':''}">${d.saida>0 ? `<span data-saida-tip="m${m}|br" data-saida-titulo="Saída Brasil — ${MESES_S[m]} ${anoAtual}">${fmtM(d.saida)}</span>` : fmtM(d.saida)}${d.transf > 0 ? `<span style="font-size:9px;color:var(--gold);margin-left:4px" title="Inclui transf. nac→int de ${fmtM(d.transf)}">↔</span>` : ''}</td>
         <td class="${nnmCls}">${fmtM(nnm)}</td>
         <td>${d.pl > 0 ? fmtM(d.pl) : '<span class="td-zero">—</span>'}</td>
         <td>${d.produtos > 0 ? fmtR(d.produtos) : '<span class="td-zero">—</span>'}</td>
