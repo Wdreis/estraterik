@@ -852,6 +852,9 @@
       }
       e.preventDefault();
       digits = input.dataset.digits || '';
+      // Texto todo selecionado (Ctrl+A ou arrastar): a próxima tecla substitui, como no Word
+      const selTudo = input.value.length > 0 && input.selectionStart === 0 && input.selectionEnd === input.value.length;
+      if (selTudo) digits = '';
       if (e.key === 'Backspace' || e.key === 'Delete') {
         digits = digits.slice(0, -1);
       } else {
@@ -866,6 +869,7 @@
     digits = digits.replace(/^0+/, '');
     input.dataset.digits = digits;
     input.value = digitosParaDisplay(digits);
+    try { input.setSelectionRange(input.value.length, input.value.length); } catch (_) {} // cursor sempre no fim
     input.dispatchEvent(new Event('input', { bubbles: false }));
     input._mascaraActive = false;
   }
