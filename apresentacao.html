@@ -599,7 +599,7 @@
   let saidasRows = []; // saídas por cliente do período (tabela saidas_cliente)
   let consultoresAll = []; // todos os ativos, sem filtro do topbar — usado no Comparativo Regional
   let chartBar = null, chartDoughnut = null;
-  const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity'];
+  const PROD_KEYS = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity','precatorios','offshore','outros'];
 
   // Estado dos rankings, guardado para os filtros por praça (Todos | BH | Brasília)
   // re-renderizarem sem recarregar o banco. Preenchido no fim de renderUI.
@@ -1139,9 +1139,9 @@ function setPeriodo(ini, fim, srcBtn) {
     });
 
     // CHART BAR — Receita de Produtos
-    const prodNomes  = ['Estudos','Câmbio','Jurídico','Previdência','Seguros','Consórcio','Private Equity'];
-    const prodChaves = ['estudos','cambio','juridico','previdencia','seguros','consorcio','private_equity'];
-    const prodCoresB = ['#C8A046','#28505A','#22c55e','#A855F7','#EF4444','#3B82F6','#EC4899'];
+    const prodNomes  = ['Estudos','Câmbio','Jurídico','Previdência','Seguros','Consórcio','Private Equity','Precatórios','Offshore','Outros'];
+    const prodChaves = PROD_KEYS;
+    const prodCoresB = ['#C8A046','#28505A','#22c55e','#A855F7','#EF4444','#3B82F6','#EC4899','#F97316','#14B8A6','#94A3B8'];
     const prodTotais = prodChaves.map(k => Object.values(prodAgg).reduce((s,r) => s + (r[k]||0), 0));
     if (chartBar) chartBar.destroy();
     chartBar = new Chart(document.getElementById('chartBar'), {
